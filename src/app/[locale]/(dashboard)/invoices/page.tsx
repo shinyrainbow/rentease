@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Send, FileDown, Eye, Loader2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
@@ -99,6 +100,7 @@ export default function InvoicesPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -230,11 +232,15 @@ export default function InvoicesPage() {
   const handleViewInvoice = async (invoice: Invoice) => {
     setLoadingInvoice(true);
     setViewDialogOpen(true);
+    setPdfPreviewUrl(null);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`);
       if (res.ok) {
         const data = await res.json();
         setSelectedInvoice(data);
+        // Generate PDF preview
+        const previewUrl = generatePdfPreview(data);
+        setPdfPreviewUrl(previewUrl);
       } else {
         toast({
           title: "Error",
@@ -279,7 +285,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const generatePdf = (invoice: InvoiceDetail) => {
+  const buildPdfDocument = (invoice: InvoiceDetail): jsPDF => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
@@ -409,7 +415,17 @@ export default function InvoicesPage() {
       doc.text(invoice.notes, 20, y);
     }
 
-    // Download
+    return doc;
+  };
+
+  const generatePdfPreview = (invoice: InvoiceDetail): string => {
+    const doc = buildPdfDocument(invoice);
+    const blob = doc.output("blob");
+    return URL.createObjectURL(blob);
+  };
+
+  const generatePdf = (invoice: InvoiceDetail) => {
+    const doc = buildPdfDocument(invoice);
     doc.save(`Invoice-${invoice.invoiceNo}.pdf`);
   };
 
@@ -601,8 +617,14 @@ export default function InvoicesPage() {
       </Card>
 
       {/* Invoice Detail Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={viewDialogOpen} onOpenChange={(open) => {
+        setViewDialogOpen(open);
+        if (!open && pdfPreviewUrl) {
+          URL.revokeObjectURL(pdfPreviewUrl);
+          setPdfPreviewUrl(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{t("viewInvoice")}</DialogTitle>
           </DialogHeader>
@@ -611,125 +633,148 @@ export default function InvoicesPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : selectedInvoice ? (
-            <div className="space-y-6">
-              {/* Company Header */}
-              <div className="text-center">
-                <h3 className="text-xl font-bold">
-                  {selectedInvoice.project.companyName || selectedInvoice.project.name}
-                </h3>
-                {selectedInvoice.project.companyAddress && (
-                  <p className="text-sm text-muted-foreground">{selectedInvoice.project.companyAddress}</p>
-                )}
-                {selectedInvoice.project.taxId && (
-                  <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.project.taxId}</p>
-                )}
-              </div>
+            <Tabs defaultValue="preview" className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="preview">{t("pdfPreview") || "PDF Preview"}</TabsTrigger>
+                <TabsTrigger value="details">{t("details") || "Details"}</TabsTrigger>
+              </TabsList>
 
-              <Separator />
-
-              {/* Invoice Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("invoiceNo")}</p>
-                  <p className="font-medium">{selectedInvoice.invoiceNo}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{tCommon("status")}</p>
-                  <Badge className={getStatusBadgeColor(selectedInvoice.status)}>
-                    {t(`statuses.${selectedInvoice.status}`)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("billingMonth")}</p>
-                  <p className="font-medium">{selectedInvoice.billingMonth}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("dueDate")}</p>
-                  <p className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Tenant Info */}
-              <div>
-                <h4 className="font-semibold mb-2">{t("billTo") || "Bill To"}</h4>
-                <p className="font-medium">{selectedInvoice.tenant.name}</p>
-                <p className="text-sm text-muted-foreground">Unit: {selectedInvoice.unit.unitNumber}</p>
-                {selectedInvoice.tenant.phone && (
-                  <p className="text-sm text-muted-foreground">Phone: {selectedInvoice.tenant.phone}</p>
-                )}
-                {selectedInvoice.tenant.taxId && (
-                  <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.tenant.taxId}</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Line Items */}
-              <div>
-                <h4 className="font-semibold mb-2">{t("lineItems") || "Items"}</h4>
-                <div className="space-y-2">
-                  {(selectedInvoice.lineItems || [{ description: t(`types.${selectedInvoice.type}`), amount: selectedInvoice.subtotal }]).map((item: LineItem, idx: number) => (
-                    <div key={idx} className="flex justify-between">
-                      <span>{item.description}</span>
-                      <span>฿{item.amount.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Totals */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>{t("subtotal") || "Subtotal"}</span>
-                  <span>฿{selectedInvoice.subtotal.toLocaleString()}</span>
-                </div>
-                {selectedInvoice.discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>{t("discount") || "Discount"}</span>
-                    <span>-฿{selectedInvoice.discountAmount.toLocaleString()}</span>
+              <TabsContent value="preview" className="flex-1 overflow-hidden mt-4">
+                {pdfPreviewUrl ? (
+                  <iframe
+                    src={pdfPreviewUrl}
+                    className="w-full h-[60vh] border rounded-lg"
+                    title="Invoice PDF Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-[60vh]">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 )}
-                {selectedInvoice.withholdingTax > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t("withholdingTax") || "Withholding Tax"}</span>
-                    <span>-฿{selectedInvoice.withholdingTax.toLocaleString()}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>{t("totalAmount")}</span>
-                  <span>฿{selectedInvoice.totalAmount.toLocaleString()}</span>
-                </div>
-                {selectedInvoice.paidAmount > 0 && (
-                  <>
-                    <div className="flex justify-between text-green-600">
-                      <span>{t("paidAmount")}</span>
-                      <span>฿{selectedInvoice.paidAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between font-bold">
-                      <span>{t("balanceDue") || "Balance Due"}</span>
-                      <span>฿{(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}</span>
-                    </div>
-                  </>
-                )}
-              </div>
+              </TabsContent>
 
-              {selectedInvoice.notes && (
-                <>
+              <TabsContent value="details" className="flex-1 overflow-y-auto mt-4">
+                <div className="space-y-6">
+                  {/* Company Header */}
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold">
+                      {selectedInvoice.project.companyName || selectedInvoice.project.name}
+                    </h3>
+                    {selectedInvoice.project.companyAddress && (
+                      <p className="text-sm text-muted-foreground">{selectedInvoice.project.companyAddress}</p>
+                    )}
+                    {selectedInvoice.project.taxId && (
+                      <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.project.taxId}</p>
+                    )}
+                  </div>
+
                   <Separator />
-                  <div>
-                    <h4 className="font-semibold mb-2">{t("notes") || "Notes"}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedInvoice.notes}</p>
+
+                  {/* Invoice Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("invoiceNo")}</p>
+                      <p className="font-medium">{selectedInvoice.invoiceNo}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{tCommon("status")}</p>
+                      <Badge className={getStatusBadgeColor(selectedInvoice.status)}>
+                        {t(`statuses.${selectedInvoice.status}`)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("billingMonth")}</p>
+                      <p className="font-medium">{selectedInvoice.billingMonth}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("dueDate")}</p>
+                      <p className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </>
-              )}
+
+                  <Separator />
+
+                  {/* Tenant Info */}
+                  <div>
+                    <h4 className="font-semibold mb-2">{t("billTo") || "Bill To"}</h4>
+                    <p className="font-medium">{selectedInvoice.tenant.name}</p>
+                    <p className="text-sm text-muted-foreground">Unit: {selectedInvoice.unit.unitNumber}</p>
+                    {selectedInvoice.tenant.phone && (
+                      <p className="text-sm text-muted-foreground">Phone: {selectedInvoice.tenant.phone}</p>
+                    )}
+                    {selectedInvoice.tenant.taxId && (
+                      <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.tenant.taxId}</p>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Line Items */}
+                  <div>
+                    <h4 className="font-semibold mb-2">{t("lineItems") || "Items"}</h4>
+                    <div className="space-y-2">
+                      {(selectedInvoice.lineItems || [{ description: t(`types.${selectedInvoice.type}`), amount: selectedInvoice.subtotal }]).map((item: LineItem, idx: number) => (
+                        <div key={idx} className="flex justify-between">
+                          <span>{item.description}</span>
+                          <span>฿{item.amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Totals */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>{t("subtotal") || "Subtotal"}</span>
+                      <span>฿{selectedInvoice.subtotal.toLocaleString()}</span>
+                    </div>
+                    {selectedInvoice.discountAmount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>{t("discount") || "Discount"}</span>
+                        <span>-฿{selectedInvoice.discountAmount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedInvoice.withholdingTax > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>{t("withholdingTax") || "Withholding Tax"}</span>
+                        <span>-฿{selectedInvoice.withholdingTax.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>{t("totalAmount")}</span>
+                      <span>฿{selectedInvoice.totalAmount.toLocaleString()}</span>
+                    </div>
+                    {selectedInvoice.paidAmount > 0 && (
+                      <>
+                        <div className="flex justify-between text-green-600">
+                          <span>{t("paidAmount")}</span>
+                          <span>฿{selectedInvoice.paidAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span>{t("balanceDue") || "Balance Due"}</span>
+                          <span>฿{(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {selectedInvoice.notes && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">{t("notes") || "Notes"}</h4>
+                        <p className="text-sm text-muted-foreground">{selectedInvoice.notes}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </TabsContent>
 
               {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-2 pt-4 border-t mt-4">
                 <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
                   {tCommon("close") || "Close"}
                 </Button>
@@ -738,7 +783,7 @@ export default function InvoicesPage() {
                   {t("downloadPdf")}
                 </Button>
               </div>
-            </div>
+            </Tabs>
           ) : null}
         </DialogContent>
       </Dialog>
