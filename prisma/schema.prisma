@@ -1,0 +1,465 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ Authentication Models ============
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          UserRole  @default(OWNER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  projects Project[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+// ============ Project/Property Models ============
+
+model Project {
+  id          String      @id @default(cuid())
+  name        String
+  nameTh      String?
+  description String?
+  address     String?
+  type        ProjectType
+
+  ownerId     String
+
+  // Billing settings
+  billingDay      Int      @default(1)
+  electricityRate Float    @default(7.0)
+  waterRate       Float    @default(18.0)
+
+  // Tax settings
+  taxId           String?
+  companyName     String?
+  companyNameTh   String?
+  companyAddress  String?
+
+  // LINE OA Integration
+  lineChannelId     String?
+  lineChannelSecret String?
+  lineAccessToken   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  units              Unit[]
+  meterReadings      MeterReading[]
+  invoices           Invoice[]
+  maintenanceRequests MaintenanceRequest[]
+  floorPlans         FloorPlan[]
+  lineContacts       LineContact[]
+}
+
+enum ProjectType {
+  WAREHOUSE
+  SHOP
+  OFFICE
+  MIXED
+}
+
+// ============ Unit/Room Models ============
+
+model Unit {
+  id          String     @id @default(cuid())
+  projectId   String
+  unitNumber  String
+  floor       Int        @default(1)
+  size        Float?
+  type        UnitType
+  status      UnitStatus @default(VACANT)
+
+  // Pricing
+  baseRent        Float
+  commonFee       Float?    @default(0)
+  deposit         Float?
+  discountPercent Float?    @default(0)
+  discountAmount  Float?    @default(0)
+
+  // Position on floor plan
+  positionX   Float?
+  positionY   Float?
+  width       Float?
+  height      Float?
+
+  // Meter info
+  electricMeterNo String?
+  waterMeterNo    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenants        Tenant[]
+  meterReadings  MeterReading[]
+  invoices       Invoice[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([projectId, unitNumber])
+}
+
+enum UnitType {
+  WAREHOUSE
+  SHOP
+  OFFICE
+  STORAGE
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+// ============ Tenant Models ============
+
+model Tenant {
+  id            String        @id @default(cuid())
+  unitId        String
+  name          String
+  nameTh        String?
+  email         String?
+  phone         String?
+  idCard        String?
+  taxId         String?
+
+  tenantType    TenantType    @default(INDIVIDUAL)
+  status        TenantStatus  @default(ACTIVE)
+  withholdingTax Float        @default(0)
+
+  lineUserId    String?
+
+  contractStart DateTime?
+  contractEnd   DateTime?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+  payments     Payment[]
+  lineContact  LineContact?
+}
+
+enum TenantType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum TenantStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// ============ LINE Integration Models ============
+
+model LineContact {
+  id          String   @id @default(cuid())
+  projectId   String
+  tenantId    String?  @unique
+  lineUserId  String
+  displayName String?
+  pictureUrl  String?
+  statusMessage String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  messages    LineMessage[]
+}
+
+model LineMessage {
+  id            String          @id @default(cuid())
+  lineContactId String
+  direction     MessageDirection
+  messageType   String
+  content       String?         @db.Text
+  mediaUrl      String?
+
+  createdAt     DateTime        @default(now())
+
+  lineContact   LineContact     @relation(fields: [lineContactId], references: [id], onDelete: Cascade)
+}
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+// ============ Meter Reading Models ============
+
+model MeterReading {
+  id          String    @id @default(cuid())
+  projectId   String
+  unitId      String
+  type        MeterType
+
+  previousReading Float
+  currentReading  Float
+  usage           Float
+  rate            Float
+  amount          Float
+
+  readingDate DateTime
+  billingMonth String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit        Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([unitId, type, billingMonth])
+}
+
+enum MeterType {
+  ELECTRICITY
+  WATER
+}
+
+// ============ Invoice Models ============
+
+model Invoice {
+  id           String        @id @default(cuid())
+  invoiceNo    String        @unique
+  projectId    String
+  unitId       String
+  tenantId     String
+  type         InvoiceType
+  status       InvoiceStatus @default(PENDING)
+
+  billingMonth String
+  dueDate      DateTime
+
+  subtotal         Float
+  discountAmount   Float     @default(0)
+  withholdingTax   Float     @default(0)
+  totalAmount      Float
+  paidAmount       Float     @default(0)
+
+  lineItems    Json?
+  notes        String?
+
+  sentViaLine  Boolean   @default(false)
+  sentAt       DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit         Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+  receipt      Receipt?
+}
+
+enum InvoiceType {
+  RENT
+  UTILITY
+  COMBINED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ============ Payment Models ============
+
+model Payment {
+  id          String        @id @default(cuid())
+  invoiceId   String
+  tenantId    String
+
+  amount      Float
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+
+  slipUrl     String?
+  slipVerified Boolean      @default(false)
+  verifiedAt   DateTime?
+  verifiedBy   String?
+
+  checkNo     String?
+  checkBank   String?
+  checkDate   DateTime?
+
+  transferRef String?
+  transferBank String?
+
+  notes       String?
+  paidAt      DateTime?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentMethod {
+  TRANSFER
+  CHECK
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// ============ Receipt Models ============
+
+model Receipt {
+  id          String   @id @default(cuid())
+  receiptNo   String   @unique
+  invoiceId   String   @unique
+
+  amount      Float
+  issuedAt    DateTime @default(now())
+
+  sentViaLine Boolean  @default(false)
+  sentAt      DateTime?
+
+  pdfUrl      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+// ============ Maintenance Request Models ============
+
+model MaintenanceRequest {
+  id          String            @id @default(cuid())
+  projectId   String
+  unitId      String
+
+  title       String
+  description String?           @db.Text
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  status      MaintenanceStatus   @default(PENDING)
+
+  imageUrls   String[]
+
+  resolvedAt  DateTime?
+  resolution  String?           @db.Text
+
+  lineMessageId String?
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit        Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+}
+
+enum MaintenanceCategory {
+  ELECTRICAL
+  PLUMBING
+  STRUCTURAL
+  HVAC
+  GENERAL
+  OTHER
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============ Floor Plan Models ============
+
+model FloorPlan {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  floor       Int
+
+  width       Float    @default(800)
+  height      Float    @default(600)
+
+  imageUrl    String?
+  layoutData  Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, floor])
+}

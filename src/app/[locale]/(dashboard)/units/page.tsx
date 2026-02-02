@@ -1,0 +1,403 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Edit, Trash2 } from "lucide-react";
+
+interface Project {
+  id: string;
+  name: string;
+  nameTh: string | null;
+}
+
+interface Unit {
+  id: string;
+  unitNumber: string;
+  floor: number;
+  size: number | null;
+  type: string;
+  status: string;
+  baseRent: number;
+  commonFee: number | null;
+  project: { name: string; nameTh: string | null };
+  tenant: { name: string; nameTh: string | null } | null;
+}
+
+export default function UnitsPage() {
+  const t = useTranslations("units");
+  const tCommon = useTranslations("common");
+
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string>("");
+
+  const [formData, setFormData] = useState({
+    projectId: "",
+    unitNumber: "",
+    floor: 1,
+    size: "",
+    type: "WAREHOUSE",
+    baseRent: "",
+    commonFee: "",
+    deposit: "",
+    discountPercent: "0",
+    discountAmount: "0",
+    electricMeterNo: "",
+    waterMeterNo: "",
+  });
+
+  const fetchData = async () => {
+    try {
+      const [unitsRes, projectsRes] = await Promise.all([
+        fetch(`/api/units${selectedProject ? `?projectId=${selectedProject}` : ""}`),
+        fetch("/api/projects"),
+      ]);
+      const [unitsData, projectsData] = await Promise.all([unitsRes.json(), projectsRes.json()]);
+      setUnits(unitsData);
+      setProjects(projectsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedProject]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const url = editingUnit ? `/api/units/${editingUnit.id}` : "/api/units";
+      const method = editingUnit ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          floor: parseInt(formData.floor.toString()),
+          size: formData.size ? parseFloat(formData.size) : null,
+          baseRent: parseFloat(formData.baseRent),
+          commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
+          deposit: formData.deposit ? parseFloat(formData.deposit) : null,
+          discountPercent: parseFloat(formData.discountPercent),
+          discountAmount: parseFloat(formData.discountAmount),
+        }),
+      });
+
+      if (res.ok) {
+        setIsDialogOpen(false);
+        setEditingUnit(null);
+        resetForm();
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error saving unit:", error);
+    }
+  };
+
+  const handleEdit = (unit: Unit) => {
+    setEditingUnit(unit);
+    setFormData({
+      projectId: "",
+      unitNumber: unit.unitNumber,
+      floor: unit.floor,
+      size: unit.size?.toString() || "",
+      type: unit.type,
+      baseRent: unit.baseRent.toString(),
+      commonFee: unit.commonFee?.toString() || "",
+      deposit: "",
+      discountPercent: "0",
+      discountAmount: "0",
+      electricMeterNo: "",
+      waterMeterNo: "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this unit?")) return;
+
+    try {
+      const res = await fetch(`/api/units/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error deleting unit:", error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      projectId: "",
+      unitNumber: "",
+      floor: 1,
+      size: "",
+      type: "WAREHOUSE",
+      baseRent: "",
+      commonFee: "",
+      deposit: "",
+      discountPercent: "0",
+      discountAmount: "0",
+      electricMeterNo: "",
+      waterMeterNo: "",
+    });
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "VACANT": return "bg-green-100 text-green-800";
+      case "OCCUPIED": return "bg-blue-100 text-blue-800";
+      case "RESERVED": return "bg-yellow-100 text-yellow-800";
+      case "MAINTENANCE": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
+        <div className="flex gap-4">
+          <Select value={selectedProject || "__all__"} onValueChange={(v) => setSelectedProject(v === "__all__" ? "" : v)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder={tCommon("all")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{tCommon("all")}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { setEditingUnit(null); resetForm(); }}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("addUnit")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingUnit ? t("editUnit") : t("addUnit")}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!editingUnit && (
+                  <div className="space-y-2">
+                    <Label>Project</Label>
+                    <Select
+                      value={formData.projectId || undefined}
+                      onValueChange={(value) => setFormData({ ...formData, projectId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("unitNumber")}</Label>
+                    <Input
+                      value={formData.unitNumber}
+                      onChange={(e) => setFormData({ ...formData, unitNumber: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("floor")}</Label>
+                    <Input
+                      type="number"
+                      value={formData.floor}
+                      onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("size")}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.size}
+                      onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t("type")}</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WAREHOUSE">{t("types.WAREHOUSE")}</SelectItem>
+                      <SelectItem value="SHOP">{t("types.SHOP")}</SelectItem>
+                      <SelectItem value="OFFICE">{t("types.OFFICE")}</SelectItem>
+                      <SelectItem value="STORAGE">{t("types.STORAGE")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("baseRent")}</Label>
+                    <Input
+                      type="number"
+                      value={formData.baseRent}
+                      onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("commonFee")}</Label>
+                    <Input
+                      type="number"
+                      value={formData.commonFee}
+                      onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("deposit")}</Label>
+                    <Input
+                      type="number"
+                      value={formData.deposit}
+                      onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("electricMeterNo")}</Label>
+                    <Input
+                      value={formData.electricMeterNo}
+                      onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("waterMeterNo")}</Label>
+                    <Input
+                      value={formData.waterMeterNo}
+                      onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    {tCommon("cancel")}
+                  </Button>
+                  <Button type="submit">{tCommon("save")}</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("unitNumber")}</TableHead>
+                <TableHead>Project</TableHead>
+                <TableHead>{t("type")}</TableHead>
+                <TableHead>{t("floor")}</TableHead>
+                <TableHead>{t("size")}</TableHead>
+                <TableHead>{t("baseRent")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>Tenant</TableHead>
+                <TableHead>{tCommon("actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {units.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    {tCommon("noData")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                units.map((unit) => (
+                  <TableRow key={unit.id}>
+                    <TableCell className="font-medium">{unit.unitNumber}</TableCell>
+                    <TableCell>{unit.project.name}</TableCell>
+                    <TableCell>{t(`types.${unit.type}`)}</TableCell>
+                    <TableCell>{unit.floor}</TableCell>
+                    <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
+                    <TableCell>฿{unit.baseRent.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusBadgeColor(unit.status)}>
+                        {t(`statuses.${unit.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{unit.tenant?.name || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(unit)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(unit.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
