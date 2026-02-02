@@ -29,8 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Send, FileDown, Eye, Loader2, Check, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Send, FileDown, Eye, Loader2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { jsPDF } from "jspdf";
 
 interface Unit {
   id: string;
@@ -57,6 +59,34 @@ interface Invoice {
   tenant: { name: string };
 }
 
+interface InvoiceDetail extends Invoice {
+  discountAmount: number;
+  lineItems: LineItem[] | null;
+  notes: string | null;
+  createdAt: string;
+  project: {
+    name: string;
+    nameTh: string | null;
+    companyName: string | null;
+    companyNameTh: string | null;
+    companyAddress: string | null;
+    taxId: string | null;
+  };
+  unit: { unitNumber: string };
+  tenant: {
+    name: string;
+    nameTh: string | null;
+    phone: string | null;
+    email: string | null;
+    taxId: string | null;
+  };
+}
+
+interface LineItem {
+  description: string;
+  amount: number;
+}
+
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
   const tCommon = useTranslations("common");
@@ -66,6 +96,9 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -192,6 +225,192 @@ export default function InvoicesPage() {
       case "CANCELLED": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const handleViewInvoice = async (invoice: Invoice) => {
+    setLoadingInvoice(true);
+    setViewDialogOpen(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedInvoice(data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load invoice details",
+          variant: "destructive",
+        });
+        setViewDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load invoice details",
+        variant: "destructive",
+      });
+      setViewDialogOpen(false);
+    } finally {
+      setLoadingInvoice(false);
+    }
+  };
+
+  const handleDownloadPdf = async (invoice: Invoice) => {
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`);
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: "Failed to load invoice for PDF",
+          variant: "destructive",
+        });
+        return;
+      }
+      const data: InvoiceDetail = await res.json();
+      generatePdf(data);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generatePdf = (invoice: InvoiceDetail) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // Company header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(invoice.project.companyName || invoice.project.name, pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    if (invoice.project.companyAddress) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
+      y += 6;
+    }
+
+    if (invoice.project.taxId) {
+      doc.text(`Tax ID: ${invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
+      y += 6;
+    }
+
+    y += 10;
+
+    // Invoice title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
+    y += 12;
+
+    // Invoice details
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Invoice No: ${invoice.invoiceNo}`, 20, y);
+    doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, pageWidth - 60, y);
+    y += 6;
+    doc.text(`Billing Month: ${invoice.billingMonth}`, 20, y);
+    doc.text(`Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}`, pageWidth - 60, y);
+    y += 12;
+
+    // Bill to section
+    doc.setFont("helvetica", "bold");
+    doc.text("Bill To:", 20, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.tenant.name, 20, y);
+    y += 5;
+    doc.text(`Unit: ${invoice.unit.unitNumber}`, 20, y);
+    y += 5;
+    if (invoice.tenant.phone) {
+      doc.text(`Phone: ${invoice.tenant.phone}`, 20, y);
+      y += 5;
+    }
+    if (invoice.tenant.taxId) {
+      doc.text(`Tax ID: ${invoice.tenant.taxId}`, 20, y);
+      y += 5;
+    }
+    y += 10;
+
+    // Line items table header
+    doc.setFillColor(240, 240, 240);
+    doc.rect(20, y, pageWidth - 40, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text("Description", 25, y + 6);
+    doc.text("Amount", pageWidth - 45, y + 6, { align: "right" });
+    y += 12;
+
+    // Line items
+    doc.setFont("helvetica", "normal");
+    const lineItems = invoice.lineItems || [{ description: t(`types.${invoice.type}`), amount: invoice.subtotal }];
+    lineItems.forEach((item: LineItem) => {
+      doc.text(item.description, 25, y);
+      doc.text(`${item.amount.toLocaleString()} THB`, pageWidth - 45, y, { align: "right" });
+      y += 7;
+    });
+
+    y += 5;
+    doc.line(20, y, pageWidth - 20, y);
+    y += 8;
+
+    // Totals
+    doc.text("Subtotal:", pageWidth - 80, y);
+    doc.text(`${invoice.subtotal.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+    y += 7;
+
+    if (invoice.discountAmount > 0) {
+      doc.text("Discount:", pageWidth - 80, y);
+      doc.text(`-${invoice.discountAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+      y += 7;
+    }
+
+    if (invoice.withholdingTax > 0) {
+      doc.text("Withholding Tax:", pageWidth - 80, y);
+      doc.text(`-${invoice.withholdingTax.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+      y += 7;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total:", pageWidth - 80, y);
+    doc.text(`${invoice.totalAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+    y += 10;
+
+    if (invoice.paidAmount > 0) {
+      doc.setFont("helvetica", "normal");
+      doc.text("Paid Amount:", pageWidth - 80, y);
+      doc.text(`${invoice.paidAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+      y += 7;
+
+      const balance = invoice.totalAmount - invoice.paidAmount;
+      doc.setFont("helvetica", "bold");
+      doc.text("Balance Due:", pageWidth - 80, y);
+      doc.text(`${balance.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
+    }
+
+    // Status badge
+    y += 15;
+    doc.setFont("helvetica", "bold");
+    doc.text(`Status: ${invoice.status}`, 20, y);
+
+    // Notes
+    if (invoice.notes) {
+      y += 12;
+      doc.setFont("helvetica", "bold");
+      doc.text("Notes:", 20, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.text(invoice.notes, 20, y);
+    }
+
+    // Download
+    doc.save(`Invoice-${invoice.invoiceNo}.pdf`);
   };
 
   if (loading) {
@@ -337,7 +556,13 @@ export default function InvoicesPage() {
                     </TableCell>
                     <TableCell className="sticky right-0 bg-background">
                       <div className="flex gap-1">
-                        <Button type="button" variant="ghost" size="icon" title={t("viewInvoice")}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={t("viewInvoice")}
+                          onClick={() => handleViewInvoice(invoice)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
@@ -356,7 +581,13 @@ export default function InvoicesPage() {
                             <Send className="h-4 w-4" />
                           )}
                         </Button>
-                        <Button type="button" variant="ghost" size="icon" title={t("downloadPdf")}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={t("downloadPdf")}
+                          onClick={() => handleDownloadPdf(invoice)}
+                        >
                           <FileDown className="h-4 w-4" />
                         </Button>
                       </div>
@@ -368,6 +599,149 @@ export default function InvoicesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Invoice Detail Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("viewInvoice")}</DialogTitle>
+          </DialogHeader>
+          {loadingInvoice ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : selectedInvoice ? (
+            <div className="space-y-6">
+              {/* Company Header */}
+              <div className="text-center">
+                <h3 className="text-xl font-bold">
+                  {selectedInvoice.project.companyName || selectedInvoice.project.name}
+                </h3>
+                {selectedInvoice.project.companyAddress && (
+                  <p className="text-sm text-muted-foreground">{selectedInvoice.project.companyAddress}</p>
+                )}
+                {selectedInvoice.project.taxId && (
+                  <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.project.taxId}</p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Invoice Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("invoiceNo")}</p>
+                  <p className="font-medium">{selectedInvoice.invoiceNo}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{tCommon("status")}</p>
+                  <Badge className={getStatusBadgeColor(selectedInvoice.status)}>
+                    {t(`statuses.${selectedInvoice.status}`)}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("billingMonth")}</p>
+                  <p className="font-medium">{selectedInvoice.billingMonth}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("dueDate")}</p>
+                  <p className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Tenant Info */}
+              <div>
+                <h4 className="font-semibold mb-2">{t("billTo") || "Bill To"}</h4>
+                <p className="font-medium">{selectedInvoice.tenant.name}</p>
+                <p className="text-sm text-muted-foreground">Unit: {selectedInvoice.unit.unitNumber}</p>
+                {selectedInvoice.tenant.phone && (
+                  <p className="text-sm text-muted-foreground">Phone: {selectedInvoice.tenant.phone}</p>
+                )}
+                {selectedInvoice.tenant.taxId && (
+                  <p className="text-sm text-muted-foreground">Tax ID: {selectedInvoice.tenant.taxId}</p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Line Items */}
+              <div>
+                <h4 className="font-semibold mb-2">{t("lineItems") || "Items"}</h4>
+                <div className="space-y-2">
+                  {(selectedInvoice.lineItems || [{ description: t(`types.${selectedInvoice.type}`), amount: selectedInvoice.subtotal }]).map((item: LineItem, idx: number) => (
+                    <div key={idx} className="flex justify-between">
+                      <span>{item.description}</span>
+                      <span>฿{item.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Totals */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>{t("subtotal") || "Subtotal"}</span>
+                  <span>฿{selectedInvoice.subtotal.toLocaleString()}</span>
+                </div>
+                {selectedInvoice.discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>{t("discount") || "Discount"}</span>
+                    <span>-฿{selectedInvoice.discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedInvoice.withholdingTax > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("withholdingTax") || "Withholding Tax"}</span>
+                    <span>-฿{selectedInvoice.withholdingTax.toLocaleString()}</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>{t("totalAmount")}</span>
+                  <span>฿{selectedInvoice.totalAmount.toLocaleString()}</span>
+                </div>
+                {selectedInvoice.paidAmount > 0 && (
+                  <>
+                    <div className="flex justify-between text-green-600">
+                      <span>{t("paidAmount")}</span>
+                      <span>฿{selectedInvoice.paidAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>{t("balanceDue") || "Balance Due"}</span>
+                      <span>฿{(selectedInvoice.totalAmount - selectedInvoice.paidAmount).toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {selectedInvoice.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="font-semibold mb-2">{t("notes") || "Notes"}</h4>
+                    <p className="text-sm text-muted-foreground">{selectedInvoice.notes}</p>
+                  </div>
+                </>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+                  {tCommon("close") || "Close"}
+                </Button>
+                <Button onClick={() => generatePdf(selectedInvoice)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {t("downloadPdf")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
