@@ -38,7 +38,7 @@ async function getDashboardData(userId: string) {
     }),
   ]);
 
-  const totalUnits = unitStats.reduce((acc, stat) => acc + stat._count, 0);
+  const totalUnits = unitStats.reduce((acc: number, stat) => acc + stat._count, 0);
   const occupiedUnits = unitStats.find((s) => s.status === "OCCUPIED")?._count || 0;
   const vacantUnits = unitStats.find((s) => s.status === "VACANT")?._count || 0;
   const occupancyRate = totalUnits > 0 ? ((occupiedUnits / totalUnits) * 100).toFixed(1) : 0;
