@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +59,12 @@ async function getDashboardData(userId: string) {
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
   const session = await auth();
-  const data = await getDashboardData(session!.user.id);
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const data = await getDashboardData(session.user.id);
 
   const stats = [
     {
