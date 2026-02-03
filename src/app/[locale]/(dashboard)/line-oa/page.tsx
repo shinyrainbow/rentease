@@ -44,7 +44,7 @@ interface Tenant {
   id: string;
   name: string;
   nameTh: string | null;
-  unit: { unitNumber: string };
+  unit: { unitNumber: string; projectId: string };
 }
 
 interface LineMessage {
@@ -226,13 +226,7 @@ export default function LineOAPage() {
 
   // Filter tenants for the selected contact's project
   const projectTenants = selectedContact
-    ? tenants.filter((t) => {
-        // Get project ID from contact
-        const contact = contacts.find((c) => c.id === selectedContact.id);
-        if (!contact) return false;
-        // Check if tenant's unit belongs to same project - would need project info on tenant
-        return true; // For now show all, ideally filter by project
-      })
+    ? tenants.filter((t) => t.unit.projectId === selectedContact.projectId)
     : [];
 
   if (loading) {
