@@ -21,7 +21,7 @@ export async function GET() {
             tenantId: true,
             project: { select: { name: true, companyName: true, companyNameTh: true, taxId: true } },
             unit: { select: { unitNumber: true } },
-            tenant: { select: { name: true, taxId: true } },
+            tenant: { select: { name: true, companyName: true, taxId: true } },
           },
         },
       },

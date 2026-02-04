@@ -79,6 +79,7 @@ interface Invoice {
   unit: { unitNumber: string };
   tenant: {
     name: string;
+    companyName: string | null;
     taxId: string | null;
   };
 }

@@ -169,6 +169,14 @@
     "taxId": "เลขประจำตัวผู้เสียภาษี",
     "tenantType": "ประเภทผู้เช่า",
     "withholdingTax": "หักภาษี ณ ที่จ่าย (%)",
+    "contractPricing": "ข้อมูลสัญญาเช่า",
+    "baseRent": "ค่าเช่า",
+    "commonFee": "ค่าส่วนกลาง",
+    "deposit": "เงินมัดจำ",
+    "discountPercent": "ส่วนลด (%)",
+    "discountAmount": "ส่วนลด (บาท)",
+    "electricMeterNo": "เลขมิเตอร์ไฟ",
+    "waterMeterNo": "เลขมิเตอร์น้ำ",
     "contractStart": "วันเริ่มสัญญา",
     "contractEnd": "วันสิ้นสุดสัญญา",
     "types": {
@@ -179,7 +187,9 @@
       "ACTIVE": "เช่าอยู่",
       "EXPIRED": "หมดสัญญา",
       "TERMINATED": "ยกเลิก"
-    }
+    },
+    "allProjects": "ทุกโครงการ",
+    "searchPlaceholder": "ค้นหาชื่อ, เบอร์โทร, ห้อง..."
   },
   "meters": {
     "title": "จดมิเตอร์",

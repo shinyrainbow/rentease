@@ -169,6 +169,14 @@
     "taxId": "Tax ID",
     "tenantType": "Tenant Type",
     "withholdingTax": "Withholding Tax (%)",
+    "contractPricing": "Contract Details",
+    "baseRent": "Base Rent",
+    "commonFee": "Common Fee",
+    "deposit": "Deposit",
+    "discountPercent": "Discount (%)",
+    "discountAmount": "Discount Amount",
+    "electricMeterNo": "Electric Meter No.",
+    "waterMeterNo": "Water Meter No.",
     "contractStart": "Contract Start",
     "contractEnd": "Contract End",
     "types": {
@@ -179,7 +187,9 @@
       "ACTIVE": "Active",
       "EXPIRED": "Expired",
       "TERMINATED": "Terminated"
-    }
+    },
+    "allProjects": "All Projects",
+    "searchPlaceholder": "Search name, phone, unit..."
   },
   "meters": {
     "title": "Meter Readings",
