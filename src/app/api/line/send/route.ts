@@ -51,30 +51,43 @@ export async function POST(request: NextRequest) {
 
       // Generate image via Edge route and upload to S3
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
-      const imageResponse = await fetch(`${baseUrl}/api/generate-image/invoice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoice: {
-            invoiceNo: invoice.invoiceNo,
-            billingMonth: invoice.billingMonth,
-            dueDate: invoice.dueDate,
-            totalAmount: invoice.totalAmount,
-            unitNumber: invoice.unit.unitNumber,
-            tenantName: invoice.tenant.name,
-            tenantNameTh: invoice.tenant.nameTh,
-            projectName: invoice.project.name,
-            companyName: invoice.project.companyName,
-          },
-          lang,
-        }),
-      });
+      console.log("Generating invoice image from:", `${baseUrl}/api/generate-image/invoice`);
 
-      if (imageResponse.ok) {
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        const s3Key = `invoices/${invoice.id}/image-${lang}-${Date.now()}.png`;
-        await uploadFile(s3Key, imageBuffer, "image/png");
-        imageUrl = await getPresignedUrl(s3Key, 3600);
+      try {
+        const imageResponse = await fetch(`${baseUrl}/api/generate-image/invoice`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            invoice: {
+              invoiceNo: invoice.invoiceNo,
+              billingMonth: invoice.billingMonth,
+              dueDate: invoice.dueDate,
+              totalAmount: invoice.totalAmount,
+              unitNumber: invoice.unit.unitNumber,
+              tenantName: invoice.tenant.name,
+              tenantNameTh: invoice.tenant.nameTh,
+              projectName: invoice.project.name,
+              companyName: invoice.project.companyName,
+            },
+            lang,
+          }),
+        });
+
+        console.log("Image response status:", imageResponse.status);
+
+        if (imageResponse.ok) {
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          console.log("Image buffer size:", imageBuffer.length);
+          const s3Key = `invoices/${invoice.id}/image-${lang}-${Date.now()}.png`;
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 3600);
+          console.log("Image uploaded, URL:", imageUrl);
+        } else {
+          const errorText = await imageResponse.text();
+          console.error("Image generation failed:", errorText);
+        }
+      } catch (imgError) {
+        console.error("Error generating image:", imgError);
       }
 
       // Prepare a text summary
@@ -140,30 +153,43 @@ ${textLabels.footer}
 
       // Generate image via Edge route and upload to S3
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
-      const imageResponse = await fetch(`${baseUrl}/api/generate-image/receipt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          receipt: {
-            receiptNo: receipt.receiptNo,
-            amount: receipt.amount,
-            issuedAt: receipt.issuedAt,
-            invoiceNo: receipt.invoice.invoiceNo,
-            unitNumber: receipt.invoice.unit.unitNumber,
-            tenantName: receipt.invoice.tenant.name,
-            tenantNameTh: receipt.invoice.tenant.nameTh,
-            projectName: receipt.invoice.project.name,
-            companyName: receipt.invoice.project.companyName,
-          },
-          lang,
-        }),
-      });
+      console.log("Generating receipt image from:", `${baseUrl}/api/generate-image/receipt`);
 
-      if (imageResponse.ok) {
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        const s3Key = `receipts/${receipt.id}/image-${lang}-${Date.now()}.png`;
-        await uploadFile(s3Key, imageBuffer, "image/png");
-        imageUrl = await getPresignedUrl(s3Key, 3600);
+      try {
+        const imageResponse = await fetch(`${baseUrl}/api/generate-image/receipt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receipt: {
+              receiptNo: receipt.receiptNo,
+              amount: receipt.amount,
+              issuedAt: receipt.issuedAt,
+              invoiceNo: receipt.invoice.invoiceNo,
+              unitNumber: receipt.invoice.unit.unitNumber,
+              tenantName: receipt.invoice.tenant.name,
+              tenantNameTh: receipt.invoice.tenant.nameTh,
+              projectName: receipt.invoice.project.name,
+              companyName: receipt.invoice.project.companyName,
+            },
+            lang,
+          }),
+        });
+
+        console.log("Image response status:", imageResponse.status);
+
+        if (imageResponse.ok) {
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          console.log("Image buffer size:", imageBuffer.length);
+          const s3Key = `receipts/${receipt.id}/image-${lang}-${Date.now()}.png`;
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 3600);
+          console.log("Image uploaded, URL:", imageUrl);
+        } else {
+          const errorText = await imageResponse.text();
+          console.error("Image generation failed:", errorText);
+        }
+      } catch (imgError) {
+        console.error("Error generating receipt image:", imgError);
       }
 
       // Prepare text summary
