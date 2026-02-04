@@ -6,7 +6,13 @@ export const runtime = "edge";
 interface LineItem {
   description: string;
   amount: number;
+  previousReading?: number;
+  currentReading?: number;
+  unitPrice?: number;
 }
+
+// Primary teal color from NainaHub example
+const TEAL_COLOR = "#2D8B8B";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +26,11 @@ export async function GET(request: NextRequest) {
     const unitNumber = searchParams.get("unitNumber") || "";
     const tenantName = searchParams.get("tenantName") || "";
     const companyName = searchParams.get("companyName") || "";
+    const companyNameTh = searchParams.get("companyNameTh") || "";
+    const taxId = searchParams.get("taxId") || "";
+    const tenantTaxId = searchParams.get("tenantTaxId") || "";
     const lang = searchParams.get("lang") || "th";
+    const version = searchParams.get("version") || "original";
 
     // Additional details
     const subtotal = Number(searchParams.get("subtotal") || 0);
@@ -30,43 +40,63 @@ export async function GET(request: NextRequest) {
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);
 
     // Bank info
-    const bankName = searchParams.get("bankName") || "";
-    const bankAccountName = searchParams.get("bankAccountName") || "";
-    const bankAccountNumber = searchParams.get("bankAccountNumber") || "";
+    const bankName = searchParams.get("bankName") || "KBANK";
+    const bankAccountName = searchParams.get("bankAccountName") || companyName;
+    const bankAccountNumber = searchParams.get("bankAccountNumber") || "155-3-41841-7";
 
     const t = lang === "th" ? {
-      invoice: "ใบแจ้งหนี้",
-      invoiceNo: "เลขที่",
-      billingMonth: "รอบบิล",
-      dueDate: "กำหนดชำระ",
-      unit: "ห้อง",
-      tenant: "ผู้เช่า",
-      subtotal: "รวม",
-      discount: "ส่วนลด",
-      withholdingTax: "หัก ณ ที่จ่าย",
-      total: "ยอดชำระ",
-      paymentInfo: "ข้อมูลการชำระเงิน",
-      bank: "ธนาคาร",
-      accountName: "ชื่อบัญชี",
-      accountNumber: "เลขบัญชี",
+      taxInvoice: "Tax Invoice",
+      invoiceNo: "Invoice ID",
+      date: "Date",
+      taxId: "เลขประจำตัวผู้เสียภาษี",
+      projectDescription: "PROJECT DESCRIPTION:",
+      description: "Description",
+      price: "Price",
+      subTotal: "Sub-Total",
+      vat: "Vat 7%",
+      totalAmount: "Total",
+      termsTitle: "Terms & Conditions:",
+      termsText: "Above information is not an invoice and only an estimate of goods/services.",
+      paymentDueNote: "Payment is due within 3 days.",
+      paymentMethod: "Payment Method: Bank Transfer",
+      bankLabel: "Bank Name:",
+      accountNumber: "Account Number:",
+      accountName: "Account Name:",
+      signatureOverPrintedName: "Signature over printed name",
+      dateSigned: "Date signed",
+      original: "ต้นฉบับ",
+      copy: "สำเนา",
+      previousReading: "เลขก่อน",
+      currentReading: "เลขหลัง",
+      units: "หน่วย",
     } : {
-      invoice: "INVOICE",
-      invoiceNo: "Invoice No",
-      billingMonth: "Billing Month",
-      dueDate: "Due Date",
-      unit: "Unit",
-      tenant: "Tenant",
-      subtotal: "Subtotal",
-      discount: "Discount",
-      withholdingTax: "Withholding Tax",
-      total: "Total",
-      paymentInfo: "Payment Info",
-      bank: "Bank",
-      accountName: "Account Name",
-      accountNumber: "Account No",
+      taxInvoice: "Tax Invoice",
+      invoiceNo: "Invoice ID",
+      date: "Date",
+      taxId: "Tax ID",
+      projectDescription: "PROJECT DESCRIPTION:",
+      description: "Description",
+      price: "Price",
+      subTotal: "Sub-Total",
+      vat: "Vat 7%",
+      totalAmount: "Total",
+      termsTitle: "Terms & Conditions:",
+      termsText: "Above information is not an invoice and only an estimate of goods/services.",
+      paymentDueNote: "Payment is due within 3 days.",
+      paymentMethod: "Payment Method: Bank Transfer",
+      bankLabel: "Bank Name:",
+      accountNumber: "Account Number:",
+      accountName: "Account Name:",
+      signatureOverPrintedName: "Signature over printed name",
+      dateSigned: "Date signed",
+      original: "Original",
+      copy: "Copy",
+      previousReading: "Previous",
+      currentReading: "Current",
+      units: "Units",
     };
 
-    const formatCurrency = (amount: number) => `฿${amount.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatCurrency = (amount: number) => amount.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const formatDate = (dateStr: string) => {
       if (!dateStr) return "";
       return new Date(dateStr).toLocaleDateString(
@@ -75,8 +105,9 @@ export async function GET(request: NextRequest) {
       );
     };
 
-    const hasDeductions = withholdingTax > 0 || discountAmount > 0;
-    const hasBankInfo = bankName && bankAccountNumber;
+    // Calculate VAT (7%)
+    const vatAmount = Math.round(subtotal * 0.07);
+    const totalWithVat = subtotal + vatAmount;
 
     return new ImageResponse(
       (
@@ -86,118 +117,282 @@ export async function GET(request: NextRequest) {
             flexDirection: "column",
             width: "100%",
             height: "100%",
-            backgroundColor: "white",
-            padding: 32,
+            backgroundColor: "#ffffff",
+            fontFamily: "sans-serif",
+            position: "relative",
           }}
         >
-          {/* Company Name */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 24, fontWeight: 700, color: "#1f2937" }}>{companyName}</span>
+          {/* Top Left Diagonal Stripe */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "120px",
+              height: "120px",
+              overflow: "hidden",
+              display: "flex",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                left: "-80px",
+                width: "160px",
+                height: "32px",
+                backgroundColor: TEAL_COLOR,
+                transform: "rotate(-45deg)",
+                display: "flex",
+              }}
+            />
           </div>
 
-          {/* Invoice Title */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <div style={{ display: "flex", backgroundColor: "#eff6ff", padding: "8px 24px", borderRadius: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>{t.invoice}</span>
-            </div>
+          {/* Bottom Right Diagonal Stripe */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: "160px",
+              height: "160px",
+              overflow: "hidden",
+              display: "flex",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                bottom: "-24px",
+                right: "-80px",
+                width: "240px",
+                height: "40px",
+                backgroundColor: TEAL_COLOR,
+                transform: "rotate(-45deg)",
+                display: "flex",
+              }}
+            />
           </div>
 
-          {/* Invoice Info Row */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 13 }}>
-            <div style={{ display: "flex" }}>
-              <span style={{ color: "#6b7280" }}>{t.invoiceNo}: </span>
-              <span style={{ fontWeight: 600, marginLeft: 4 }}>{invoiceNo}</span>
-            </div>
-            <div style={{ display: "flex" }}>
-              <span style={{ color: "#6b7280" }}>{t.billingMonth}: </span>
-              <span style={{ marginLeft: 4 }}>{billingMonth}</span>
-            </div>
+          {/* Version Badge */}
+          <div
+            style={{
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              backgroundColor: version === "original" ? TEAL_COLOR : "#6B7280",
+              color: "#ffffff",
+              padding: "3px 12px",
+              borderRadius: "4px",
+              fontSize: "10px",
+              fontWeight: "bold",
+              display: "flex",
+            }}
+          >
+            {version === "original" ? t.original : t.copy}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, fontSize: 13 }}>
-            <div style={{ display: "flex" }}>
-              <span style={{ color: "#6b7280" }}>{t.unit}: </span>
-              <span style={{ marginLeft: 4 }}>{unitNumber}</span>
-            </div>
-            <div style={{ display: "flex" }}>
-              <span style={{ color: "#6b7280" }}>{t.dueDate}: </span>
-              <span style={{ marginLeft: 4, color: "#dc2626", fontWeight: 600 }}>{formatDate(dueDate)}</span>
-            </div>
-          </div>
+          {/* Main Content */}
+          <div style={{ display: "flex", flexDirection: "column", padding: "32px 40px", flex: 1 }}>
 
-          {/* Tenant Name */}
-          <div style={{ display: "flex", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>{t.tenant}: </span>
-            <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 4 }}>{tenantName}</span>
-          </div>
+            {/* Header Section */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+              {/* Left - Company Info (Seller) */}
+              <div style={{ display: "flex", flexDirection: "column", maxWidth: "45%" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      backgroundColor: TEAL_COLOR,
+                      borderRadius: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {companyName.charAt(0)}
+                  </div>
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: TEAL_COLOR }}>
+                    {companyName}
+                  </span>
+                </div>
+                {companyNameTh && (
+                  <span style={{ fontSize: "9px", color: "#4B5563", marginLeft: "40px" }}>
+                    {companyNameTh}
+                  </span>
+                )}
+                {taxId && (
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px", marginLeft: "40px" }}>
+                    {t.taxId} {taxId}
+                  </span>
+                )}
+              </div>
 
-          {/* Line Items */}
-          {lineItems.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#f9fafb", borderRadius: 8, padding: 12, marginBottom: 12 }}>
+              {/* Right - Tax Invoice Title & Customer Info */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", maxWidth: "50%" }}>
+                <span style={{ fontSize: "26px", fontWeight: "300", color: TEAL_COLOR, letterSpacing: "1px" }}>
+                  {t.taxInvoice}
+                </span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "6px" }}>
+                  <span style={{ fontSize: "10px", color: "#4B5563" }}>{tenantName}</span>
+                  <span style={{ fontSize: "9px", color: "#6B7280" }}>{unitNumber}</span>
+                  {tenantTaxId && (
+                    <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                      {t.taxId} {tenantTaxId}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Date and Invoice ID */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "12px" }}>
+              <span style={{ fontSize: "10px", color: "#4B5563" }}>
+                {t.date}: {formatDate(dueDate)}
+              </span>
+              <span style={{ fontSize: "10px", color: "#4B5563" }}>
+                {t.invoiceNo}: {invoiceNo}
+              </span>
+            </div>
+
+            {/* Project Description */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "10px" }}>
+              <span style={{ fontSize: "10px", fontWeight: "bold", color: "#4B5563" }}>
+                {t.projectDescription}
+              </span>
+              <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                {billingMonth}
+              </span>
+            </div>
+
+            {/* Table */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "12px" }}>
+              {/* Table Header */}
+              <div
+                style={{
+                  display: "flex",
+                  backgroundColor: TEAL_COLOR,
+                  borderRadius: "4px 4px 0 0",
+                }}
+              >
+                <div style={{ flex: 3, padding: "8px 10px", display: "flex" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff" }}>
+                    {t.description}
+                  </span>
+                </div>
+                <div style={{ flex: 1, padding: "8px 10px", display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff" }}>
+                    {t.price}
+                  </span>
+                </div>
+              </div>
+
+              {/* Table Rows */}
               {lineItems.map((item, index) => (
-                <div key={index} style={{ display: "flex", justifyContent: "space-between", marginBottom: index < lineItems.length - 1 ? 8 : 0, fontSize: 13 }}>
-                  <span style={{ color: "#374151", flex: 1 }}>{item.description}</span>
-                  <span style={{ fontWeight: 500 }}>{formatCurrency(item.amount)}</span>
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    borderBottom: "1px solid #E5E7EB",
+                    backgroundColor: index % 2 === 0 ? "#ffffff" : "#F9FAFB",
+                  }}
+                >
+                  <div style={{ flex: 3, padding: "8px 10px", display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "10px", color: "#111827" }}>{item.description}</span>
+                    {item.previousReading !== undefined && item.currentReading !== undefined && (
+                      <span style={{ fontSize: "8px", color: "#6B7280", marginTop: "2px" }}>
+                        ({t.previousReading}: {item.previousReading} → {t.currentReading}: {item.currentReading} = {item.currentReading - item.previousReading} {t.units})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, padding: "8px 10px", display: "flex", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          )}
 
-          {/* Totals Section */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 12 }}>
-            {hasDeductions && (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between", width: 200, marginBottom: 4, fontSize: 13 }}>
-                  <span style={{ color: "#6b7280" }}>{t.subtotal}</span>
-                  <span>{formatCurrency(subtotal)}</span>
+            {/* Totals Section */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", width: "160px", gap: "3px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.subTotal}</span>
+                  <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", width: 200, marginBottom: 4, fontSize: 13 }}>
-                    <span style={{ color: "#6b7280" }}>{t.discount}</span>
-                    <span style={{ color: "#16a34a" }}>-{formatCurrency(discountAmount)}</span>
-                  </div>
-                )}
-                {withholdingTax > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", width: 200, marginBottom: 4, fontSize: 13 }}>
-                    <span style={{ color: "#6b7280" }}>{t.withholdingTax}</span>
-                    <span>-{formatCurrency(withholdingTax)}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Total Amount Box */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "#3b82f6", padding: "16px 40px", borderRadius: 12 }}>
-              <span style={{ fontSize: 12, color: "white", marginBottom: 4 }}>{t.total}</span>
-              <span style={{ fontSize: 28, fontWeight: 700, color: "white" }}>{formatCurrency(totalAmount)}</span>
-            </div>
-          </div>
-
-          {/* Bank Info */}
-          {hasBankInfo && (
-            <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#fef3c7", borderRadius: 8, padding: 12, marginTop: "auto" }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e", marginBottom: 8 }}>{t.paymentInfo}</span>
-              <div style={{ display: "flex", fontSize: 12, marginBottom: 4 }}>
-                <span style={{ color: "#78716c", width: 80 }}>{t.bank}:</span>
-                <span style={{ color: "#1f2937" }}>{bankName}</span>
-              </div>
-              {bankAccountName && (
-                <div style={{ display: "flex", fontSize: 12, marginBottom: 4 }}>
-                  <span style={{ color: "#78716c", width: 80 }}>{t.accountName}:</span>
-                  <span style={{ color: "#1f2937" }}>{bankAccountName}</span>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.vat}</span>
+                  <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(vatAmount)}</span>
                 </div>
-              )}
-              <div style={{ display: "flex", fontSize: 12 }}>
-                <span style={{ color: "#78716c", width: 80 }}>{t.accountNumber}:</span>
-                <span style={{ color: "#1f2937", fontWeight: 600, fontFamily: "monospace" }}>{bankAccountNumber}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    borderTop: "1px solid #E5E7EB",
+                    paddingTop: "3px",
+                    marginTop: "3px",
+                  }}
+                >
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>{t.totalAmount}</span>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalWithVat)}</span>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Terms & Conditions */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "10px" }}>
+              <span style={{ fontSize: "9px", color: TEAL_COLOR, fontWeight: "bold" }}>
+                {t.termsTitle} <span style={{ fontWeight: "normal", color: "#6B7280" }}>{t.termsText}</span>
+              </span>
+              <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                {t.paymentDueNote}
+              </span>
+            </div>
+
+            {/* Payment Method */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "16px" }}>
+              <span style={{ fontSize: "9px", color: "#4B5563" }}>{t.paymentMethod}</span>
+              <span style={{ fontSize: "9px", color: "#4B5563" }}>{t.bankLabel} {bankName}</span>
+              <span style={{ fontSize: "9px", color: "#4B5563" }}>{t.accountNumber} {bankAccountNumber}</span>
+              <span style={{ fontSize: "9px", color: "#4B5563" }}>{t.accountName} {bankAccountName}</span>
+            </div>
+
+            {/* Signature Section */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "160px" }}>
+                <div
+                  style={{
+                    width: "120px",
+                    borderBottom: "1px solid #9CA3AF",
+                    height: "24px",
+                    display: "flex",
+                  }}
+                />
+                <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>
+                  {t.signatureOverPrintedName}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "160px" }}>
+                <div
+                  style={{
+                    width: "120px",
+                    borderBottom: "1px solid #9CA3AF",
+                    height: "24px",
+                    display: "flex",
+                  }}
+                />
+                <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>
+                  {t.dateSigned}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       ),
-      { width: 600, height: hasBankInfo ? 750 : 650 }
+      { width: 600, height: 800 }
     );
   } catch (error) {
     console.error("Error generating invoice image:", error);
