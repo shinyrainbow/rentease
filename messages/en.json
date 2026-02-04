@@ -127,7 +127,8 @@
       "OCCUPIED": "Occupied",
       "RESERVED": "Reserved",
       "MAINTENANCE": "Maintenance"
-    }
+    },
+    "allProjects": "All Projects"
   },
   "tenants": {
     "title": "Tenants",

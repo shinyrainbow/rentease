@@ -127,7 +127,8 @@
       "OCCUPIED": "เช่าแล้ว",
       "RESERVED": "จอง",
       "MAINTENANCE": "ซ่อมบำรุง"
-    }
+    },
+    "allProjects": "โครงการทั้งหมด"
   },
   "tenants": {
     "title": "ผู้เช่า",

@@ -562,24 +562,26 @@ export default function ProjectDetailPage() {
           <div className="grid gap-6 lg:grid-cols-4">
             {/* Floor Plan Canvas */}
             <Card className="lg:col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Map className="h-5 w-5" />
-                  {tFloorPlans("title")}
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={handleOpenCreateUnit}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {tUnits("addUnit") || "เพิ่มห้อง"}
-                  </Button>
-                  <div className="h-6 w-px bg-border mx-2" />
-                  <Button
-                    variant={showGrid ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowGrid(!showGrid)}
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
+              <CardHeader className="pb-2">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Map className="h-5 w-5" />
+                      {tFloorPlans("title")}
+                    </CardTitle>
+                    <Button onClick={handleOpenCreateUnit}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {tUnits("addUnit") || "เพิ่มห้อง"}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      variant={showGrid ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowGrid(!showGrid)}
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -616,6 +618,7 @@ export default function ProjectDetailPage() {
                       </Button>
                     </>
                   )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -669,8 +672,12 @@ export default function ProjectDetailPage() {
                       </div>
                     ))}
                     {units.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        No units in this project
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <p className="mb-4">{tUnits("noUnits") || "ยังไม่มีห้องในโครงการนี้"}</p>
+                        <Button onClick={handleOpenCreateUnit}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {tUnits("addUnit") || "เพิ่มห้อง"}
+                        </Button>
                       </div>
                     )}
                   </div>
