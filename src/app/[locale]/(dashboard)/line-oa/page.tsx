@@ -31,6 +31,8 @@ import {
   Send,
   Link2,
   Loader2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 interface Project {
@@ -95,6 +97,42 @@ export default function LineOAPage() {
     lineChannelSecret: "",
     lineAccessToken: "",
   });
+
+  // Track expanded/collapsed state for each project in chat list
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+
+  // Group contacts by project
+  const contactsByProject = contacts.reduce((acc, contact) => {
+    const projectId = contact.projectId;
+    if (!acc[projectId]) {
+      acc[projectId] = {
+        project: contact.project,
+        contacts: [],
+      };
+    }
+    acc[projectId].contacts.push(contact);
+    return acc;
+  }, {} as Record<string, { project: { name: string; nameTh: string | null }; contacts: LineContact[] }>);
+
+  const toggleProjectExpanded = (projectId: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  };
+
+  // Initialize all projects as expanded on first load
+  useEffect(() => {
+    if (contacts.length > 0 && expandedProjects.size === 0) {
+      const allProjectIds = new Set(contacts.map((c) => c.projectId));
+      setExpandedProjects(allProjectIds);
+    }
+  }, [contacts]);
 
   const fetchData = async () => {
     try {
@@ -269,7 +307,7 @@ export default function LineOAPage() {
         {/* Chat Tab */}
         <TabsContent value="chat">
           <div className="grid gap-6 lg:grid-cols-3 h-[600px]">
-            {/* Contacts List */}
+            {/* Contacts List - Grouped by Project/Channel */}
             <Card className="lg:col-span-1">
               <CardHeader className="py-3">
                 <CardTitle className="text-sm">LINE Contacts ({contacts.length})</CardTitle>
@@ -281,41 +319,65 @@ export default function LineOAPage() {
                       No LINE contacts yet. Users will appear here when they add your LINE OA.
                     </div>
                   ) : (
-                    <div className="divide-y">
-                      {contacts.map((contact) => (
-                        <div
-                          key={contact.id}
-                          className={`p-3 cursor-pointer hover:bg-accent transition-colors ${
-                            selectedContact?.id === contact.id ? "bg-accent" : ""
-                          }`}
-                          onClick={() => handleSelectContact(contact)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={contact.pictureUrl || undefined} />
-                              <AvatarFallback>
-                                {contact.displayName?.[0] || "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium truncate">{contact.displayName}</p>
-                                {contact.tenant && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {contact.tenant.name}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {contact.project.name}
-                              </p>
-                              {contact.messages[0] && (
-                                <p className="text-xs text-muted-foreground truncate mt-1">
-                                  {contact.messages[0].content || `[${contact.messages[0].messageType}]`}
-                                </p>
-                              )}
+                    <div>
+                      {Object.entries(contactsByProject).map(([projectId, { project, contacts: projectContacts }]) => (
+                        <div key={projectId} className="border-b last:border-b-0">
+                          {/* Project Header - Collapsible */}
+                          <div
+                            className="flex items-center gap-2 px-3 py-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors sticky top-0 z-10"
+                            onClick={() => toggleProjectExpanded(projectId)}
+                          >
+                            {expandedProjects.has(projectId) ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <div className="flex-1 flex items-center justify-between">
+                              <span className="font-medium text-sm">{project.name}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {projectContacts.length}
+                              </Badge>
                             </div>
                           </div>
+
+                          {/* Project Contacts */}
+                          {expandedProjects.has(projectId) && (
+                            <div className="divide-y">
+                              {projectContacts.map((contact) => (
+                                <div
+                                  key={contact.id}
+                                  className={`p-3 cursor-pointer hover:bg-accent transition-colors ${
+                                    selectedContact?.id === contact.id ? "bg-accent" : ""
+                                  }`}
+                                  onClick={() => handleSelectContact(contact)}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="h-10 w-10">
+                                      <AvatarImage src={contact.pictureUrl || undefined} />
+                                      <AvatarFallback>
+                                        {contact.displayName?.[0] || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-medium truncate">{contact.displayName}</p>
+                                        {contact.tenant && (
+                                          <Badge variant="secondary" className="text-xs">
+                                            {contact.tenant.name}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {contact.messages[0] && (
+                                        <p className="text-xs text-muted-foreground truncate mt-1">
+                                          {contact.messages[0].content || `[${contact.messages[0].messageType}]`}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

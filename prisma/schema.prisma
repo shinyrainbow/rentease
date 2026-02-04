@@ -92,6 +92,7 @@ model Project {
   lineChannelId     String?
   lineChannelSecret String?
   lineAccessToken   String?
+  liffId            String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -356,6 +357,26 @@ model Payment {
 
   invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slips       PaymentSlip[]
+}
+
+model PaymentSlip {
+  id          String     @id @default(cuid())
+  paymentId   String
+  s3Key       String
+  fileName    String?
+  contentType String?
+  uploadedAt  DateTime   @default(now())
+  uploadedBy  String?
+  source      SlipSource @default(MANUAL)
+
+  payment     Payment    @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+enum SlipSource {
+  MANUAL
+  LINE_CHAT
+  LIFF
 }
 
 enum PaymentMethod {
