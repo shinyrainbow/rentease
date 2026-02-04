@@ -33,6 +33,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  Receipt,
 } from "lucide-react";
 
 interface Project {
@@ -55,6 +56,7 @@ interface LineMessage {
   direction: "INCOMING" | "OUTGOING";
   messageType: string;
   content: string | null;
+  mediaUrl: string | null;
   createdAt: string;
 }
 
@@ -449,9 +451,32 @@ export default function LineOAPage() {
                                   : "bg-muted"
                               }`}
                             >
-                              <p className="text-sm whitespace-pre-wrap">
-                                {msg.content || `[${msg.messageType}]`}
-                              </p>
+                              {msg.messageType === "image" && msg.mediaUrl ? (
+                                <div className="space-y-2">
+                                  <img
+                                    src={`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
+                                    alt="LINE Image"
+                                    className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
+                                    loading="lazy"
+                                    onClick={() => window.open(`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`, "_blank")}
+                                  />
+                                  {msg.direction === "INCOMING" && selectedContact.tenant && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full"
+                                      onClick={() => handleOpenSaveSlip(msg.mediaUrl!)}
+                                    >
+                                      <Receipt className="h-4 w-4 mr-2" />
+                                      เก็บสลิป
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {msg.content || `[${msg.messageType}]`}
+                                </p>
+                              )}
                               <p className="text-xs opacity-70 mt-1">
                                 {new Date(msg.createdAt).toLocaleString("th-TH")}
                               </p>
