@@ -13,12 +13,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
     const status = searchParams.get("status");
+    const tenantId = searchParams.get("tenantId");
+
+    // Support multiple statuses (comma-separated)
+    const statusFilter = status
+      ? status.split(",").map((s) => s.trim() as "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED")
+      : undefined;
 
     const invoices = await prisma.invoice.findMany({
       where: {
         project: { ownerId: session.user.id },
         ...(projectId && { projectId }),
-        ...(status && { status: status as "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED" }),
+        ...(tenantId && { tenantId }),
+        ...(statusFilter && { status: { in: statusFilter } }),
       },
       include: {
         project: { select: { name: true, nameTh: true } },

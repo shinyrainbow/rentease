@@ -218,6 +218,135 @@ export async function POST(request: NextRequest) {
               });
             }
           }
+
+          // Check for payment slip keywords
+          if (
+            text.includes("ส่งสลิป") ||
+            text.includes("ชำระเงิน") ||
+            text.includes("pay") ||
+            text.includes("payment") ||
+            text.includes("slip")
+          ) {
+            if (lineContact.tenantId) {
+              // Check if tenant has unpaid invoices
+              const unpaidInvoices = await prisma.invoice.findMany({
+                where: {
+                  tenantId: lineContact.tenantId,
+                  status: { in: ["PENDING", "PARTIAL", "OVERDUE"] },
+                },
+              });
+
+              if (unpaidInvoices.length > 0 && project.liffId) {
+                // Send Flex Message with LIFF button
+                const liffUrl = `https://liff.line.me/${project.liffId}`;
+                await fetch("https://api.line.me/v2/bot/message/reply", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${project.lineAccessToken}`,
+                  },
+                  body: JSON.stringify({
+                    replyToken,
+                    messages: [{
+                      type: "flex",
+                      altText: "ส่งสลิปชำระเงิน",
+                      contents: {
+                        type: "bubble",
+                        body: {
+                          type: "box",
+                          layout: "vertical",
+                          contents: [
+                            {
+                              type: "text",
+                              text: "ส่งสลิปชำระเงิน",
+                              weight: "bold",
+                              size: "xl",
+                              color: "#1DB446",
+                            },
+                            {
+                              type: "text",
+                              text: `คุณมี ${unpaidInvoices.length} รายการค้างชำระ`,
+                              margin: "md",
+                              color: "#666666",
+                            },
+                            {
+                              type: "text",
+                              text: "กดปุ่มด้านล่างเพื่อส่งสลิป",
+                              margin: "sm",
+                              size: "sm",
+                              color: "#999999",
+                            },
+                          ],
+                        },
+                        footer: {
+                          type: "box",
+                          layout: "vertical",
+                          contents: [
+                            {
+                              type: "button",
+                              action: {
+                                type: "uri",
+                                label: "ส่งสลิป",
+                                uri: liffUrl,
+                              },
+                              style: "primary",
+                              color: "#1DB446",
+                            },
+                          ],
+                        },
+                      },
+                    }],
+                  }),
+                });
+              } else if (unpaidInvoices.length > 0) {
+                // No LIFF configured, send text message
+                await fetch("https://api.line.me/v2/bot/message/reply", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${project.lineAccessToken}`,
+                  },
+                  body: JSON.stringify({
+                    replyToken,
+                    messages: [{
+                      type: "text",
+                      text: `คุณมี ${unpaidInvoices.length} รายการค้างชำระ\nกรุณาส่งรูปสลิปมาในแชทนี้ เจ้าหน้าที่จะตรวจสอบให้ค่ะ`,
+                    }],
+                  }),
+                });
+              } else {
+                await fetch("https://api.line.me/v2/bot/message/reply", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${project.lineAccessToken}`,
+                  },
+                  body: JSON.stringify({
+                    replyToken,
+                    messages: [{
+                      type: "text",
+                      text: "ไม่พบใบแจ้งหนี้ค้างชำระค่ะ\nNo unpaid invoices found.",
+                    }],
+                  }),
+                });
+              }
+            } else {
+              await fetch("https://api.line.me/v2/bot/message/reply", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${project.lineAccessToken}`,
+                },
+                body: JSON.stringify({
+                  replyToken,
+                  messages: [{
+                    type: "text",
+                    text: "กรุณาติดต่อเจ้าหน้าที่เพื่อลงทะเบียนห้องของท่านก่อนค่ะ\nPlease contact staff to register your unit first.",
+                  }],
+                }),
+              });
+            }
+          }
         }
       }
     }

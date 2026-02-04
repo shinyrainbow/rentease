@@ -27,8 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Send, FileDown, Loader2, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Send, FileDown, Loader2, Check, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface Receipt {
   id: string;
@@ -51,6 +57,7 @@ export default function ReceiptsPage() {
   const { toast } = useToast();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingReceiptId, setSendingReceiptId] = useState<string | null>(null);
   const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
@@ -58,18 +65,46 @@ export default function ReceiptsPage() {
   const [lineSendReceipt, setLineSendReceipt] = useState<Receipt | null>(null);
   const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
+  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/receipts");
-      const data = await res.json();
-      setReceipts(data);
+      const [receiptsRes, projectsRes] = await Promise.all([
+        fetch("/api/receipts"),
+        fetch("/api/projects"),
+      ]);
+      const [receiptsData, projectsData] = await Promise.all([
+        receiptsRes.json(),
+        projectsRes.json(),
+      ]);
+      setReceipts(receiptsData);
+      setProjects(projectsData);
     } catch (error) {
       console.error("Error fetching receipts:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Filter receipts by project and search query
+  const filteredReceipts = receipts.filter((receipt) => {
+    // Project filter
+    if (projectFilter && receipt.invoice.project.name !== projectFilter) {
+      return false;
+    }
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        receipt.receiptNo.toLowerCase().includes(query) ||
+        receipt.invoice.invoiceNo.toLowerCase().includes(query) ||
+        receipt.invoice.tenant.name.toLowerCase().includes(query) ||
+        receipt.invoice.unit.unitNumber.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
 
   useEffect(() => {
     fetchData();
@@ -186,6 +221,32 @@ export default function ReceiptsPage() {
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchPlaceholder") || "Search receipt, invoice, tenant..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("allProjects") || "All Projects"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.name}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -203,14 +264,14 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {receipts.length === 0 ? (
+              {filteredReceipts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                receipts.map((receipt) => (
+                filteredReceipts.map((receipt) => (
                   <TableRow key={receipt.id}>
                     <TableCell className="font-medium">{receipt.receiptNo}</TableCell>
                     <TableCell>{receipt.invoice.invoiceNo}</TableCell>

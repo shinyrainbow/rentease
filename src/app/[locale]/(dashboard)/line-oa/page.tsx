@@ -90,8 +90,13 @@ export default function LineOAPage() {
   const [linkingTenant, setLinkingTenant] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [isSaveSlipOpen, setIsSaveSlipOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedTenant, setSelectedTenant] = useState<string>("");
+  const [slipMessageId, setSlipMessageId] = useState<string>("");
+  const [selectedInvoice, setSelectedInvoice] = useState<string>("");
+  const [savingSlip, setSavingSlip] = useState(false);
+  const [unpaidInvoices, setUnpaidInvoices] = useState<Array<{ id: string; invoiceNo: string; totalAmount: number; paidAmount: number }>>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
@@ -277,6 +282,57 @@ export default function LineOAPage() {
 
   const isConnected = (project: Project) => {
     return project.lineChannelId && project.lineChannelSecret && project.lineAccessToken;
+  };
+
+  const handleOpenSaveSlip = async (messageId: string) => {
+    if (!selectedContact?.tenant) return;
+
+    setSlipMessageId(messageId);
+    setSelectedInvoice("");
+    setIsSaveSlipOpen(true);
+
+    // Fetch unpaid invoices for this tenant
+    try {
+      const res = await fetch(`/api/invoices?tenantId=${selectedContact.tenant.id}&status=PENDING,PARTIAL,OVERDUE`);
+      if (res.ok) {
+        const data = await res.json();
+        setUnpaidInvoices(data);
+      }
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    }
+  };
+
+  const handleSaveSlip = async () => {
+    if (!selectedContact || !slipMessageId || !selectedInvoice) return;
+
+    setSavingSlip(true);
+    try {
+      const res = await fetch("/api/line/save-slip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId: slipMessageId,
+          projectId: selectedContact.projectId,
+          invoiceId: selectedInvoice,
+        }),
+      });
+
+      if (res.ok) {
+        setIsSaveSlipOpen(false);
+        setSlipMessageId("");
+        setSelectedInvoice("");
+        alert("บันทึกสลิปเรียบร้อยแล้ว / Slip saved successfully");
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to save slip");
+      }
+    } catch (error) {
+      console.error("Error saving slip:", error);
+      alert("Error saving slip");
+    } finally {
+      setSavingSlip(false);
+    }
   };
 
   // Filter tenants for the selected contact's project
@@ -692,6 +748,67 @@ export default function LineOAPage() {
               <Button onClick={handleLinkTenant} disabled={linkingTenant}>
                 {linkingTenant && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {tCommon("save")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Slip Dialog */}
+      <Dialog open={isSaveSlipOpen} onOpenChange={setIsSaveSlipOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              เก็บสลิป - {selectedContact?.tenant?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {slipMessageId && selectedContact && (
+              <div className="flex justify-center">
+                <img
+                  src={`/api/line/image/${slipMessageId}?projectId=${selectedContact.projectId}`}
+                  alt="Payment Slip"
+                  className="max-h-48 rounded-lg"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>เลือกใบแจ้งหนี้ / Select Invoice</Label>
+              <Select
+                value={selectedInvoice || "__none__"}
+                onValueChange={(v) => setSelectedInvoice(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกใบแจ้งหนี้" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">-- เลือกใบแจ้งหนี้ --</SelectItem>
+                  {unpaidInvoices.length === 0 ? (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      ไม่มีใบแจ้งหนี้ค้างชำระ
+                    </div>
+                  ) : (
+                    unpaidInvoices.map((invoice) => (
+                      <SelectItem key={invoice.id} value={invoice.id}>
+                        {invoice.invoiceNo} - ฿{(invoice.totalAmount - invoice.paidAmount).toLocaleString()}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                สลิปจะถูกบันทึกไว้ในระบบการชำระเงิน รอการตรวจสอบ
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsSaveSlipOpen(false)} disabled={savingSlip}>
+                {tCommon("cancel")}
+              </Button>
+              <Button onClick={handleSaveSlip} disabled={savingSlip || !selectedInvoice}>
+                {savingSlip && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                เก็บสลิป
               </Button>
             </div>
           </div>

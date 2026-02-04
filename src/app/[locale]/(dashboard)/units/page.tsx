@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 
 interface Project {
   id: string;
@@ -60,6 +60,7 @@ export default function UnitsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [formData, setFormData] = useState({
     projectId: "",
@@ -188,6 +189,18 @@ export default function UnitsPage() {
     }
   };
 
+  // Filter units by search query
+  const filteredUnits = units.filter((unit) => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        unit.unitNumber.toLowerCase().includes(query) ||
+        (unit.tenant?.name && unit.tenant.name.toLowerCase().includes(query))
+      );
+    }
+    return true;
+  });
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
   }
@@ -196,21 +209,7 @@ export default function UnitsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <div className="flex gap-4">
-          <Select value={selectedProject || "__all__"} onValueChange={(v) => setSelectedProject(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder={tCommon("all")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{tCommon("all")}</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => { setEditingUnit(null); resetForm(); }}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -340,7 +339,32 @@ export default function UnitsPage() {
               </form>
             </DialogContent>
           </Dialog>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchPlaceholder") || "Search unit number, tenant..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <Select value={selectedProject || "__all__"} onValueChange={(v) => setSelectedProject(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("allProjects") || "All Projects"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -360,14 +384,14 @@ export default function UnitsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {units.length === 0 ? (
+              {filteredUnits.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                units.map((unit) => (
+                filteredUnits.map((unit) => (
                   <TableRow key={unit.id}>
                     <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                     <TableCell>{unit.project.name}</TableCell>

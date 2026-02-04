@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { getPresignedUrl } from "@/lib/s3";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,11 +27,28 @@ export async function GET(request: NextRequest) {
           },
         },
         tenant: { select: { name: true, nameTh: true } },
+        slips: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(payments);
+    // Add presigned URLs for slips
+    const paymentsWithUrls = await Promise.all(
+      payments.map(async (payment) => {
+        const slipsWithUrls = await Promise.all(
+          payment.slips.map(async (slip) => ({
+            ...slip,
+            presignedUrl: await getPresignedUrl(slip.s3Key),
+          }))
+        );
+        return {
+          ...payment,
+          slips: slipsWithUrls,
+        };
+      })
+    );
+
+    return NextResponse.json(paymentsWithUrls);
   } catch (error) {
     console.error("Error fetching payments:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

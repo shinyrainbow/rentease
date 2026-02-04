@@ -29,7 +29,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, UserX } from "lucide-react";
+import { Plus, Edit, Trash2, UserX, Search } from "lucide-react";
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface Unit {
   id: string;
@@ -60,10 +65,13 @@ export default function TenantsPage() {
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [vacantUnits, setVacantUnits] = useState<Unit[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -84,13 +92,19 @@ export default function TenantsPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.append("status", statusFilter);
 
-      const [tenantsRes, unitsRes] = await Promise.all([
+      const [tenantsRes, unitsRes, projectsRes] = await Promise.all([
         fetch(`/api/tenants?${params.toString()}`),
         fetch("/api/units"),
+        fetch("/api/projects"),
       ]);
-      const [tenantsData, unitsData] = await Promise.all([tenantsRes.json(), unitsRes.json()]);
+      const [tenantsData, unitsData, projectsData] = await Promise.all([
+        tenantsRes.json(),
+        unitsRes.json(),
+        projectsRes.json(),
+      ]);
       setTenants(tenantsData);
       setVacantUnits(unitsData.filter((u: { status: string }) => u.status === "VACANT"));
+      setProjects(projectsData);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -101,6 +115,26 @@ export default function TenantsPage() {
   useEffect(() => {
     fetchData();
   }, [statusFilter]);
+
+  // Filter tenants by project and search query (client-side filtering)
+  const filteredTenants = tenants.filter((tenant) => {
+    // Project filter
+    if (projectFilter && tenant.unit.project.name !== projectFilter) {
+      return false;
+    }
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        tenant.name.toLowerCase().includes(query) ||
+        (tenant.nameTh && tenant.nameTh.toLowerCase().includes(query)) ||
+        (tenant.phone && tenant.phone.includes(query)) ||
+        (tenant.email && tenant.email.toLowerCase().includes(query)) ||
+        tenant.unit.unitNumber.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,25 +246,13 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <div className="flex gap-4">
-          <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={tCommon("all")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{tCommon("all")}</SelectItem>
-              <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
-              <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
-              <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setEditingTenant(null); resetForm(); }}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addTenant")}
-              </Button>
-            </DialogTrigger>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => { setEditingTenant(null); resetForm(); }}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t("addTenant")}
+            </Button>
+          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingTenant ? t("editTenant") : t("addTenant")}</DialogTitle>
@@ -354,7 +376,43 @@ export default function TenantsPage() {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchPlaceholder") || "Search name, phone, unit..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("allProjects") || "All Projects"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.name}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={tCommon("all")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{tCommon("all")}</SelectItem>
+            <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
+            <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
+            <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -373,14 +431,14 @@ export default function TenantsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants.length === 0 ? (
+              {filteredTenants.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                tenants.map((tenant) => (
+                filteredTenants.map((tenant) => (
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
                     <TableCell>{tenant.unit.unitNumber}</TableCell>

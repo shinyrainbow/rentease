@@ -31,9 +31,14 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Send, FileDown, Eye, Loader2, Check } from "lucide-react";
+import { Plus, Send, FileDown, Eye, Loader2, Check, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface Unit {
   id: string;
@@ -94,9 +99,12 @@ export default function InvoicesPage() {
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
@@ -120,13 +128,19 @@ export default function InvoicesPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.append("status", statusFilter);
 
-      const [invoicesRes, unitsRes] = await Promise.all([
+      const [invoicesRes, unitsRes, projectsRes] = await Promise.all([
         fetch(`/api/invoices?${params.toString()}`),
         fetch("/api/units"),
+        fetch("/api/projects"),
       ]);
-      const [invoicesData, unitsData] = await Promise.all([invoicesRes.json(), unitsRes.json()]);
+      const [invoicesData, unitsData, projectsData] = await Promise.all([
+        invoicesRes.json(),
+        unitsRes.json(),
+        projectsRes.json(),
+      ]);
       setInvoices(invoicesData);
       setUnits(unitsData.filter((u: Unit) => u.tenant !== null));
+      setProjects(projectsData);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -243,6 +257,24 @@ export default function InvoicesPage() {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+
+  // Filter invoices by project and search query
+  const filteredInvoices = invoices.filter((invoice) => {
+    // Project filter
+    if (projectFilter && invoice.project.name !== projectFilter) {
+      return false;
+    }
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        invoice.invoiceNo.toLowerCase().includes(query) ||
+        invoice.tenant.name.toLowerCase().includes(query) ||
+        invoice.unit.unitNumber.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
 
   const handleViewInvoice = async (invoice: Invoice) => {
     setLoadingInvoice(true);
@@ -452,26 +484,13 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <div className="flex gap-4">
-          <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={tCommon("all")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{tCommon("all")}</SelectItem>
-              <SelectItem value="PENDING">{t("statuses.PENDING")}</SelectItem>
-              <SelectItem value="PARTIAL">{t("statuses.PARTIAL")}</SelectItem>
-              <SelectItem value="PAID">{t("statuses.PAID")}</SelectItem>
-              <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("createInvoice")}
-              </Button>
-            </DialogTrigger>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t("createInvoice")}
+            </Button>
+          </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{t("createInvoice")}</DialogTitle>
@@ -542,7 +561,44 @@ export default function InvoicesPage() {
               </form>
             </DialogContent>
           </Dialog>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchPlaceholder") || "Search invoice, tenant, unit..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("allProjects") || "All Projects"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.name}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={tCommon("all")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{tCommon("all")}</SelectItem>
+            <SelectItem value="PENDING">{t("statuses.PENDING")}</SelectItem>
+            <SelectItem value="PARTIAL">{t("statuses.PARTIAL")}</SelectItem>
+            <SelectItem value="PAID">{t("statuses.PAID")}</SelectItem>
+            <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -563,14 +619,14 @@ export default function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.length === 0 ? (
+              {filteredInvoices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                invoices.map((invoice) => (
+                filteredInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
                     <TableCell>{invoice.project.name}</TableCell>
