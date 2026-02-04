@@ -12,16 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -102,6 +92,8 @@ export default function TenantsPage() {
     unitId: "",
     name: "",
     nameTh: "",
+    companyName: "",
+    companyNameTh: "",
     email: "",
     phone: "",
     idCard: "",
@@ -201,11 +193,17 @@ export default function TenantsPage() {
       const url = editingTenant ? `/api/tenants/${editingTenant.id}` : "/api/tenants";
       const method = editingTenant ? "PUT" : "POST";
 
+      // Set name based on tenant type
+      const name = formData.tenantType === "INDIVIDUAL" ? formData.name : formData.companyName;
+      const nameTh = formData.tenantType === "INDIVIDUAL" ? formData.nameTh : formData.companyNameTh;
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          name,
+          nameTh,
           withholdingTax: parseFloat(formData.withholdingTax),
           contractStart: formData.contractStart || null,
           contractEnd: formData.contractEnd || null,
@@ -216,8 +214,8 @@ export default function TenantsPage() {
         toast({
           title: tCommon("success"),
           description: editingTenant
-            ? `${formData.name} ${tCommon("updated")}`
-            : `${formData.name} ${tCommon("created")}`,
+            ? `${name} ${tCommon("updated")}`
+            : `${name} ${tCommon("created")}`,
         });
         setIsDialogOpen(false);
         setEditingTenant(null);
@@ -247,8 +245,10 @@ export default function TenantsPage() {
     setEditingTenant(tenant);
     setFormData({
       unitId: "",
-      name: tenant.name,
-      nameTh: tenant.nameTh || "",
+      name: tenant.tenantType === "INDIVIDUAL" ? tenant.name : "",
+      nameTh: tenant.tenantType === "INDIVIDUAL" ? (tenant.nameTh || "") : "",
+      companyName: tenant.tenantType === "COMPANY" ? tenant.name : "",
+      companyNameTh: tenant.tenantType === "COMPANY" ? (tenant.nameTh || "") : "",
       email: tenant.email || "",
       phone: tenant.phone || "",
       idCard: "",
@@ -355,6 +355,8 @@ export default function TenantsPage() {
       unitId: "",
       name: "",
       nameTh: "",
+      companyName: "",
+      companyNameTh: "",
       email: "",
       phone: "",
       idCard: "",
@@ -440,42 +442,6 @@ export default function TenantsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{t("name")}</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("nameTh")}</Label>
-                  <Input
-                    value={formData.nameTh}
-                    onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("email")}</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("phone")}</Label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
                   <Label>{t("tenantType")}</Label>
                   <Select
                     value={formData.tenantType}
@@ -503,6 +469,83 @@ export default function TenantsPage() {
                     step="0.01"
                     value={formData.withholdingTax}
                     onChange={(e) => setFormData({ ...formData, withholdingTax: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Conditional fields based on tenant type */}
+              {formData.tenantType === "INDIVIDUAL" ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t("name")}</Label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("nameTh")}</Label>
+                      <Input
+                        value={formData.nameTh}
+                        onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("idCard")}</Label>
+                    <Input
+                      value={formData.idCard}
+                      onChange={(e) => setFormData({ ...formData, idCard: e.target.value })}
+                      placeholder="X-XXXX-XXXXX-XX-X"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t("companyName")}</Label>
+                      <Input
+                        value={formData.companyName}
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("companyNameTh")}</Label>
+                      <Input
+                        value={formData.companyNameTh}
+                        onChange={(e) => setFormData({ ...formData, companyNameTh: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("taxId")}</Label>
+                    <Input
+                      value={formData.taxId}
+                      onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
+                      placeholder="XXXXXXXXXXXXX"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("email")}</Label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("phone")}</Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
               </div>
@@ -645,50 +688,54 @@ export default function TenantsPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteTenant")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tenantToDelete?.name} - {tenantToDelete?.unit.unitNumber}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("deleteTenant")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {tenantToDelete?.name} - {tenantToDelete?.unit.unitNumber}
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {tCommon("delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* End Contract Confirmation Dialog */}
-      <AlertDialog open={endContractDialogOpen} onOpenChange={setEndContractDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("endContract")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("confirmEndContract")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
+      <Dialog open={endContractDialogOpen} onOpenChange={setEndContractDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("endContract")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("confirmEndContract")}
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setEndContractDialogOpen(false)} disabled={deleting}>
+              {tCommon("cancel")}
+            </Button>
+            <Button
               onClick={handleEndContract}
               disabled={deleting}
               className="bg-orange-500 text-white hover:bg-orange-600"
             >
               {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t("endContract")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

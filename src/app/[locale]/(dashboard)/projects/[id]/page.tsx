@@ -530,20 +530,24 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleDeleteUnit = async (unitId: string) => {
-    const unit = units.find(u => u.id === unitId);
-    if (!unit) return;
+  const openDeleteUnitDialog = (unit: Unit) => {
+    setUnitToDelete(unit);
+    setDeleteUnitDialogOpen(true);
+  };
 
-    if (!confirm(`${tUnits("confirmDelete") || "Are you sure you want to delete"} ${unit.unitNumber}?`)) return;
+  const handleDeleteUnit = async () => {
+    if (!unitToDelete) return;
 
-    setDeletingUnit(unitId);
+    setDeletingUnit(unitToDelete.id);
     try {
-      const res = await fetch(`/api/units/${unitId}`, { method: "DELETE" });
+      const res = await fetch(`/api/units/${unitToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
         toast({
           title: tUnits("unitDeleted") || "Unit Deleted",
-          description: `${unit.unitNumber} ${tCommon("deleted") || "has been deleted"}`,
+          description: `${unitToDelete.unitNumber} ${tCommon("deleted") || "has been deleted"}`,
         });
+        setDeleteUnitDialogOpen(false);
+        setUnitToDelete(null);
         setSelectedUnit(null);
         fetchData();
       } else {
@@ -603,7 +607,7 @@ export default function ProjectDetailPage() {
             <p className="text-muted-foreground">{t(`types.${project.type}`)}</p>
           </div>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDeleteProject} disabled={deletingProject}>
+        <Button variant="destructive" size="sm" onClick={() => setDeleteProjectDialogOpen(true)} disabled={deletingProject}>
           {deletingProject ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
           {t("deleteProject")}
         </Button>
@@ -826,13 +830,9 @@ export default function ProjectDetailPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleDeleteUnit(selectedUnitData.id)}
-                        disabled={deletingUnit === selectedUnitData.id}
+                        onClick={() => openDeleteUnitDialog(selectedUnitData)}
                       >
-                        {deletingUnit === selectedUnitData.id
-                          ? <Loader2 className="h-4 w-4 animate-spin text-destructive" />
-                          : <Trash2 className="h-4 w-4 text-destructive" />
-                        }
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </CardHeader>
@@ -1210,6 +1210,52 @@ export default function ProjectDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Project AlertDialog */}
+      <AlertDialog open={deleteProjectDialogOpen} onOpenChange={setDeleteProjectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteProject")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tUnits("confirmDelete")} {project?.name}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingProject}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={deletingProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingProject && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Unit AlertDialog */}
+      <AlertDialog open={deleteUnitDialogOpen} onOpenChange={setDeleteUnitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tUnits("deleteUnit")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tUnits("confirmDelete")} {unitToDelete?.unitNumber}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingUnit}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUnit}
+              disabled={!!deletingUnit}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingUnit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

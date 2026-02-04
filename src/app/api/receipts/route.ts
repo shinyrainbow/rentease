@@ -19,9 +19,9 @@ export async function GET() {
           select: {
             invoiceNo: true,
             tenantId: true,
-            project: { select: { name: true } },
+            project: { select: { name: true, companyName: true, companyNameTh: true, taxId: true } },
             unit: { select: { unitNumber: true } },
-            tenant: { select: { name: true } },
+            tenant: { select: { name: true, companyName: true, taxId: true } },
           },
         },
       },

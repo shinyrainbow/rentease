@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -134,6 +144,9 @@ export default function InvoicesPage() {
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
   const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -280,28 +293,41 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDelete = async (invoice: Invoice) => {
-    if (!confirm(t("confirmDelete") || `Are you sure you want to delete ${invoice.invoiceNo}?`)) {
-      return;
-    }
+  const openDeleteDialog = (invoice: Invoice) => {
+    setInvoiceToDelete(invoice);
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!invoiceToDelete) return;
+
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/invoices/${invoiceToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
-        fetchData();
         toast({
           title: t("invoiceDeleted") || "Invoice Deleted",
-          description: `${invoice.invoiceNo} ${t("deleted") || "has been deleted"}`,
+          description: `${invoiceToDelete.invoiceNo} ${tCommon("deleted") || "has been deleted"}`,
         });
+        setDeleteDialogOpen(false);
+        setInvoiceToDelete(null);
+        fetchData();
       } else {
         toast({
-          title: "Error",
+          title: tCommon("error") || "Error",
           description: "Failed to delete invoice",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error deleting invoice:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -841,7 +867,7 @@ export default function InvoicesPage() {
                               variant="ghost"
                               size="icon"
                               title={t("deleteInvoice") || "Delete Invoice"}
-                              onClick={() => handleDelete(invoice)}
+                              onClick={() => openDeleteDialog(invoice)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -1197,6 +1223,29 @@ export default function InvoicesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Invoice AlertDialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteInvoice") || "Delete Invoice"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("confirmDelete")} {invoiceToDelete?.invoiceNo}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

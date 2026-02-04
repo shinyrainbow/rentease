@@ -29,7 +29,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, X, Image, Plus, Trash2, Loader2, Search } from "lucide-react";
+import { Check, X, Image, Plus, Trash2, Loader2, Search, Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -107,6 +117,26 @@ export default function PaymentsPage() {
     notes: "",
     autoVerify: true,
   });
+
+  // Edit payment state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [updatingPayment, setUpdatingPayment] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    amount: "",
+    method: "CASH" as "CASH" | "CHECK" | "TRANSFER",
+    checkNo: "",
+    checkBank: "",
+    checkDate: "",
+    transferRef: "",
+    transferBank: "",
+    notes: "",
+  });
+
+  // Delete payment state
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -344,6 +374,114 @@ export default function PaymentsPage() {
     }
   };
 
+  // Edit payment handlers
+  const handleOpenEditDialog = (payment: Payment) => {
+    setEditingPayment(payment);
+    setEditFormData({
+      amount: String(payment.amount),
+      method: payment.method as "CASH" | "CHECK" | "TRANSFER",
+      checkNo: "",
+      checkBank: "",
+      checkDate: "",
+      transferRef: payment.transferRef || "",
+      transferBank: "",
+      notes: "",
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPayment || !editFormData.amount) return;
+
+    setUpdatingPayment(true);
+    try {
+      const res = await fetch(`/api/payments/${editingPayment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parseFloat(editFormData.amount),
+          method: editFormData.method,
+          checkNo: editFormData.method === "CHECK" ? editFormData.checkNo : undefined,
+          checkBank: editFormData.method === "CHECK" ? editFormData.checkBank : undefined,
+          checkDate: editFormData.method === "CHECK" ? editFormData.checkDate : undefined,
+          transferRef: editFormData.method === "TRANSFER" ? editFormData.transferRef : undefined,
+          transferBank: editFormData.method === "TRANSFER" ? editFormData.transferBank : undefined,
+          notes: editFormData.notes || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("paymentUpdated") || "Payment Updated",
+          description: t("paymentUpdatedDesc") || "Payment has been updated successfully",
+        });
+        setIsEditOpen(false);
+        setEditingPayment(null);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to update payment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingPayment(false);
+    }
+  };
+
+  // Delete payment handlers
+  const handleOpenDeleteDialog = (payment: Payment) => {
+    setDeletingPayment(payment);
+    setIsDeleteOpen(true);
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/payments/${deletingPayment.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("paymentDeleted") || "Payment Deleted",
+          description: t("paymentDeletedDesc") || "Payment has been deleted successfully",
+        });
+        setIsDeleteOpen(false);
+        setDeletingPayment(null);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to delete payment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "PENDING":
@@ -491,28 +629,47 @@ export default function PaymentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {payment.status === "PENDING" && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-green-600"
-                            onClick={() => handleVerify(payment.id, true)}
-                            title={t("verifyPayment")}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-600"
-                            onClick={() => handleVerify(payment.id, false)}
-                            title={t("rejectPayment")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-1">
+                        {payment.status === "PENDING" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-green-600"
+                              onClick={() => handleVerify(payment.id, true)}
+                              title={t("verifyPayment")}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600"
+                              onClick={() => handleVerify(payment.id, false)}
+                              title={t("rejectPayment")}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(payment)}
+                              title={t("editPayment") || "Edit"}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600"
+                              onClick={() => handleOpenDeleteDialog(payment)}
+                              title={t("deletePayment") || "Delete"}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -802,6 +959,170 @@ export default function PaymentsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("editPayment") || "แก้ไขการชำระเงิน"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdatePayment} className="space-y-4">
+            {/* Invoice Info (read-only) */}
+            {editingPayment && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("invoice") || "ใบแจ้งหนี้"}:</span>
+                  <span>{editingPayment.invoice.invoiceNo}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("tenant") || "ผู้เช่า"}:</span>
+                  <span>{editingPayment.tenant.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("unit") || "ห้อง"}:</span>
+                  <span>{editingPayment.invoice.unit.unitNumber}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>{t("amount") || "จำนวนเงิน"} *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editFormData.amount}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+                required
+              />
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label>{t("method") || "วิธีชำระ"} *</Label>
+              <Select
+                value={editFormData.method}
+                onValueChange={(v) => setEditFormData((prev) => ({ ...prev, method: v as "CASH" | "CHECK" | "TRANSFER" }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CASH">{t("methods.CASH") || "เงินสด"}</SelectItem>
+                  <SelectItem value="CHECK">{t("methods.CHECK") || "เช็ค"}</SelectItem>
+                  <SelectItem value="TRANSFER">{t("methods.TRANSFER") || "โอนเงิน"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Check Fields */}
+            {editFormData.method === "CHECK" && (
+              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("checkNo") || "เลขที่เช็ค"}</Label>
+                    <Input
+                      value={editFormData.checkNo}
+                      onChange={(e) => setEditFormData((prev) => ({ ...prev, checkNo: e.target.value }))}
+                      placeholder="เลขที่เช็ค"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("checkBank") || "ธนาคาร"}</Label>
+                    <Input
+                      value={editFormData.checkBank}
+                      onChange={(e) => setEditFormData((prev) => ({ ...prev, checkBank: e.target.value }))}
+                      placeholder="ชื่อธนาคาร"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("checkDate") || "วันที่เช็ค"}</Label>
+                  <Input
+                    type="date"
+                    value={editFormData.checkDate}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, checkDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Transfer Fields */}
+            {editFormData.method === "TRANSFER" && (
+              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("transferRef") || "เลขอ้างอิง"}</Label>
+                    <Input
+                      value={editFormData.transferRef}
+                      onChange={(e) => setEditFormData((prev) => ({ ...prev, transferRef: e.target.value }))}
+                      placeholder="เลขอ้างอิงการโอน"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("transferBank") || "ธนาคาร"}</Label>
+                    <Input
+                      value={editFormData.transferBank}
+                      onChange={(e) => setEditFormData((prev) => ({ ...prev, transferBank: e.target.value }))}
+                      placeholder="ชื่อธนาคาร"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>{t("notes") || "หมายเหตุ"}</Label>
+              <Input
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder={t("notesPlaceholder") || "หมายเหตุเพิ่มเติม (ถ้ามี)"}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} disabled={updatingPayment}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={updatingPayment || !editFormData.amount}>
+                {updatingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {t("savePayment") || "บันทึก"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Payment Confirmation */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("confirmDeletePayment") || "ยืนยันการลบ"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("confirmDeletePaymentDesc") || "คุณแน่ใจหรือไม่ว่าต้องการลบการชำระเงินนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้"}
+              {deletingPayment && (
+                <div className="mt-2 p-2 bg-muted rounded text-foreground">
+                  <div>{t("invoice") || "ใบแจ้งหนี้"}: {deletingPayment.invoice.invoiceNo}</div>
+                  <div>{t("amount") || "จำนวน"}: ฿{deletingPayment.amount.toLocaleString()}</div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePayment}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete") || "ลบ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
