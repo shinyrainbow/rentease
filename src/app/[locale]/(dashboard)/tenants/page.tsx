@@ -110,6 +110,7 @@ export default function TenantsPage() {
     idCard: "",
     taxId: "",
     tenantType: "INDIVIDUAL",
+    status: "ACTIVE",
     withholdingTax: "0",
     // Contract pricing
     baseRent: "",
@@ -224,6 +225,8 @@ export default function TenantsPage() {
           ...formData,
           name,
           nameTh,
+          // Only include status when editing
+          ...(editingTenant && { status: formData.status }),
           withholdingTax: parseFloat(formData.withholdingTax),
           baseRent: formData.baseRent ? parseFloat(formData.baseRent) : 0,
           commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
@@ -279,6 +282,7 @@ export default function TenantsPage() {
       idCard: "",
       taxId: "",
       tenantType: tenant.tenantType,
+      status: tenant.status,
       withholdingTax: tenant.withholdingTax.toString(),
       baseRent: tenant.baseRent?.toString() || "",
       commonFee: tenant.commonFee?.toString() || "",
@@ -394,6 +398,7 @@ export default function TenantsPage() {
       idCard: "",
       taxId: "",
       tenantType: "INDIVIDUAL",
+      status: "ACTIVE",
       withholdingTax: "0",
       baseRent: "",
       commonFee: "",
@@ -728,6 +733,26 @@ export default function TenantsPage() {
                 </div>
               </div>
 
+              {/* Status field - only show when editing */}
+              {editingTenant && (
+                <div className="space-y-2">
+                  <Label>{tCommon("status")}</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
+                      <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
+                      <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setDateError(null); }} disabled={saving}>
                   {tCommon("cancel")}
@@ -837,15 +862,13 @@ export default function TenantsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         {tenant.status === "ACTIVE" && (
-                          <>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openEndContractDialog(tenant)} title={t("endContract")}>
-                              <UserX className="h-4 w-4 text-orange-500" />
-                            </Button>
-                          </>
+                          <Button variant="ghost" size="icon" onClick={() => openEndContractDialog(tenant)} title={t("endContract")}>
+                            <UserX className="h-4 w-4 text-orange-500" />
+                          </Button>
                         )}
                         <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(tenant)} title={tCommon("delete")}>
                           <Trash2 className="h-4 w-4 text-destructive" />

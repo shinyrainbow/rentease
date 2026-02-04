@@ -55,8 +55,6 @@ interface Unit {
   size: number | null;
   type: string;
   status: string;
-  baseRent: number;
-  commonFee: number | null;
   project: { name: string; nameTh: string | null };
   tenant: { name: string; nameTh: string | null } | null;
 }
@@ -86,13 +84,6 @@ export default function UnitsPage() {
     floor: 1,
     size: "",
     type: "WAREHOUSE",
-    baseRent: "",
-    commonFee: "",
-    deposit: "",
-    discountPercent: "0",
-    discountAmount: "0",
-    electricMeterNo: "",
-    waterMeterNo: "",
   });
 
   const fetchData = async () => {
@@ -130,11 +121,6 @@ export default function UnitsPage() {
           ...formData,
           floor: parseInt(formData.floor.toString()),
           size: formData.size ? parseFloat(formData.size) : null,
-          baseRent: parseFloat(formData.baseRent),
-          commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
-          deposit: formData.deposit ? parseFloat(formData.deposit) : null,
-          discountPercent: parseFloat(formData.discountPercent),
-          discountAmount: parseFloat(formData.discountAmount),
         }),
       });
 
@@ -177,13 +163,6 @@ export default function UnitsPage() {
       floor: unit.floor,
       size: unit.size?.toString() || "",
       type: unit.type,
-      baseRent: unit.baseRent.toString(),
-      commonFee: unit.commonFee?.toString() || "",
-      deposit: "",
-      discountPercent: "0",
-      discountAmount: "0",
-      electricMeterNo: "",
-      waterMeterNo: "",
     });
     setIsDialogOpen(true);
   };
@@ -234,13 +213,6 @@ export default function UnitsPage() {
       floor: 1,
       size: "",
       type: "WAREHOUSE",
-      baseRent: "",
-      commonFee: "",
-      deposit: "",
-      discountPercent: "0",
-      discountAmount: "0",
-      electricMeterNo: "",
-      waterMeterNo: "",
     });
   };
 
@@ -300,8 +272,6 @@ export default function UnitsPage() {
         return direction * (a.floor - b.floor);
       case "size":
         return direction * ((a.size || 0) - (b.size || 0));
-      case "baseRent":
-        return direction * (a.baseRent - b.baseRent);
       case "status":
         return direction * a.status.localeCompare(b.status);
       case "tenant":
@@ -395,51 +365,6 @@ export default function UnitsPage() {
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("baseRent")}</Label>
-                    <Input
-                      type="number"
-                      value={formData.baseRent}
-                      onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("commonFee")}</Label>
-                    <Input
-                      type="number"
-                      value={formData.commonFee}
-                      onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("deposit")}</Label>
-                    <Input
-                      type="number"
-                      value={formData.deposit}
-                      onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("electricMeterNo")}</Label>
-                    <Input
-                      value={formData.electricMeterNo}
-                      onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("waterMeterNo")}</Label>
-                    <Input
-                      value={formData.waterMeterNo}
-                      onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })}
-                    />
-                  </div>
-                </div>
-
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
                     {tCommon("cancel")}
@@ -500,9 +425,6 @@ export default function UnitsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("size")}>
                   {t("size")} <SortIcon column="size" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("baseRent")}>
-                  {t("baseRent")} <SortIcon column="baseRent" />
-                </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                   {t("status")} <SortIcon column="status" />
                 </TableHead>
@@ -515,7 +437,7 @@ export default function UnitsPage() {
             <TableBody>
               {sortedUnits.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
@@ -527,7 +449,6 @@ export default function UnitsPage() {
                     <TableCell>{t(`types.${unit.type}`)}</TableCell>
                     <TableCell>{unit.floor}</TableCell>
                     <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
-                    <TableCell>฿{unit.baseRent.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(unit.status)}>
                         {t(`statuses.${unit.status}`)}

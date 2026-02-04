@@ -363,15 +363,15 @@ export default function LineOAPage() {
         </TabsList>
 
         {/* Chat Tab */}
-        <TabsContent value="chat">
-          <div className="grid gap-6 lg:grid-cols-3 h-[600px]">
+        <TabsContent value="chat" className="h-[calc(100vh-220px)] min-h-[500px]">
+          <div className="grid gap-6 lg:grid-cols-3 h-full">
             {/* Contacts List - Grouped by Project/Channel */}
-            <Card className="lg:col-span-1">
-              <CardHeader className="py-3">
+            <Card className="lg:col-span-1 flex flex-col overflow-hidden">
+              <CardHeader className="py-3 flex-shrink-0">
                 <CardTitle className="text-sm">LINE Contacts ({contacts.length})</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[520px]">
+              <CardContent className="p-0 flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
                   {contacts.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground text-sm">
                       No LINE contacts yet. Users will appear here when they add your LINE OA.
@@ -445,11 +445,11 @@ export default function LineOAPage() {
             </Card>
 
             {/* Chat Area */}
-            <Card className="lg:col-span-2 flex flex-col">
+            <Card className="lg:col-span-2 flex flex-col overflow-hidden">
               {selectedContact ? (
                 <>
                   {/* Chat Header */}
-                  <CardHeader className="py-3 border-b flex flex-row items-center justify-between">
+                  <CardHeader className="py-3 border-b flex flex-row items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={selectedContact.pictureUrl || undefined} />
@@ -484,8 +484,9 @@ export default function LineOAPage() {
                   </CardHeader>
 
                   {/* Messages */}
-                  <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-4">
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full p-4">
+                      <div className="space-y-4">
                       {loadingMessages ? (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -554,11 +555,12 @@ export default function LineOAPage() {
                         ))
                       )}
                       <div ref={messagesEndRef} />
-                    </div>
-                  </ScrollArea>
+                      </div>
+                    </ScrollArea>
+                  </div>
 
                   {/* Message Input */}
-                  <div className="p-4 border-t">
+                  <div className="p-4 border-t shrink-0">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                       <Input
                         value={newMessage}

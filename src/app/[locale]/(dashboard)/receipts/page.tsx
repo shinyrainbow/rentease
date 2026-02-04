@@ -28,7 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -64,7 +65,42 @@ interface Receipt {
     unit: { unitNumber: string };
     tenant: {
       name: string;
+      tenantType: string;
+      taxId: string | null;
+    };
+  };
+}
+
+interface ReceiptDetail {
+  id: string;
+  receiptNo: string;
+  amount: number;
+  issuedAt: string;
+  sentViaLine: boolean;
+  createdAt: string;
+  invoice: {
+    invoiceNo: string;
+    type: string;
+    billingMonth: string;
+    subtotal: number;
+    withholdingTax: number;
+    totalAmount: number;
+    lineItems: { description: string; amount: number }[] | null;
+    project: {
+      name: string;
+      nameTh: string | null;
       companyName: string | null;
+      companyNameTh: string | null;
+      companyAddress: string | null;
+      taxId: string | null;
+    };
+    unit: { unitNumber: string };
+    tenant: {
+      name: string;
+      nameTh: string | null;
+      tenantType: string;
+      phone: string | null;
+      email: string | null;
       taxId: string | null;
     };
   };
@@ -88,6 +124,9 @@ export default function ReceiptsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("receiptNo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptDetail | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   // Create receipt state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -179,8 +218,8 @@ export default function ReceiptsPage() {
         bVal = b.invoice.unit.unitNumber;
         break;
       case "tenant":
-        aVal = a.invoice.tenant.companyName || a.invoice.tenant.name;
-        bVal = b.invoice.tenant.companyName || b.invoice.tenant.name;
+        aVal = a.invoice.tenant.name;
+        bVal = b.invoice.tenant.name;
         break;
       case "amount":
         aVal = a.amount;
@@ -393,6 +432,35 @@ export default function ReceiptsPage() {
     }
   };
 
+  const handleViewReceipt = async (receipt: Receipt) => {
+    setLoadingReceipt(true);
+    setViewDialogOpen(true);
+    try {
+      const res = await fetch(`/api/receipts/${receipt.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedReceipt(data);
+      } else {
+        toast({
+          title: tCommon("error") || "Error",
+          description: "Failed to load receipt details",
+          variant: "destructive",
+        });
+        setViewDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error fetching receipt:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Failed to load receipt details",
+        variant: "destructive",
+      });
+      setViewDialogOpen(false);
+    } finally {
+      setLoadingReceipt(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
   }
@@ -486,9 +554,9 @@ export default function ReceiptsPage() {
                     <TableCell>{receipt.invoice.unit.unitNumber}</TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{receipt.invoice.tenant.companyName || receipt.invoice.tenant.name}</div>
-                        {receipt.invoice.tenant.companyName && (
-                          <div className="text-xs text-muted-foreground">{receipt.invoice.tenant.name}</div>
+                        <div className="font-medium">{receipt.invoice.tenant.name}</div>
+                        {receipt.invoice.tenant.tenantType === "COMPANY" && (
+                          <div className="text-xs text-muted-foreground">{t("company") || "Company"}</div>
                         )}
                         {receipt.invoice.tenant.taxId && (
                           <div className="text-xs text-muted-foreground">{t("taxId") || "Tax ID"}: {receipt.invoice.tenant.taxId}</div>
@@ -504,6 +572,14 @@ export default function ReceiptsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t("viewReceipt") || "View Receipt"}
+                          onClick={() => handleViewReceipt(receipt)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -710,6 +786,126 @@ export default function ReceiptsPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Preview Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("viewReceipt") || "View Receipt"}</DialogTitle>
+          </DialogHeader>
+          {loadingReceipt ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : selectedReceipt ? (
+            <div className="space-y-6">
+              {/* Company Header */}
+              <div className="text-center">
+                <h3 className="text-xl font-bold">
+                  {selectedReceipt.invoice.project.companyName || selectedReceipt.invoice.project.name}
+                </h3>
+                {selectedReceipt.invoice.project.companyAddress && (
+                  <p className="text-sm text-muted-foreground">{selectedReceipt.invoice.project.companyAddress}</p>
+                )}
+                {selectedReceipt.invoice.project.taxId && (
+                  <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.project.taxId}</p>
+                )}
+              </div>
+
+              <div className="text-center">
+                <h4 className="text-lg font-semibold">{t("receiptTitle") || "RECEIPT"}</h4>
+              </div>
+
+              <Separator />
+
+              {/* Receipt Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("receiptNo")}</p>
+                  <p className="font-medium">{selectedReceipt.receiptNo}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("issuedAt")}</p>
+                  <p className="font-medium">{new Date(selectedReceipt.issuedAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("invoiceRef") || "Invoice Ref"}</p>
+                  <p className="font-medium">{selectedReceipt.invoice.invoiceNo}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("billingMonth") || "Billing Month"}</p>
+                  <p className="font-medium">{selectedReceipt.invoice.billingMonth}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Tenant Info */}
+              <div>
+                <h4 className="font-semibold mb-2">{t("receivedFrom") || "Received From"}</h4>
+                <p className="font-medium">{selectedReceipt.invoice.tenant.name}</p>
+                {selectedReceipt.invoice.tenant.tenantType === "COMPANY" && (
+                  <p className="text-sm text-muted-foreground">{t("company") || "Company"}</p>
+                )}
+                <p className="text-sm text-muted-foreground">{t("unit") || "Unit"}: {selectedReceipt.invoice.unit.unitNumber}</p>
+                {selectedReceipt.invoice.tenant.phone && (
+                  <p className="text-sm text-muted-foreground">{t("phone") || "Phone"}: {selectedReceipt.invoice.tenant.phone}</p>
+                )}
+                {selectedReceipt.invoice.tenant.taxId && (
+                  <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.tenant.taxId}</p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Line Items */}
+              {selectedReceipt.invoice.lineItems && selectedReceipt.invoice.lineItems.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">{t("paymentFor") || "Payment For"}</h4>
+                  <div className="space-y-2">
+                    {selectedReceipt.invoice.lineItems.map((item, idx) => (
+                      <div key={idx} className="flex justify-between">
+                        <span className="text-sm">{item.description}</span>
+                        <span className="text-sm">฿{item.amount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <span>{t("subtotal") || "Subtotal"}</span>
+                  <span>฿{selectedReceipt.invoice.subtotal.toLocaleString()}</span>
+                </div>
+                {selectedReceipt.invoice.withholdingTax > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t("withholdingTax") || "Withholding Tax"}</span>
+                    <span>-฿{selectedReceipt.invoice.withholdingTax.toLocaleString()}</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex justify-between font-bold text-lg text-green-600">
+                  <span>{t("amountReceived") || "Amount Received"}</span>
+                  <span>฿{selectedReceipt.amount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+                  {tCommon("close") || "Close"}
+                </Button>
+                <Button onClick={() => handleDownloadPdf(selectedReceipt as unknown as Receipt)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {t("downloadPdf")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

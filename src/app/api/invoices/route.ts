@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true, companyName: true, companyNameTh: true, taxId: true } },
         unit: { select: { unitNumber: true } },
-        tenant: { select: { name: true, nameTh: true, companyName: true, taxId: true } },
+        tenant: { select: { name: true, nameTh: true, tenantType: true, taxId: true } },
         receipt: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },

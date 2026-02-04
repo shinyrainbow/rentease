@@ -79,7 +79,7 @@ interface Invoice {
   unit: { unitNumber: string };
   tenant: {
     name: string;
-    companyName: string | null;
+    tenantType: string;
     taxId: string | null;
   };
 }
@@ -101,6 +101,7 @@ interface InvoiceDetail extends Invoice {
   tenant: {
     name: string;
     nameTh: string | null;
+    tenantType: string;
     phone: string | null;
     email: string | null;
     taxId: string | null;

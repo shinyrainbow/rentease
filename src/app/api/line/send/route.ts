@@ -26,7 +26,24 @@ export async function POST(request: NextRequest) {
     if (invoiceId) {
       const invoice = await prisma.invoice.findFirst({
         where: { id: invoiceId, project: { ownerId: session.user.id } },
-        include: { unit: true, tenant: true, project: true },
+        include: {
+          unit: true,
+          tenant: true,
+          project: {
+            select: {
+              name: true,
+              nameTh: true,
+              companyName: true,
+              companyNameTh: true,
+              taxId: true,
+              bankName: true,
+              bankAccountName: true,
+              bankAccountNumber: true,
+              lineAccessToken: true,
+              ownerId: true,
+            }
+          }
+        },
       });
 
       if (!invoice) {
@@ -52,7 +69,7 @@ export async function POST(request: NextRequest) {
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
       const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
-      const companyName = invoice.project.companyName || invoice.project.name;
+      const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
       const params = new URLSearchParams({
         lang,
         invoiceNo: invoice.invoiceNo,
@@ -62,6 +79,15 @@ export async function POST(request: NextRequest) {
         unitNumber: invoice.unit.unitNumber,
         tenantName,
         companyName,
+        // Additional details
+        subtotal: String(invoice.subtotal),
+        withholdingTax: String(invoice.withholdingTax || 0),
+        discountAmount: String(invoice.discountAmount || 0),
+        lineItems: JSON.stringify(invoice.lineItems || []),
+        // Bank info for payment
+        bankName: invoice.project.bankName || "",
+        bankAccountName: invoice.project.bankAccountName || "",
+        bankAccountNumber: invoice.project.bankAccountNumber || "",
       });
       imageUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
 
@@ -103,7 +129,25 @@ ${textLabels.footer}
       // If receiptId provided, look up LINE contact from receipt's tenant
       const receipt = await prisma.receipt.findFirst({
         where: { id: receiptId, invoice: { project: { ownerId: session.user.id } } },
-        include: { invoice: { include: { unit: true, tenant: true, project: true } } },
+        include: {
+          invoice: {
+            include: {
+              unit: true,
+              tenant: true,
+              project: {
+                select: {
+                  name: true,
+                  nameTh: true,
+                  companyName: true,
+                  companyNameTh: true,
+                  taxId: true,
+                  lineAccessToken: true,
+                  ownerId: true,
+                }
+              }
+            }
+          }
+        },
       });
 
       if (!receipt) {
@@ -129,7 +173,14 @@ ${textLabels.footer}
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
-      const companyName = receipt.invoice.project.companyName || receipt.invoice.project.name;
+      const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
+
+      // Get payment info if available
+      const payment = await prisma.payment.findFirst({
+        where: { invoiceId: receipt.invoiceId, status: "VERIFIED" },
+        orderBy: { createdAt: "desc" },
+      });
+
       const params = new URLSearchParams({
         lang,
         receiptNo: receipt.receiptNo,
@@ -139,6 +190,10 @@ ${textLabels.footer}
         unitNumber: receipt.invoice.unit.unitNumber,
         tenantName,
         companyName,
+        // Additional details
+        billingMonth: receipt.invoice.billingMonth,
+        paymentMethod: payment?.method || "",
+        paymentDate: payment?.createdAt?.toISOString() || "",
       });
       imageUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
 
