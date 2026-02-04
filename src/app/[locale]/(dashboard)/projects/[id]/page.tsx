@@ -630,21 +630,19 @@ export default function ProjectDetailPage() {
               <CardContent>
                 <div
                   className="overflow-auto border rounded-lg"
-                  style={{
-                    backgroundImage: showGrid
-                      ? `linear-gradient(to right, #e2e8f0 1px, transparent 1px),
-                         linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`
-                      : 'none',
-                    backgroundSize: `${10 * zoom}px ${10 * zoom}px`,
-                    backgroundColor: '#f8fafc',
-                  }}
+                  style={{ backgroundColor: '#f8fafc' }}
                 >
                   <div
                     ref={canvasRef}
                     className="relative"
                     style={{
-                      minWidth: CANVAS_WIDTH * zoom,
-                      minHeight: CANVAS_HEIGHT * zoom,
+                      width: CANVAS_WIDTH * zoom,
+                      height: CANVAS_HEIGHT * zoom,
+                      backgroundImage: showGrid
+                        ? `linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+                           linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`
+                        : 'none',
+                      backgroundSize: `${10 * zoom}px ${10 * zoom}px`,
                     }}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
@@ -680,8 +678,11 @@ export default function ProjectDetailPage() {
                         </div>
                         {editMode && (
                           <div
-                            className="absolute bottom-0 right-0 w-4 h-4 bg-white border border-gray-400 cursor-se-resize rounded-tl"
-                            style={{ transform: `scale(${zoom})`, transformOrigin: 'bottom right' }}
+                            className="absolute bottom-0 right-0 w-6 h-6 bg-white border-2 border-gray-500 cursor-se-resize rounded-tl hover:bg-gray-100 hover:border-primary"
+                            style={{
+                              width: Math.max(16, 24 * zoom),
+                              height: Math.max(16, 24 * zoom),
+                            }}
                             onMouseDown={(e) => handleResizeStart(e, unit.id)}
                           />
                         )}
@@ -808,13 +809,12 @@ export default function ProjectDetailPage() {
                       <div className="pt-2 border-t space-y-2">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <Label className="text-xs">Width</Label>
+                            <Label className="text-xs">Width (px)</Label>
                             <Input
                               type="number"
                               min={60}
-                              defaultValue={selectedUnitData.width || DEFAULT_WIDTH}
-                              key={`width-${selectedUnitData.id}`}
-                              onBlur={(e) => {
+                              value={Math.round(selectedUnitData.width || DEFAULT_WIDTH)}
+                              onChange={(e) => {
                                 const val = parseInt(e.target.value);
                                 if (!isNaN(val) && val >= 60) {
                                   updateUnitSize(
@@ -828,13 +828,12 @@ export default function ProjectDetailPage() {
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Height</Label>
+                            <Label className="text-xs">Height (px)</Label>
                             <Input
                               type="number"
                               min={40}
-                              defaultValue={selectedUnitData.height || DEFAULT_HEIGHT}
-                              key={`height-${selectedUnitData.id}`}
-                              onBlur={(e) => {
+                              value={Math.round(selectedUnitData.height || DEFAULT_HEIGHT)}
+                              onChange={(e) => {
                                 const val = parseInt(e.target.value);
                                 if (!isNaN(val) && val >= 40) {
                                   updateUnitSize(
