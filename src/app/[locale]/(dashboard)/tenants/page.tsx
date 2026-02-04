@@ -457,6 +457,19 @@ export default function TenantsPage() {
     }
   });
 
+  function getContractStatus(contractEnd: string): "เช่าอยู่" | "หมดอายุสัญญา" {
+  // contractEnd format: M/D/YYYY (e.g. 2/4/2026)
+  const [month, day, year] = contractEnd.split("/").map(Number);
+
+  const endDate = new Date(year, month - 1, day);
+  const today = new Date();
+
+  // normalize today (ignore time)
+  today.setHours(0, 0, 0, 0);
+
+  return today <= endDate ? "เช่าอยู่" : "หมดอายุสัญญา";
+}
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
   }
@@ -764,7 +777,8 @@ export default function TenantsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(tenant.status)}>
-                        {t(`statuses.${tenant.status}`)}
+                        {/* {t(`statuses.${tenant.status}`)} */}
+                        {getContractStatus(tenant.contractEnd || "")}
                       </Badge>
                     </TableCell>
                     <TableCell>{tenant.phone || "-"}</TableCell>
