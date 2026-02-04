@@ -98,7 +98,9 @@
       "SHOP": "Shop",
       "OFFICE": "Office",
       "MIXED": "Mixed"
-    }
+    },
+    "totalUnits": "Units",
+    "occupancyRate": "Occupancy"
   },
   "units": {
     "title": "Units",

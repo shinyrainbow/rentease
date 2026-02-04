@@ -98,7 +98,9 @@
       "SHOP": "ร้านค้า",
       "OFFICE": "ออฟฟิศ",
       "MIXED": "ผสม"
-    }
+    },
+    "totalUnits": "ห้อง",
+    "occupancyRate": "อัตราเช่า"
   },
   "units": {
     "title": "ห้อง/ยูนิต",

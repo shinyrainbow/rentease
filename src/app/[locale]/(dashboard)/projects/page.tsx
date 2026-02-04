@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, MapPin, Calendar } from "lucide-react";
 
 interface Unit {
   id: string;
@@ -72,40 +72,43 @@ function FloorPlanThumbnail({ units }: { units: Unit[] }) {
   if (units.length === 0) {
     return (
       <div
-        className="flex items-center justify-center bg-slate-100 rounded text-xs text-muted-foreground"
-        style={{ width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT }}
+        className="flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg text-xs text-muted-foreground border border-dashed border-slate-200"
+        style={{ width: '100%', height: THUMBNAIL_HEIGHT }}
       >
-        No units
+        <Building2 className="w-8 h-8 text-slate-300" />
       </div>
     );
   }
 
   return (
     <div
-      className="relative bg-slate-100 rounded overflow-hidden"
-      style={{ width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT }}
+      className="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg overflow-hidden border border-slate-200"
+      style={{ width: '100%', height: THUMBNAIL_HEIGHT }}
     >
-      {units.map((unit, index) => {
-        const x = unit.positionX ?? (index % 5) * 120 + 20;
-        const y = unit.positionY ?? Math.floor(index / 5) * 100 + 20;
-        const width = unit.width ?? 100;
-        const height = unit.height ?? 80;
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative" style={{ width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT }}>
+          {units.map((unit, index) => {
+            const x = unit.positionX ?? (index % 5) * 120 + 20;
+            const y = unit.positionY ?? Math.floor(index / 5) * 100 + 20;
+            const width = unit.width ?? 100;
+            const height = unit.height ?? 80;
 
-        return (
-          <div
-            key={unit.id}
-            className="absolute rounded"
-            style={{
-              left: x * scale,
-              top: y * scale,
-              width: width * scale,
-              height: height * scale,
-              backgroundColor: getStatusColor(unit.status),
-              border: '1px solid rgba(0,0,0,0.2)',
-            }}
-          />
-        );
-      })}
+            return (
+              <div
+                key={unit.id}
+                className="absolute rounded-sm shadow-sm transition-transform hover:scale-105"
+                style={{
+                  left: x * scale,
+                  top: y * scale,
+                  width: width * scale,
+                  height: height * scale,
+                  backgroundColor: getStatusColor(unit.status),
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -335,46 +338,92 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Link key={project.id} href={`/${locale}/projects/${project.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {locale === "th" && project.nameTh ? project.nameTh : project.name}
-                      </CardTitle>
-                      <Badge className={`mt-1 ${getTypeBadgeColor(project.type)}`}>
-                        {getTypeLabel(project.type)}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => {
+            const units = project.units || [];
+            const occupiedCount = units.filter(u => u.status === "OCCUPIED").length;
+            const vacantCount = units.filter(u => u.status === "VACANT").length;
+            const totalUnits = project._count.units;
+            const occupancyRate = totalUnits > 0 ? Math.round((occupiedCount / totalUnits) * 100) : 0;
+
+            return (
+              <Link key={project.id} href={`/${locale}/projects/${project.id}`}>
+                <Card className="group hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer h-full overflow-hidden">
                   {/* Floor Plan Thumbnail */}
-                  <FloorPlanThumbnail units={project.units || []} />
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded bg-blue-500"></div>
-                      <span>{tUnits("statuses.OCCUPIED")}: {(project.units || []).filter(u => u.status === "OCCUPIED").length}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded bg-green-500"></div>
-                      <span>{tUnits("statuses.VACANT")}: {(project.units || []).filter(u => u.status === "VACANT").length}</span>
-                    </div>
+                  <div className="p-4 pb-0">
+                    <FloorPlanThumbnail units={units} />
                   </div>
 
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    {project.address && <p>{project.address}</p>}
-                    <p>Units: {project._count.units} | {t("billingDay")}: {project.billingDay}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <CardHeader className="pb-3 pt-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <CardTitle className="text-xl font-semibold truncate group-hover:text-primary transition-colors">
+                          {locale === "th" && project.nameTh ? project.nameTh : project.name}
+                        </CardTitle>
+                        <Badge className={`${getTypeBadgeColor(project.type)} font-medium`}>
+                          {getTypeLabel(project.type)}
+                        </Badge>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-2xl font-bold text-primary">{totalUnits}</div>
+                        <div className="text-xs text-muted-foreground">{t("totalUnits")}</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Occupancy Progress */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t("occupancyRate")}</span>
+                        <span className="font-semibold">{occupancyRate}%</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                          style={{ width: `${occupancyRate}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-blue-50 border border-blue-100">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div>
+                        <div>
+                          <div className="text-lg font-semibold text-blue-700">{occupiedCount}</div>
+                          <div className="text-xs text-blue-600">{tUnits("statuses.OCCUPIED")}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-green-50 border border-green-100">
+                        <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+                        <div>
+                          <div className="text-lg font-semibold text-green-700">{vacantCount}</div>
+                          <div className="text-xs text-green-600">{tUnits("statuses.VACANT")}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="pt-3 border-t border-slate-100 space-y-2">
+                      {project.address && (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{project.address}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4" />
+                          <span>{t("billingDay")}: {project.billingDay}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
