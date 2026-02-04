@@ -1,31 +1,21 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
 
 export const runtime = "edge";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = await params;
     const { searchParams } = new URL(request.url);
+
+    // Get data from query params (passed by send route)
+    const invoiceNo = searchParams.get("invoiceNo") || "";
+    const billingMonth = searchParams.get("billingMonth") || "";
+    const dueDate = searchParams.get("dueDate") || "";
+    const totalAmount = Number(searchParams.get("totalAmount") || 0);
+    const unitNumber = searchParams.get("unitNumber") || "";
+    const tenantName = searchParams.get("tenantName") || "";
+    const companyName = searchParams.get("companyName") || "";
     const lang = searchParams.get("lang") || "th";
-
-    // Fetch invoice data
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
-      include: {
-        unit: true,
-        tenant: true,
-        project: true,
-      },
-    });
-
-    if (!invoice) {
-      return new Response("Invoice not found", { status: 404 });
-    }
 
     const t = lang === "th" ? {
       invoice: "ใบแจ้งหนี้",
@@ -44,13 +34,13 @@ export async function GET(
     };
 
     const formatCurrency = (amount: number) => `฿${amount.toLocaleString()}`;
-    const formatDate = (date: Date) => new Date(date).toLocaleDateString(
-      lang === "th" ? "th-TH" : "en-US",
-      { year: "numeric", month: "short", day: "numeric" }
-    );
-
-    const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
-    const companyName = invoice.project.companyName || invoice.project.name;
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return "";
+      return new Date(dateStr).toLocaleDateString(
+        lang === "th" ? "th-TH" : "en-US",
+        { year: "numeric", month: "short", day: "numeric" }
+      );
+    };
 
     return new ImageResponse(
       (
@@ -80,19 +70,19 @@ export async function GET(
           <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#f9fafb", padding: 24, borderRadius: 12, marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.invoiceNo}:</span>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{invoice.invoiceNo}</span>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{invoiceNo}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.unit}:</span>
-              <span style={{ fontSize: 16 }}>{invoice.unit.unitNumber}</span>
+              <span style={{ fontSize: 16 }}>{unitNumber}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.billingMonth}:</span>
-              <span style={{ fontSize: 16 }}>{invoice.billingMonth}</span>
+              <span style={{ fontSize: 16 }}>{billingMonth}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.dueDate}:</span>
-              <span style={{ fontSize: 16, color: "#dc2626" }}>{formatDate(invoice.dueDate)}</span>
+              <span style={{ fontSize: 16, color: "#dc2626" }}>{formatDate(dueDate)}</span>
             </div>
           </div>
 
@@ -105,7 +95,7 @@ export async function GET(
           <div style={{ display: "flex", justifyContent: "center", marginTop: "auto" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "#3b82f6", padding: "24px 48px", borderRadius: 12 }}>
               <span style={{ fontSize: 14, color: "white", marginBottom: 8 }}>{t.total}</span>
-              <span style={{ fontSize: 36, fontWeight: 700, color: "white" }}>{formatCurrency(Number(invoice.totalAmount))}</span>
+              <span style={{ fontSize: 36, fontWeight: 700, color: "white" }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>

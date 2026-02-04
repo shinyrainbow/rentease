@@ -1,35 +1,21 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
 
 export const runtime = "edge";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = await params;
     const { searchParams } = new URL(request.url);
+
+    // Get data from query params (passed by send route)
+    const receiptNo = searchParams.get("receiptNo") || "";
+    const invoiceNo = searchParams.get("invoiceNo") || "";
+    const amount = Number(searchParams.get("amount") || 0);
+    const issuedAt = searchParams.get("issuedAt") || "";
+    const unitNumber = searchParams.get("unitNumber") || "";
+    const tenantName = searchParams.get("tenantName") || "";
+    const companyName = searchParams.get("companyName") || "";
     const lang = searchParams.get("lang") || "th";
-
-    // Fetch receipt data
-    const receipt = await prisma.receipt.findUnique({
-      where: { id },
-      include: {
-        invoice: {
-          include: {
-            unit: true,
-            tenant: true,
-            project: true,
-          },
-        },
-      },
-    });
-
-    if (!receipt) {
-      return new Response("Receipt not found", { status: 404 });
-    }
 
     const t = lang === "th" ? {
       receipt: "ใบเสร็จรับเงิน",
@@ -49,14 +35,14 @@ export async function GET(
       thankYou: "Thank you for your payment",
     };
 
-    const formatCurrency = (amount: number) => `฿${amount.toLocaleString()}`;
-    const formatDate = (date: Date) => new Date(date).toLocaleDateString(
-      lang === "th" ? "th-TH" : "en-US",
-      { year: "numeric", month: "short", day: "numeric" }
-    );
-
-    const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
-    const companyName = receipt.invoice.project.companyName || receipt.invoice.project.name;
+    const formatCurrency = (amt: number) => `฿${amt.toLocaleString()}`;
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return "";
+      return new Date(dateStr).toLocaleDateString(
+        lang === "th" ? "th-TH" : "en-US",
+        { year: "numeric", month: "short", day: "numeric" }
+      );
+    };
 
     return new ImageResponse(
       (
@@ -86,19 +72,19 @@ export async function GET(
           <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#f0fdf4", padding: 24, borderRadius: 12, marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.receiptNo}:</span>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>{receipt.receiptNo}</span>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{receiptNo}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.invoiceRef}:</span>
-              <span style={{ fontSize: 16 }}>{receipt.invoice.invoiceNo}</span>
+              <span style={{ fontSize: 16 }}>{invoiceNo}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.unit}:</span>
-              <span style={{ fontSize: 16 }}>{receipt.invoice.unit.unitNumber}</span>
+              <span style={{ fontSize: 16 }}>{unitNumber}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: 16, color: "#6b7280" }}>{t.date}:</span>
-              <span style={{ fontSize: 16 }}>{formatDate(receipt.issuedAt)}</span>
+              <span style={{ fontSize: 16 }}>{formatDate(issuedAt)}</span>
             </div>
           </div>
 
@@ -111,7 +97,7 @@ export async function GET(
           <div style={{ display: "flex", justifyContent: "center", marginTop: "auto" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "#16a34a", padding: "24px 48px", borderRadius: 12 }}>
               <span style={{ fontSize: 14, color: "white", marginBottom: 8 }}>{t.total}</span>
-              <span style={{ fontSize: 36, fontWeight: 700, color: "white" }}>{formatCurrency(Number(receipt.amount))}</span>
+              <span style={{ fontSize: 36, fontWeight: 700, color: "white" }}>{formatCurrency(amount)}</span>
             </div>
           </div>
 

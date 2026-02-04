@@ -51,7 +51,19 @@ export async function POST(request: NextRequest) {
 
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
-      imageUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?lang=${lang}`;
+      const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+      const companyName = invoice.project.companyName || invoice.project.name;
+      const params = new URLSearchParams({
+        lang,
+        invoiceNo: invoice.invoiceNo,
+        billingMonth: invoice.billingMonth,
+        dueDate: invoice.dueDate.toISOString(),
+        totalAmount: String(invoice.totalAmount),
+        unitNumber: invoice.unit.unitNumber,
+        tenantName,
+        companyName,
+      });
+      imageUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
 
       // Prepare a text summary
       const textLabels = lang === "th" ? {
@@ -116,7 +128,19 @@ ${textLabels.footer}
 
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
-      imageUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?lang=${lang}`;
+      const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
+      const companyName = receipt.invoice.project.companyName || receipt.invoice.project.name;
+      const params = new URLSearchParams({
+        lang,
+        receiptNo: receipt.receiptNo,
+        invoiceNo: receipt.invoice.invoiceNo,
+        amount: String(receipt.amount),
+        issuedAt: receipt.issuedAt.toISOString(),
+        unitNumber: receipt.invoice.unit.unitNumber,
+        tenantName,
+        companyName,
+      });
+      imageUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
 
       // Prepare text summary
       const textLabels = lang === "th" ? {
@@ -164,17 +188,15 @@ ${textLabels.footer}
     // Build messages array
     const messages: Array<{ type: string; text?: string; originalContentUrl?: string; previewImageUrl?: string }> = [];
 
-    // Add image message if we have an image URL
+    // Add image message if we have an image URL (for invoices/receipts)
     if (imageUrl) {
       messages.push({
         type: "image",
         originalContentUrl: imageUrl,
         previewImageUrl: imageUrl,
       });
-    }
-
-    // Add text message
-    if (messageContent) {
+    } else if (messageContent) {
+      // Only add text message if no image (for direct messages)
       messages.push({ type: "text", text: messageContent });
     }
 
