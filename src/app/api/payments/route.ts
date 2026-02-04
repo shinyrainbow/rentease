@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { getPresignedUrl } from "@/lib/s3";
+import { generateReceiptNo } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,12 +67,16 @@ export async function POST(request: NextRequest) {
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: data.invoiceId, project: { ownerId: session.user.id } },
-      include: { tenant: true },
+      include: { tenant: true, project: true },
     });
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
+
+    // Determine if we should auto-verify (for cash/check payments from admin)
+    const shouldAutoVerify = data.autoVerify === true;
+    const paymentStatus = shouldAutoVerify ? "VERIFIED" : "PENDING";
 
     const payment = await prisma.payment.create({
       data: {
@@ -79,7 +84,11 @@ export async function POST(request: NextRequest) {
         tenantId: invoice.tenantId,
         amount: data.amount,
         method: data.method,
+        status: paymentStatus,
         slipUrl: data.slipUrl,
+        slipVerified: shouldAutoVerify,
+        verifiedAt: shouldAutoVerify ? new Date() : null,
+        verifiedBy: shouldAutoVerify ? session.user.id : null,
         transferRef: data.transferRef,
         transferBank: data.transferBank,
         checkNo: data.checkNo,
@@ -99,6 +108,36 @@ export async function POST(request: NextRequest) {
         tenant: { select: { name: true, nameTh: true } },
       },
     });
+
+    // If auto-verify is enabled, also update invoice and create receipt if needed
+    if (shouldAutoVerify) {
+      const newPaidAmount = invoice.paidAmount + data.amount;
+      const newStatus = newPaidAmount >= invoice.totalAmount ? "PAID" : "PARTIAL";
+
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          paidAmount: newPaidAmount,
+          status: newStatus,
+        },
+      });
+
+      // Create receipt if fully paid
+      if (newStatus === "PAID") {
+        const receiptNo = generateReceiptNo(
+          invoice.project.name.substring(0, 3).toUpperCase(),
+          new Date()
+        );
+
+        await prisma.receipt.create({
+          data: {
+            receiptNo,
+            invoiceId: invoice.id,
+            amount: invoice.totalAmount,
+          },
+        });
+      }
+    }
 
     return NextResponse.json(payment);
   } catch (error) {

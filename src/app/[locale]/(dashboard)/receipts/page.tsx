@@ -28,12 +28,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Send, FileDown, Loader2, Check, Search } from "lucide-react";
+import { Send, FileDown, Loader2, Check, Search, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
   name: string;
+}
+
+interface PaidInvoice {
+  id: string;
+  invoiceNo: string;
+  totalAmount: number;
+  project: { name: string };
+  unit: { unitNumber: string };
+  tenant: { name: string };
+  receipt: { id: string } | null;
 }
 
 interface Receipt {
@@ -67,6 +77,17 @@ export default function ReceiptsPage() {
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Create receipt state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [paidInvoices, setPaidInvoices] = useState<PaidInvoice[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [creatingReceipt, setCreatingReceipt] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    invoiceId: "",
+    amount: "",
+    issuedAt: new Date().toISOString().split("T")[0],
+  });
 
   const fetchData = async () => {
     try {
@@ -109,6 +130,89 @@ export default function ReceiptsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch paid invoices without receipts
+  const fetchPaidInvoices = async (projectId?: string) => {
+    try {
+      const params = new URLSearchParams({ status: "PAID" });
+      if (projectId) params.append("projectId", projectId);
+      const res = await fetch(`/api/invoices?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Filter out invoices that already have receipts
+        const invoicesWithoutReceipts = data.filter((inv: PaidInvoice) => !inv.receipt);
+        setPaidInvoices(invoicesWithoutReceipts);
+      }
+    } catch (error) {
+      console.error("Error fetching paid invoices:", error);
+    }
+  };
+
+  const handleOpenCreateDialog = () => {
+    setCreateFormData({
+      invoiceId: "",
+      amount: "",
+      issuedAt: new Date().toISOString().split("T")[0],
+    });
+    setSelectedProjectId("");
+    fetchPaidInvoices();
+    setIsCreateOpen(true);
+  };
+
+  const handleProjectChangeForCreate = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setCreateFormData((prev) => ({ ...prev, invoiceId: "" }));
+    if (projectId && projectId !== "__all__") {
+      fetchPaidInvoices(projectId);
+    } else {
+      fetchPaidInvoices();
+    }
+  };
+
+  const handleCreateReceipt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createFormData.invoiceId) return;
+
+    setCreatingReceipt(true);
+    try {
+      const res = await fetch("/api/receipts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoiceId: createFormData.invoiceId,
+          amount: createFormData.amount ? parseFloat(createFormData.amount) : undefined,
+          issuedAt: createFormData.issuedAt,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("receiptCreated") || "Receipt Created",
+          description: t("receiptCreatedDesc") || "Receipt has been created successfully",
+        });
+        setIsCreateOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to create receipt",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating receipt:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingReceipt(false);
+    }
+  };
+
+  const selectedInvoiceForReceipt = paidInvoices.find((inv) => inv.id === createFormData.invoiceId);
 
   const openLineSendDialog = (receipt: Receipt) => {
     setLineSendReceipt(receipt);
@@ -219,6 +323,10 @@ export default function ReceiptsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
+        <Button onClick={handleOpenCreateDialog}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("createReceipt") || "สร้างใบเสร็จ"}
+        </Button>
       </div>
 
       {/* Filters */}
@@ -380,6 +488,119 @@ export default function ReceiptsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Receipt Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("createReceipt") || "สร้างใบเสร็จรับเงิน"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateReceipt} className="space-y-4">
+            {/* Project Filter */}
+            <div className="space-y-2">
+              <Label>{t("project") || "โครงการ"}</Label>
+              <Select
+                value={selectedProjectId || "__all__"}
+                onValueChange={(v) => handleProjectChangeForCreate(v === "__all__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("allProjects") || "ทุกโครงการ"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t("allProjects") || "ทุกโครงการ"}</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Invoice Selection */}
+            <div className="space-y-2">
+              <Label>{t("selectInvoice") || "เลือกใบแจ้งหนี้"} *</Label>
+              <Select
+                value={createFormData.invoiceId || undefined}
+                onValueChange={(v) => {
+                  const inv = paidInvoices.find((i) => i.id === v);
+                  setCreateFormData((prev) => ({
+                    ...prev,
+                    invoiceId: v,
+                    amount: inv ? String(inv.totalAmount) : "",
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("selectInvoicePlaceholder") || "เลือกใบแจ้งหนี้ที่ชำระแล้ว"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {paidInvoices.length === 0 ? (
+                    <SelectItem value="__none__" disabled>
+                      {t("noPaidInvoicesWithoutReceipt") || "ไม่มีใบแจ้งหนี้ที่ยังไม่มีใบเสร็จ"}
+                    </SelectItem>
+                  ) : (
+                    paidInvoices.map((inv) => (
+                      <SelectItem key={inv.id} value={inv.id}>
+                        {inv.invoiceNo} - {inv.project.name} - {inv.unit.unitNumber} (฿{inv.totalAmount.toLocaleString()})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selected Invoice Info */}
+            {selectedInvoiceForReceipt && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("tenant") || "ผู้เช่า"}:</span>
+                  <span>{selectedInvoiceForReceipt.tenant.name}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium">
+                  <span>{t("totalAmount") || "ยอดรวม"}:</span>
+                  <span className="text-green-600">฿{selectedInvoiceForReceipt.totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>{t("amount") || "จำนวนเงิน"}</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={createFormData.amount}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("amountHint") || "ถ้าไม่กรอก จะใช้ยอดรวมจากใบแจ้งหนี้"}
+              </p>
+            </div>
+
+            {/* Issued Date */}
+            <div className="space-y-2">
+              <Label>{t("issuedAt") || "วันที่ออกใบเสร็จ"}</Label>
+              <Input
+                type="date"
+                value={createFormData.issuedAt}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, issuedAt: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} disabled={creatingReceipt}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={creatingReceipt || !createFormData.invoiceId}>
+                {creatingReceipt && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {t("createReceipt") || "สร้างใบเสร็จ"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

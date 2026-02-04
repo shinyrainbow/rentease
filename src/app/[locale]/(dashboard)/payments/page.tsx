@@ -25,13 +25,26 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Check, X, Image, Plus, Trash2, Loader2, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
   name: string;
+}
+
+interface UnpaidInvoice {
+  id: string;
+  invoiceNo: string;
+  totalAmount: number;
+  paidAmount: number;
+  project: { name: string };
+  unit: { unitNumber: string };
+  tenant: { name: string };
 }
 
 interface PaymentSlip {
@@ -63,6 +76,7 @@ interface Payment {
 export default function PaymentsPage() {
   const t = useTranslations("payments");
   const tCommon = useTranslations("common");
+  const { toast } = useToast();
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -75,6 +89,24 @@ export default function PaymentsPage() {
   const [uploadingSlip, setUploadingSlip] = useState(false);
   const [deletingSlipId, setDeletingSlipId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Create payment state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [creatingPayment, setCreatingPayment] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    invoiceId: "",
+    amount: "",
+    method: "CASH" as "CASH" | "CHECK" | "TRANSFER",
+    checkNo: "",
+    checkBank: "",
+    checkDate: "",
+    transferRef: "",
+    transferBank: "",
+    notes: "",
+    autoVerify: true,
+  });
 
   const fetchData = async () => {
     try {
@@ -120,6 +152,104 @@ export default function PaymentsPage() {
   useEffect(() => {
     fetchData();
   }, [statusFilter]);
+
+  // Fetch unpaid invoices when create dialog opens or project changes
+  const fetchUnpaidInvoices = async (projectId?: string) => {
+    try {
+      const params = new URLSearchParams({ status: "PENDING,PARTIAL,OVERDUE" });
+      if (projectId) params.append("projectId", projectId);
+      const res = await fetch(`/api/invoices?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUnpaidInvoices(data);
+      }
+    } catch (error) {
+      console.error("Error fetching unpaid invoices:", error);
+    }
+  };
+
+  const handleOpenCreateDialog = () => {
+    setCreateFormData({
+      invoiceId: "",
+      amount: "",
+      method: "CASH",
+      checkNo: "",
+      checkBank: "",
+      checkDate: "",
+      transferRef: "",
+      transferBank: "",
+      notes: "",
+      autoVerify: true,
+    });
+    setSelectedProjectId("");
+    fetchUnpaidInvoices();
+    setIsCreateOpen(true);
+  };
+
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setCreateFormData((prev) => ({ ...prev, invoiceId: "" }));
+    if (projectId && projectId !== "__all__") {
+      fetchUnpaidInvoices(projectId);
+    } else {
+      fetchUnpaidInvoices();
+    }
+  };
+
+  const handleCreatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createFormData.invoiceId || !createFormData.amount) return;
+
+    setCreatingPayment(true);
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoiceId: createFormData.invoiceId,
+          amount: parseFloat(createFormData.amount),
+          method: createFormData.method,
+          checkNo: createFormData.method === "CHECK" ? createFormData.checkNo : undefined,
+          checkBank: createFormData.method === "CHECK" ? createFormData.checkBank : undefined,
+          checkDate: createFormData.method === "CHECK" ? createFormData.checkDate : undefined,
+          transferRef: createFormData.method === "TRANSFER" ? createFormData.transferRef : undefined,
+          transferBank: createFormData.method === "TRANSFER" ? createFormData.transferBank : undefined,
+          notes: createFormData.notes || undefined,
+          autoVerify: createFormData.autoVerify,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("paymentCreated") || "Payment Created",
+          description: t("paymentCreatedDesc") || "Payment has been recorded successfully",
+        });
+        setIsCreateOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to create payment",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingPayment(false);
+    }
+  };
+
+  const selectedInvoice = unpaidInvoices.find((inv) => inv.id === createFormData.invoiceId);
+  const remainingAmount = selectedInvoice
+    ? selectedInvoice.totalAmount - selectedInvoice.paidAmount
+    : 0;
 
   const handleVerify = async (id: string, approved: boolean) => {
     try {
@@ -248,6 +378,10 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
+        <Button onClick={handleOpenCreateDialog}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("createPayment") || "บันทึกการชำระ"}
+        </Button>
       </div>
 
       {/* Filters */}
@@ -459,6 +593,213 @@ export default function PaymentsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Payment Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("createPayment") || "บันทึกการชำระเงิน"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreatePayment} className="space-y-4">
+            {/* Project Filter */}
+            <div className="space-y-2">
+              <Label>{t("project") || "โครงการ"}</Label>
+              <Select
+                value={selectedProjectId || "__all__"}
+                onValueChange={(v) => handleProjectChange(v === "__all__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("allProjects") || "ทุกโครงการ"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t("allProjects") || "ทุกโครงการ"}</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Invoice Selection */}
+            <div className="space-y-2">
+              <Label>{t("selectInvoice") || "เลือกใบแจ้งหนี้"} *</Label>
+              <Select
+                value={createFormData.invoiceId || undefined}
+                onValueChange={(v) => {
+                  const inv = unpaidInvoices.find((i) => i.id === v);
+                  setCreateFormData((prev) => ({
+                    ...prev,
+                    invoiceId: v,
+                    amount: inv ? String(inv.totalAmount - inv.paidAmount) : "",
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("selectInvoicePlaceholder") || "เลือกใบแจ้งหนี้"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {unpaidInvoices.length === 0 ? (
+                    <SelectItem value="__none__" disabled>
+                      {t("noUnpaidInvoices") || "ไม่มีใบแจ้งหนี้ค้างชำระ"}
+                    </SelectItem>
+                  ) : (
+                    unpaidInvoices.map((inv) => (
+                      <SelectItem key={inv.id} value={inv.id}>
+                        {inv.invoiceNo} - {inv.project.name} - {inv.unit.unitNumber} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selected Invoice Info */}
+            {selectedInvoice && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("tenant") || "ผู้เช่า"}:</span>
+                  <span>{selectedInvoice.tenant.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("totalAmount") || "ยอดรวม"}:</span>
+                  <span>฿{selectedInvoice.totalAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("paidAmount") || "ชำระแล้ว"}:</span>
+                  <span>฿{selectedInvoice.paidAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium">
+                  <span>{t("remainingAmount") || "คงเหลือ"}:</span>
+                  <span className="text-primary">฿{remainingAmount.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>{t("amount") || "จำนวนเงิน"} *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={createFormData.amount}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+                required
+              />
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label>{t("method") || "วิธีชำระ"} *</Label>
+              <Select
+                value={createFormData.method}
+                onValueChange={(v) => setCreateFormData((prev) => ({ ...prev, method: v as "CASH" | "CHECK" | "TRANSFER" }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CASH">{t("methods.CASH") || "เงินสด"}</SelectItem>
+                  <SelectItem value="CHECK">{t("methods.CHECK") || "เช็ค"}</SelectItem>
+                  <SelectItem value="TRANSFER">{t("methods.TRANSFER") || "โอนเงิน"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Check Fields */}
+            {createFormData.method === "CHECK" && (
+              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("checkNo") || "เลขที่เช็ค"}</Label>
+                    <Input
+                      value={createFormData.checkNo}
+                      onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkNo: e.target.value }))}
+                      placeholder="เลขที่เช็ค"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("checkBank") || "ธนาคาร"}</Label>
+                    <Input
+                      value={createFormData.checkBank}
+                      onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkBank: e.target.value }))}
+                      placeholder="ชื่อธนาคาร"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("checkDate") || "วันที่เช็ค"}</Label>
+                  <Input
+                    type="date"
+                    value={createFormData.checkDate}
+                    onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Transfer Fields */}
+            {createFormData.method === "TRANSFER" && (
+              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("transferRef") || "เลขอ้างอิง"}</Label>
+                    <Input
+                      value={createFormData.transferRef}
+                      onChange={(e) => setCreateFormData((prev) => ({ ...prev, transferRef: e.target.value }))}
+                      placeholder="เลขอ้างอิงการโอน"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("transferBank") || "ธนาคาร"}</Label>
+                    <Input
+                      value={createFormData.transferBank}
+                      onChange={(e) => setCreateFormData((prev) => ({ ...prev, transferBank: e.target.value }))}
+                      placeholder="ชื่อธนาคาร"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>{t("notes") || "หมายเหตุ"}</Label>
+              <Input
+                value={createFormData.notes}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder={t("notesPlaceholder") || "หมายเหตุเพิ่มเติม (ถ้ามี)"}
+              />
+            </div>
+
+            {/* Auto Verify Checkbox */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoVerify"
+                checked={createFormData.autoVerify}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, autoVerify: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="autoVerify" className="text-sm font-normal">
+                {t("autoVerifyPayment") || "ยืนยันการชำระทันที (สร้างใบเสร็จอัตโนมัติถ้าครบยอด)"}
+              </Label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} disabled={creatingPayment}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={creatingPayment || !createFormData.invoiceId || !createFormData.amount}>
+                {creatingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {t("savePayment") || "บันทึก"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

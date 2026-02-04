@@ -111,6 +111,7 @@ export default function InvoicesPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
+    projectId: "",
     unitId: "",
     type: "RENT",
     billingMonth: new Date().toISOString().slice(0, 7),
@@ -190,12 +191,18 @@ export default function InvoicesPage() {
     nextMonth.setDate(15);
 
     setFormData({
+      projectId: "",
       unitId: "",
       type: "RENT",
       billingMonth: new Date().toISOString().slice(0, 7),
       dueDate: nextMonth.toISOString().split("T")[0],
     });
   };
+
+  // Get units filtered by selected project
+  const filteredUnitsForCreate = formData.projectId
+    ? units.filter((u) => u.projectId === formData.projectId)
+    : units;
 
   const handleEdit = async (invoice: Invoice) => {
     // Fetch full invoice details
@@ -609,21 +616,49 @@ export default function InvoicesPage() {
                 <DialogTitle>{t("createInvoice")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Project Selection */}
                 <div className="space-y-2">
-                  <Label>Unit</Label>
+                  <Label>{t("project") || "โครงการ"}</Label>
+                  <Select
+                    value={formData.projectId || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, projectId: value, unitId: "" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("selectProject") || "เลือกโครงการ"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Unit Selection */}
+                <div className="space-y-2">
+                  <Label>{t("unit") || "ห้อง/ยูนิต"}</Label>
                   <Select
                     value={formData.unitId || undefined}
                     onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                    disabled={!formData.projectId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select unit" />
+                      <SelectValue placeholder={formData.projectId ? (t("selectUnit") || "เลือกห้อง") : (t("selectProjectFirst") || "กรุณาเลือกโครงการก่อน")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {units.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.project.name} - {unit.unitNumber} ({unit.tenant?.name})
+                      {filteredUnitsForCreate.length === 0 ? (
+                        <SelectItem value="__none__" disabled>
+                          {t("noUnitsWithTenant") || "ไม่มีห้องที่มีผู้เช่า"}
                         </SelectItem>
-                      ))}
+                      ) : (
+                        filteredUnitsForCreate.map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            {unit.unitNumber} - {unit.tenant?.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

@@ -18,6 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Save,
   RotateCcw,
@@ -28,7 +34,11 @@ import {
   Settings,
   Map,
   Trash2,
+  Plus,
+  Edit,
+  Loader2,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
@@ -48,7 +58,17 @@ interface Project {
 interface Unit {
   id: string;
   unitNumber: string;
+  floor: number;
+  size: number | null;
+  type: string;
   status: string;
+  baseRent: number;
+  commonFee: number | null;
+  deposit: number | null;
+  discountPercent: number | null;
+  discountAmount: number | null;
+  electricMeterNo: string | null;
+  waterMeterNo: string | null;
   positionX: number | null;
   positionY: number | null;
   width: number | null;
@@ -105,6 +125,25 @@ export default function ProjectDetailPage() {
 
   // Selected unit for editing
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+
+  // Unit management state
+  const { toast } = useToast();
+  const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [savingUnit, setSavingUnit] = useState(false);
+  const [unitFormData, setUnitFormData] = useState({
+    unitNumber: "",
+    floor: 1,
+    size: "",
+    type: "WAREHOUSE",
+    baseRent: "",
+    commonFee: "",
+    deposit: "",
+    discountPercent: "0",
+    discountAmount: "0",
+    electricMeterNo: "",
+    waterMeterNo: "",
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -317,6 +356,151 @@ export default function ProjectDetailPage() {
     }));
   };
 
+  // Unit management functions
+  const resetUnitForm = () => {
+    setUnitFormData({
+      unitNumber: "",
+      floor: 1,
+      size: "",
+      type: "WAREHOUSE",
+      baseRent: "",
+      commonFee: "",
+      deposit: "",
+      discountPercent: "0",
+      discountAmount: "0",
+      electricMeterNo: "",
+      waterMeterNo: "",
+    });
+  };
+
+  const handleOpenCreateUnit = () => {
+    setEditingUnit(null);
+    resetUnitForm();
+    setIsUnitDialogOpen(true);
+  };
+
+  const handleEditUnit = (unit: Unit) => {
+    setEditingUnit(unit);
+    setUnitFormData({
+      unitNumber: unit.unitNumber,
+      floor: unit.floor,
+      size: unit.size?.toString() || "",
+      type: unit.type,
+      baseRent: unit.baseRent.toString(),
+      commonFee: unit.commonFee?.toString() || "",
+      deposit: unit.deposit?.toString() || "",
+      discountPercent: unit.discountPercent?.toString() || "0",
+      discountAmount: unit.discountAmount?.toString() || "0",
+      electricMeterNo: unit.electricMeterNo || "",
+      waterMeterNo: unit.waterMeterNo || "",
+    });
+    setIsUnitDialogOpen(true);
+  };
+
+  const handleSaveUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingUnit(true);
+
+    try {
+      const url = editingUnit ? `/api/units/${editingUnit.id}` : "/api/units";
+      const method = editingUnit ? "PUT" : "POST";
+
+      // Calculate position for new unit
+      let positionX = 20;
+      let positionY = 20;
+      if (!editingUnit) {
+        const existingCount = units.length;
+        positionX = (existingCount % 5) * 120 + 20;
+        positionY = Math.floor(existingCount / 5) * 100 + 20;
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: projectId,
+          ...unitFormData,
+          floor: parseInt(unitFormData.floor.toString()),
+          size: unitFormData.size ? parseFloat(unitFormData.size) : null,
+          baseRent: parseFloat(unitFormData.baseRent),
+          commonFee: unitFormData.commonFee ? parseFloat(unitFormData.commonFee) : null,
+          deposit: unitFormData.deposit ? parseFloat(unitFormData.deposit) : null,
+          discountPercent: parseFloat(unitFormData.discountPercent),
+          discountAmount: parseFloat(unitFormData.discountAmount),
+          // Set initial position for new units
+          ...(!editingUnit && {
+            positionX,
+            positionY,
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
+          }),
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: editingUnit ? (tUnits("unitUpdated") || "Unit Updated") : (tUnits("unitCreated") || "Unit Created"),
+          description: editingUnit
+            ? `${unitFormData.unitNumber} ${tCommon("updated") || "has been updated"}`
+            : `${unitFormData.unitNumber} ${tCommon("created") || "has been created"}`,
+        });
+        setIsUnitDialogOpen(false);
+        setEditingUnit(null);
+        resetUnitForm();
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to save unit",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving unit:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
+  const handleDeleteUnit = async (unitId: string) => {
+    const unit = units.find(u => u.id === unitId);
+    if (!unit) return;
+
+    if (!confirm(`${tUnits("confirmDelete") || "Are you sure you want to delete"} ${unit.unitNumber}?`)) return;
+
+    try {
+      const res = await fetch(`/api/units/${unitId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast({
+          title: tUnits("unitDeleted") || "Unit Deleted",
+          description: `${unit.unitNumber} ${tCommon("deleted") || "has been deleted"}`,
+        });
+        setSelectedUnit(null);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to delete unit",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting unit:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "VACANT": return "bg-green-500 border-green-600";
@@ -384,6 +568,11 @@ export default function ProjectDetailPage() {
                   {tFloorPlans("title")}
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={handleOpenCreateUnit}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {tUnits("addUnit") || "เพิ่มห้อง"}
+                  </Button>
+                  <div className="h-6 w-px bg-border mx-2" />
                   <Button
                     variant={showGrid ? "default" : "outline"}
                     size="sm"
@@ -544,24 +733,56 @@ export default function ProjectDetailPage() {
               {/* Unit Details */}
               {selectedUnitData && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Unit: {selectedUnitData.unitNumber}</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-base">Unit: {selectedUnitData.unitNumber}</CardTitle>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditUnit(selectedUnitData)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteUnit(selectedUnitData.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Badge className={`ml-2 ${getStatusColor(selectedUnitData.status).split(' ')[0]}`}>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge className={`${getStatusColor(selectedUnitData.status).split(' ')[0]}`}>
                         {tUnits(`statuses.${selectedUnitData.status}`)}
                       </Badge>
                     </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{tUnits("type")}:</span>
+                      <span>{tUnits(`types.${selectedUnitData.type}`)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{tUnits("floor")}:</span>
+                      <span>{selectedUnitData.floor}</span>
+                    </div>
+                    {selectedUnitData.size && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{tUnits("size")}:</span>
+                        <span>{selectedUnitData.size} sq.m.</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{tUnits("baseRent")}:</span>
+                      <span className="font-medium">฿{selectedUnitData.baseRent.toLocaleString()}</span>
+                    </div>
+                    {selectedUnitData.commonFee && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{tUnits("commonFee")}:</span>
+                        <span>฿{selectedUnitData.commonFee.toLocaleString()}</span>
+                      </div>
+                    )}
                     {selectedUnitData.tenant && (
-                      <div>
+                      <div className="pt-2 border-t">
                         <span className="text-sm text-muted-foreground">Tenant:</span>
                         <p className="font-medium">{selectedUnitData.tenant.name}</p>
                       </div>
                     )}
                     {editMode && (
-                      <>
+                      <div className="pt-2 border-t space-y-2">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <Label className="text-xs">Width</Label>
@@ -593,7 +814,7 @@ export default function ProjectDetailPage() {
                         <div className="text-xs text-muted-foreground">
                           Position: ({Math.round(selectedUnitData.positionX || 0)}, {Math.round(selectedUnitData.positionY || 0)})
                         </div>
-                      </>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -747,6 +968,144 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Unit Create/Edit Dialog */}
+      <Dialog open={isUnitDialogOpen} onOpenChange={setIsUnitDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingUnit ? (tUnits("editUnit") || "แก้ไขห้อง") : (tUnits("addUnit") || "เพิ่มห้อง")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveUnit} className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>{tUnits("unitNumber") || "หมายเลขห้อง"}</Label>
+                <Input
+                  value={unitFormData.unitNumber}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, unitNumber: e.target.value })}
+                  placeholder="A101"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("floor") || "ชั้น"}</Label>
+                <Input
+                  type="number"
+                  value={unitFormData.floor}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, floor: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("size") || "ขนาด (ตร.ม.)"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={unitFormData.size}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, size: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{tUnits("type") || "ประเภท"}</Label>
+              <Select value={unitFormData.type} onValueChange={(value) => setUnitFormData({ ...unitFormData, type: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="WAREHOUSE">{tUnits("types.WAREHOUSE") || "โกดัง"}</SelectItem>
+                  <SelectItem value="SHOP">{tUnits("types.SHOP") || "ร้านค้า"}</SelectItem>
+                  <SelectItem value="OFFICE">{tUnits("types.OFFICE") || "สำนักงาน"}</SelectItem>
+                  <SelectItem value="STORAGE">{tUnits("types.STORAGE") || "คลังสินค้า"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>{tUnits("baseRent") || "ค่าเช่า"} *</Label>
+                <Input
+                  type="number"
+                  value={unitFormData.baseRent}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, baseRent: e.target.value })}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("commonFee") || "ค่าส่วนกลาง"}</Label>
+                <Input
+                  type="number"
+                  value={unitFormData.commonFee}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, commonFee: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("deposit") || "เงินมัดจำ"}</Label>
+                <Input
+                  type="number"
+                  value={unitFormData.deposit}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, deposit: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{tUnits("discountPercent") || "ส่วนลด (%)"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={unitFormData.discountPercent}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, discountPercent: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("discountAmount") || "ส่วนลด (บาท)"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={unitFormData.discountAmount}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, discountAmount: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{tUnits("electricMeterNo") || "เลขมิเตอร์ไฟ"}</Label>
+                <Input
+                  value={unitFormData.electricMeterNo}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, electricMeterNo: e.target.value })}
+                  placeholder="เลขมิเตอร์ไฟฟ้า"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{tUnits("waterMeterNo") || "เลขมิเตอร์น้ำ"}</Label>
+                <Input
+                  value={unitFormData.waterMeterNo}
+                  onChange={(e) => setUnitFormData({ ...unitFormData, waterMeterNo: e.target.value })}
+                  placeholder="เลขมิเตอร์น้ำ"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsUnitDialogOpen(false)} disabled={savingUnit}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={savingUnit}>
+                {savingUnit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

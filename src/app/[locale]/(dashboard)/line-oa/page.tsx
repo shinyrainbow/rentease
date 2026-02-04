@@ -511,11 +511,18 @@ export default function LineOAPage() {
                                 <div className="space-y-2">
                                   {msg.mediaUrl ? (
                                     <img
-                                      src={`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
+                                      src={msg.direction === "OUTGOING"
+                                        ? msg.mediaUrl
+                                        : `/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
                                       alt="LINE Image"
                                       className="max-w-48 max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover bg-muted"
                                       loading="lazy"
-                                      onClick={() => window.open(`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`, "_blank")}
+                                      onClick={() => window.open(
+                                        msg.direction === "OUTGOING"
+                                          ? msg.mediaUrl!
+                                          : `/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`,
+                                        "_blank"
+                                      )}
                                     />
                                   ) : (
                                     <div className="w-48 h-24 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">
