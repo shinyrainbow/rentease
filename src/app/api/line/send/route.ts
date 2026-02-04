@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
     let lineContact = null;
     let messageContent = message;
     let imageUrl: string | null = null;
-    let fileUrl: string | null = null;
 
     // If invoiceId provided, look up LINE contact from invoice's tenant
     if (invoiceId) {
@@ -50,11 +49,35 @@ export async function POST(request: NextRequest) {
         }, { status: 404 });
       }
 
-      // Always generate PDF and upload to S3 (works reliably on Vercel)
-      const pdfUrl = await generateAndUploadInvoicePdf(invoice, lang);
-      fileUrl = pdfUrl;
+      // Generate image via Edge route and upload to S3
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
+      const imageResponse = await fetch(`${baseUrl}/api/generate-image/invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice: {
+            invoiceNo: invoice.invoiceNo,
+            billingMonth: invoice.billingMonth,
+            dueDate: invoice.dueDate,
+            totalAmount: invoice.totalAmount,
+            unitNumber: invoice.unit.unitNumber,
+            tenantName: invoice.tenant.name,
+            tenantNameTh: invoice.tenant.nameTh,
+            projectName: invoice.project.name,
+            companyName: invoice.project.companyName,
+          },
+          lang,
+        }),
+      });
 
-      // Also prepare a text summary
+      if (imageResponse.ok) {
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        const s3Key = `invoices/${invoice.id}/image-${lang}-${Date.now()}.png`;
+        await uploadFile(s3Key, imageBuffer, "image/png");
+        imageUrl = await getPresignedUrl(s3Key, 3600);
+      }
+
+      // Prepare a text summary
       const textLabels = lang === "th" ? {
         title: "📄 ใบแจ้งหนี้",
         invoiceNo: "เลขที่",
@@ -115,9 +138,33 @@ ${textLabels.footer}
         }, { status: 404 });
       }
 
-      // Always generate PDF and upload to S3 (works reliably on Vercel)
-      const pdfUrl = await generateAndUploadReceiptPdf(receipt, lang);
-      fileUrl = pdfUrl;
+      // Generate image via Edge route and upload to S3
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
+      const imageResponse = await fetch(`${baseUrl}/api/generate-image/receipt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receipt: {
+            receiptNo: receipt.receiptNo,
+            amount: receipt.amount,
+            issuedAt: receipt.issuedAt,
+            invoiceNo: receipt.invoice.invoiceNo,
+            unitNumber: receipt.invoice.unit.unitNumber,
+            tenantName: receipt.invoice.tenant.name,
+            tenantNameTh: receipt.invoice.tenant.nameTh,
+            projectName: receipt.invoice.project.name,
+            companyName: receipt.invoice.project.companyName,
+          },
+          lang,
+        }),
+      });
+
+      if (imageResponse.ok) {
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        const s3Key = `receipts/${receipt.id}/image-${lang}-${Date.now()}.png`;
+        await uploadFile(s3Key, imageBuffer, "image/png");
+        imageUrl = await getPresignedUrl(s3Key, 3600);
+      }
 
       // Prepare text summary
       const textLabels = lang === "th" ? {
@@ -163,18 +210,9 @@ ${textLabels.footer}
     }
 
     // Build messages array
-    const messages: Array<{ type: string; text?: string; originalContentUrl?: string; previewImageUrl?: string; fileName?: string }> = [];
+    const messages: Array<{ type: string; text?: string; originalContentUrl?: string; previewImageUrl?: string }> = [];
 
-    // Add file message if we have a PDF URL
-    if (fileUrl) {
-      messages.push({
-        type: "file",
-        originalContentUrl: fileUrl,
-        fileName: `Invoice.pdf`,
-      });
-    }
-
-    // Add image message if we have an invoice image URL
+    // Add image message if we have an image URL
     if (imageUrl) {
       messages.push({
         type: "image",
@@ -212,8 +250,9 @@ ${textLabels.footer}
       data: {
         lineContactId: lineContact.id,
         direction: "OUTGOING",
-        messageType: fileUrl ? "file" : (imageUrl ? "image" : "text"),
+        messageType: imageUrl ? "image" : "text",
         content: messageContent,
+        mediaUrl: imageUrl || undefined,
       },
     });
 
