@@ -222,7 +222,9 @@
     "sendSuccess": "ส่งสำเร็จ",
     "sendError": "ส่งไม่สำเร็จ",
     "sentToLine": "ส่งผ่าน LINE แล้ว",
-    "noLineContact": "ผู้เช่านี้ยังไม่ได้เชื่อมต่อกับ LINE"
+    "noLineContact": "ผู้เช่านี้ยังไม่ได้เชื่อมต่อกับ LINE",
+    "confirmDelete": "คุณต้องการลบใบแจ้งหนี้นี้หรือไม่?",
+    "invoiceDeleted": "ลบใบแจ้งหนี้แล้ว"
   },
   "payments": {
     "title": "การชำระเงิน",

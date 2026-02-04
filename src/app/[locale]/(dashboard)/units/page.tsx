@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -60,7 +70,10 @@ export default function UnitsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [unitToDelete, setUnitToDelete] = useState<Unit | null>(null);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -173,16 +186,24 @@ export default function UnitsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this unit?")) return;
+  const openDeleteDialog = (unit: Unit) => {
+    setUnitToDelete(unit);
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!unitToDelete) return;
+
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/units/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/units/${unitToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
         toast({
           title: tCommon("success"),
-          description: tCommon("deleted"),
+          description: `${unitToDelete.unitNumber} ${tCommon("deleted")}`,
         });
+        setDeleteDialogOpen(false);
+        setUnitToDelete(null);
         fetchData();
       } else {
         const data = await res.json();
@@ -199,6 +220,8 @@ export default function UnitsPage() {
         description: "Network error",
         variant: "destructive",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -453,7 +476,7 @@ export default function UnitsPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(unit)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(unit.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(unit)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -465,6 +488,29 @@ export default function UnitsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unitToDelete?.unitNumber} - {unitToDelete?.project.name}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

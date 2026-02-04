@@ -24,6 +24,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Save,
   RotateCcw,
@@ -133,6 +143,9 @@ export default function ProjectDetailPage() {
   const [savingUnit, setSavingUnit] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
   const [deletingUnit, setDeletingUnit] = useState<string | null>(null);
+  const [deleteProjectDialogOpen, setDeleteProjectDialogOpen] = useState(false);
+  const [deleteUnitDialogOpen, setDeleteUnitDialogOpen] = useState(false);
+  const [unitToDelete, setUnitToDelete] = useState<Unit | null>(null);
   const [unitFormData, setUnitFormData] = useState({
     unitNumber: "",
     floor: 1,
@@ -233,8 +246,6 @@ export default function ProjectDetailPage() {
   };
 
   const handleDeleteProject = async () => {
-    if (!confirm("Are you sure you want to delete this project? All units and data will be lost.")) return;
-
     setDeletingProject(true);
     try {
       const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
@@ -243,6 +254,7 @@ export default function ProjectDetailPage() {
           title: tCommon("success"),
           description: `${project?.name} ${tCommon("deleted")}`,
         });
+        setDeleteProjectDialogOpen(false);
         router.push(`/${locale}/projects`);
       } else {
         toast({

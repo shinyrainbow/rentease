@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -76,7 +86,12 @@ export default function TenantsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [endContractDialogOpen, setEndContractDialogOpen] = useState(false);
+  const [tenantToDelete, setTenantToDelete] = useState<Tenant | null>(null);
+  const [tenantToEndContract, setTenantToEndContract] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
@@ -246,16 +261,29 @@ export default function TenantsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this tenant?")) return;
+  const openDeleteDialog = (tenant: Tenant) => {
+    setTenantToDelete(tenant);
+    setDeleteDialogOpen(true);
+  };
 
+  const openEndContractDialog = (tenant: Tenant) => {
+    setTenantToEndContract(tenant);
+    setEndContractDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!tenantToDelete) return;
+
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/tenants/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/tenants/${tenantToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
         toast({
           title: tCommon("success"),
-          description: tCommon("deleted"),
+          description: `${tenantToDelete.name} ${tCommon("deleted")}`,
         });
+        setDeleteDialogOpen(false);
+        setTenantToDelete(null);
         fetchData();
       } else {
         toast({
@@ -271,14 +299,17 @@ export default function TenantsPage() {
         description: "Network error",
         variant: "destructive",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleEndContract = async (id: string) => {
-    if (!confirm(t("confirmEndContract"))) return;
+  const handleEndContract = async () => {
+    if (!tenantToEndContract) return;
 
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/tenants/${id}`, {
+      const res = await fetch(`/api/tenants/${tenantToEndContract.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "end_contract" }),
@@ -288,6 +319,8 @@ export default function TenantsPage() {
           title: tCommon("success"),
           description: "Contract ended",
         });
+        setEndContractDialogOpen(false);
+        setTenantToEndContract(null);
         fetchData();
       } else {
         toast({
@@ -303,6 +336,8 @@ export default function TenantsPage() {
         description: "Network error",
         variant: "destructive",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -591,12 +626,12 @@ export default function TenantsPage() {
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEndContract(tenant.id)} title={t("endContract")}>
+                            <Button variant="ghost" size="icon" onClick={() => openEndContractDialog(tenant)} title={t("endContract")}>
                               <UserX className="h-4 w-4 text-orange-500" />
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(tenant.id)} title={tCommon("delete")}>
+                        <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(tenant)} title={tCommon("delete")}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -608,6 +643,52 @@ export default function TenantsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteTenant")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tenantToDelete?.name} - {tenantToDelete?.unit.unitNumber}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* End Contract Confirmation Dialog */}
+      <AlertDialog open={endContractDialogOpen} onOpenChange={setEndContractDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("endContract")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("confirmEndContract")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEndContract}
+              disabled={deleting}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("endContract")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
