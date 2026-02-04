@@ -29,7 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, UserX, Search } from "lucide-react";
+import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
@@ -39,7 +40,13 @@ interface Project {
 interface Unit {
   id: string;
   unitNumber: string;
+  status: string;
   project: { name: string };
+  tenant: {
+    name: string;
+    contractStart: string | null;
+    contractEnd: string | null;
+  } | null;
 }
 
 interface Tenant {
@@ -63,15 +70,18 @@ export default function TenantsPage() {
   const t = useTranslations("tenants");
   const tCommon = useTranslations("common");
 
+  const { toast } = useToast();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [vacantUnits, setVacantUnits] = useState<Unit[]>([]);
+  const [allUnits, setAllUnits] = useState<Unit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -103,7 +113,8 @@ export default function TenantsPage() {
         projectsRes.json(),
       ]);
       setTenants(tenantsData);
-      setVacantUnits(unitsData.filter((u: { status: string }) => u.status === "VACANT"));
+      // Show all units (not just vacant) - allow selecting units with existing tenants
+      setAllUnits(unitsData);
       setProjects(projectsData);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -138,7 +149,39 @@ export default function TenantsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDateError(null);
 
+    // Validate contract dates if unit has existing tenant
+    if (!editingTenant && formData.unitId) {
+      const selectedUnit = allUnits.find(u => u.id === formData.unitId);
+      if (selectedUnit?.tenant?.contractEnd) {
+        const currentContractEnd = new Date(selectedUnit.tenant.contractEnd);
+        const newContractStart = formData.contractStart ? new Date(formData.contractStart) : null;
+
+        if (!newContractStart) {
+          setDateError("Contract start date is required when unit has existing tenant");
+          toast({
+            title: tCommon("error"),
+            description: "Contract start date is required when unit has existing tenant",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (newContractStart <= currentContractEnd) {
+          const errorMsg = `Contract start date must be after ${currentContractEnd.toLocaleDateString()} (current tenant's contract end)`;
+          setDateError(errorMsg);
+          toast({
+            title: tCommon("error"),
+            description: errorMsg,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    setSaving(true);
     try {
       const url = editingTenant ? `/api/tenants/${editingTenant.id}` : "/api/tenants";
       const method = editingTenant ? "PUT" : "POST";
@@ -155,13 +198,33 @@ export default function TenantsPage() {
       });
 
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: editingTenant
+            ? `${formData.name} ${tCommon("updated")}`
+            : `${formData.name} ${tCommon("created")}`,
+        });
         setIsDialogOpen(false);
         setEditingTenant(null);
         resetForm();
         fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to save tenant",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error saving tenant:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -189,10 +252,25 @@ export default function TenantsPage() {
     try {
       const res = await fetch(`/api/tenants/${id}`, { method: "DELETE" });
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: tCommon("deleted"),
+        });
         fetchData();
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to delete tenant",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error deleting tenant:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -206,10 +284,25 @@ export default function TenantsPage() {
         body: JSON.stringify({ action: "end_contract" }),
       });
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: "Contract ended",
+        });
         fetchData();
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to end contract",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error ending contract:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -263,19 +356,50 @@ export default function TenantsPage() {
                   <Label>Unit</Label>
                   <Select
                     value={formData.unitId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, unitId: value });
+                      setDateError(null);
+                    }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select vacant unit" />
+                      <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vacantUnits.map((unit) => (
+                      {allUnits.map((unit) => (
                         <SelectItem key={unit.id} value={unit.id}>
                           {unit.project.name} - {unit.unitNumber}
+                          {unit.tenant && ` (${unit.tenant.name})`}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* Show warning if selected unit has active tenant */}
+                  {formData.unitId && (() => {
+                    const selectedUnit = allUnits.find(u => u.id === formData.unitId);
+                    if (selectedUnit?.tenant) {
+                      return (
+                        <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
+                          <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-medium text-yellow-800">Unit has active tenant</p>
+                            <p className="text-yellow-700">
+                              Current tenant: {selectedUnit.tenant.name}
+                              {selectedUnit.tenant.contractEnd && (
+                                <> (ends {new Date(selectedUnit.tenant.contractEnd).toLocaleDateString()})</>
+                              )}
+                            </p>
+                            <p className="text-yellow-600 mt-1">
+                              New contract must start after current contract ends.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  {dateError && (
+                    <p className="text-sm text-red-600">{dateError}</p>
+                  )}
                 </div>
               )}
 
@@ -368,10 +492,13 @@ export default function TenantsPage() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setDateError(null); }} disabled={saving}>
                   {tCommon("cancel")}
                 </Button>
-                <Button type="submit">{tCommon("save")}</Button>
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {tCommon("save")}
+                </Button>
               </div>
             </form>
           </DialogContent>

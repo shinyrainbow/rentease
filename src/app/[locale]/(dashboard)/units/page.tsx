@@ -29,7 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
@@ -53,10 +54,12 @@ interface Unit {
 export default function UnitsPage() {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
+  const { toast } = useToast();
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
@@ -99,6 +102,7 @@ export default function UnitsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
 
     try {
       const url = editingUnit ? `/api/units/${editingUnit.id}` : "/api/units";
@@ -120,13 +124,33 @@ export default function UnitsPage() {
       });
 
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: editingUnit
+            ? `${formData.unitNumber} ${tCommon("updated")}`
+            : `${formData.unitNumber} ${tCommon("created")}`,
+        });
         setIsDialogOpen(false);
         setEditingUnit(null);
         resetForm();
         fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to save unit",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error saving unit:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -155,10 +179,26 @@ export default function UnitsPage() {
     try {
       const res = await fetch(`/api/units/${id}`, { method: "DELETE" });
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: tCommon("deleted"),
+        });
         fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to delete unit",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error deleting unit:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -331,10 +371,13 @@ export default function UnitsPage() {
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
                     {tCommon("cancel")}
                   </Button>
-                  <Button type="submit">{tCommon("save")}</Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {tCommon("save")}
+                  </Button>
                 </div>
               </form>
             </DialogContent>

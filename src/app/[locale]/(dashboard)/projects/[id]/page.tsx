@@ -131,6 +131,8 @@ export default function ProjectDetailPage() {
   const [isUnitDialogOpen, setIsUnitDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [savingUnit, setSavingUnit] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deletingUnit, setDeletingUnit] = useState<string | null>(null);
   const [unitFormData, setUnitFormData] = useState({
     unitNumber: "",
     floor: 1,
@@ -207,9 +209,24 @@ export default function ProjectDetailPage() {
       if (res.ok) {
         const updatedProject = await res.json();
         setProject(updatedProject);
+        toast({
+          title: tCommon("success"),
+          description: `${formData.name} ${tCommon("updated")}`,
+        });
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to save project",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error saving project:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -218,13 +235,31 @@ export default function ProjectDetailPage() {
   const handleDeleteProject = async () => {
     if (!confirm("Are you sure you want to delete this project? All units and data will be lost.")) return;
 
+    setDeletingProject(true);
     try {
       const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: `${project?.name} ${tCommon("deleted")}`,
+        });
         router.push(`/${locale}/projects`);
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to delete project",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error deleting project:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingProject(false);
     }
   };
 
@@ -330,8 +365,17 @@ export default function ProjectDetailPage() {
           })
         )
       );
+      toast({
+        title: tCommon("success"),
+        description: "Floor plan layout saved",
+      });
     } catch (error) {
       console.error("Error saving positions:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Failed to save layout",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -480,6 +524,7 @@ export default function ProjectDetailPage() {
 
     if (!confirm(`${tUnits("confirmDelete") || "Are you sure you want to delete"} ${unit.unitNumber}?`)) return;
 
+    setDeletingUnit(unitId);
     try {
       const res = await fetch(`/api/units/${unitId}`, { method: "DELETE" });
       if (res.ok) {
@@ -504,6 +549,8 @@ export default function ProjectDetailPage() {
         description: "Network error",
         variant: "destructive",
       });
+    } finally {
+      setDeletingUnit(null);
     }
   };
 
@@ -544,8 +591,8 @@ export default function ProjectDetailPage() {
             <p className="text-muted-foreground">{t(`types.${project.type}`)}</p>
           </div>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDeleteProject}>
-          <Trash2 className="h-4 w-4 mr-2" />
+        <Button variant="destructive" size="sm" onClick={handleDeleteProject} disabled={deletingProject}>
+          {deletingProject ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
           {t("deleteProject")}
         </Button>
       </div>
@@ -619,7 +666,7 @@ export default function ProjectDetailPage() {
                         Reset
                       </Button>
                       <Button size="sm" onClick={savePositions} disabled={saving}>
-                        <Save className="h-4 w-4 mr-2" />
+                        {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                         {saving ? "Saving..." : "Save"}
                       </Button>
                     </>
@@ -763,8 +810,17 @@ export default function ProjectDetailPage() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditUnit(selectedUnitData)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteUnit(selectedUnitData.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleDeleteUnit(selectedUnitData.id)}
+                        disabled={deletingUnit === selectedUnitData.id}
+                      >
+                        {deletingUnit === selectedUnitData.id
+                          ? <Loader2 className="h-4 w-4 animate-spin text-destructive" />
+                          : <Trash2 className="h-4 w-4 text-destructive" />
+                        }
                       </Button>
                     </div>
                   </CardHeader>
@@ -995,7 +1051,7 @@ export default function ProjectDetailPage() {
 
                 <div className="flex justify-end gap-2">
                   <Button type="submit" disabled={saving}>
-                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                     {saving ? tCommon("loading") : tCommon("save")}
                   </Button>
                 </div>

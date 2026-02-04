@@ -10,13 +10,13 @@ export function Toaster() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
             "flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all",
-            "bg-background animate-in slide-in-from-bottom-2",
+            "bg-background animate-in slide-in-from-top-2",
             toast.variant === "destructive"
               ? "border-red-200 bg-red-50 text-red-900"
               : "border-border"

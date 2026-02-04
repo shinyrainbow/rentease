@@ -51,19 +51,14 @@ export async function POST(request: NextRequest) {
 
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
-      include: {
-        tenants: { where: { status: "ACTIVE" } },
-      },
     });
 
     if (!unit) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
-    // Check if unit already has an active tenant
-    if (unit.tenants.length > 0) {
-      return NextResponse.json({ error: "Unit already has an active tenant" }, { status: 400 });
-    }
+    // Note: Allow multiple tenants per unit (for cases where current contract is ending
+    // and new tenant is already lined up)
 
     // Properly map and sanitize the data for Prisma
     const tenantData = {
@@ -93,11 +88,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update unit status to occupied
-    await prisma.unit.update({
-      where: { id: data.unitId },
-      data: { status: "OCCUPIED" },
-    });
+    // Update unit status to occupied (only if currently vacant or reserved)
+    if (unit.status === "VACANT" || unit.status === "RESERVED") {
+      await prisma.unit.update({
+        where: { id: data.unitId },
+        data: { status: "OCCUPIED" },
+      });
+    }
 
     return NextResponse.json(tenant);
   } catch (error) {
