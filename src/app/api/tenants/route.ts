@@ -13,6 +13,40 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get("projectId");
     const status = searchParams.get("status");
 
+    // Auto-expire tenants whose contract has ended
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const expiredTenants = await prisma.tenant.findMany({
+      where: {
+        status: "ACTIVE",
+        contractEnd: { lt: today },
+        unit: { project: { ownerId: session.user.id } },
+      },
+      select: { id: true, unitId: true },
+    });
+
+    if (expiredTenants.length > 0) {
+      // Update expired tenants to EXPIRED status
+      await prisma.tenant.updateMany({
+        where: { id: { in: expiredTenants.map((t) => t.id) } },
+        data: { status: "EXPIRED" },
+      });
+
+      // Update units to VACANT if they have no other ACTIVE tenant
+      for (const tenant of expiredTenants) {
+        const activeTenantsInUnit = await prisma.tenant.count({
+          where: { unitId: tenant.unitId, status: "ACTIVE" },
+        });
+        if (activeTenantsInUnit === 0) {
+          await prisma.unit.update({
+            where: { id: tenant.unitId },
+            data: { status: "VACANT" },
+          });
+        }
+      }
+    }
+
     const tenants = await prisma.tenant.findMany({
       where: {
         unit: {

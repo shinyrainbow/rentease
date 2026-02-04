@@ -184,7 +184,7 @@
       "COMPANY": "นิติบุคคล"
     },
     "statuses": {
-      "ACTIVE": "เช่าอยู่",
+      "ACTIVE": "อยู่ระหว่างสัญญา",
       "EXPIRED": "หมดสัญญา",
       "TERMINATED": "ยกเลิก"
     },
