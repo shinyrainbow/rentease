@@ -101,10 +101,22 @@ export default function MaintenancePage() {
       const url = editingRequest ? `/api/maintenance/${editingRequest.id}` : "/api/maintenance";
       const method = editingRequest ? "PUT" : "POST";
 
+      // When editing, don't send unitId
+      const payload = editingRequest
+        ? {
+            title: formData.title,
+            description: formData.description || null,
+            category: formData.category,
+            priority: formData.priority,
+            status: formData.status,
+            resolution: formData.resolution || null,
+          }
+        : formData;
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {

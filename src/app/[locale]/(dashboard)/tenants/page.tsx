@@ -115,8 +115,8 @@ export default function TenantsPage() {
     baseRent: "",
     commonFee: "",
     deposit: "",
-    discountPercent: "0",
-    discountAmount: "0",
+    discountPercent: "",
+    discountAmount: "",
     // Meter info
     electricMeterNo: "",
     waterMeterNo: "",
@@ -636,10 +636,10 @@ export default function TenantsPage() {
 
               {/* Contract Pricing Section */}
               <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">{t("contractPricing") || "ข้อมูลสัญญาเช่า"}</h4>
+                <h4 className="font-medium mb-3">{t("contractPricing")}</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>{t("baseRent") || "ค่าเช่า"} *</Label>
+                    <Label>{t("baseRent")} *</Label>
                     <Input
                       type="number"
                       value={formData.baseRent}
@@ -649,7 +649,7 @@ export default function TenantsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("commonFee") || "ค่าส่วนกลาง"}</Label>
+                    <Label>{t("commonFee")}</Label>
                     <Input
                       type="number"
                       value={formData.commonFee}
@@ -658,7 +658,7 @@ export default function TenantsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("deposit") || "เงินมัดจำ"}</Label>
+                    <Label>{t("deposit")}</Label>
                     <Input
                       type="number"
                       value={formData.deposit}
@@ -670,7 +670,7 @@ export default function TenantsPage() {
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
-                    <Label>{t("discountPercent") || "ส่วนลด (%)"}</Label>
+                    <Label>{t("discountPercent")}</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -680,7 +680,7 @@ export default function TenantsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("discountAmount") || "ส่วนลด (บาท)"}</Label>
+                    <Label>{t("discountAmount")}</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -693,19 +693,17 @@ export default function TenantsPage() {
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
-                    <Label>{t("electricMeterNo") || "เลขมิเตอร์ไฟ"}</Label>
+                    <Label>{t("electricMeterNo")}</Label>
                     <Input
                       value={formData.electricMeterNo}
                       onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })}
-                      placeholder="เลขมิเตอร์ไฟฟ้า"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("waterMeterNo") || "เลขมิเตอร์น้ำ"}</Label>
+                    <Label>{t("waterMeterNo")}</Label>
                     <Input
                       value={formData.waterMeterNo}
                       onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })}
-                      placeholder="เลขมิเตอร์น้ำ"
                     />
                   </div>
                 </div>
@@ -749,7 +747,7 @@ export default function TenantsPage() {
         <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={t("searchPlaceholder") || "Search name, phone, unit..."}
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -757,10 +755,10 @@ export default function TenantsPage() {
         </div>
         <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("allProjects") || "All Projects"} />
+            <SelectValue placeholder={t("allProjects")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
+            <SelectItem value="__all__">{t("allProjects")}</SelectItem>
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.name}>
                 {project.name}
