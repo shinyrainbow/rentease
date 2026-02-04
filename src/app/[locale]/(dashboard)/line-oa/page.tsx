@@ -507,16 +507,22 @@ export default function LineOAPage() {
                                   : "bg-muted"
                               }`}
                             >
-                              {msg.messageType === "image" && msg.mediaUrl ? (
+                              {msg.messageType === "image" ? (
                                 <div className="space-y-2">
-                                  <img
-                                    src={`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
-                                    alt="LINE Image"
-                                    className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
-                                    loading="lazy"
-                                    onClick={() => window.open(`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`, "_blank")}
-                                  />
-                                  {msg.direction === "INCOMING" && selectedContact.tenant && (
+                                  {msg.mediaUrl ? (
+                                    <img
+                                      src={`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
+                                      alt="LINE Image"
+                                      className="max-w-48 max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover bg-muted"
+                                      loading="lazy"
+                                      onClick={() => window.open(`/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`, "_blank")}
+                                    />
+                                  ) : (
+                                    <div className="w-48 h-24 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                      [รูปภาพ]
+                                    </div>
+                                  )}
+                                  {msg.direction === "INCOMING" && selectedContact.tenant && msg.mediaUrl && (
                                     <Button
                                       size="sm"
                                       variant="outline"
