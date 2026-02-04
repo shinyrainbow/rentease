@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
 import { jsPDF } from "jspdf";
+import { ImageResponse } from "@vercel/og";
+import React from "react";
 
 interface LineItem {
   description: string;
@@ -60,8 +62,9 @@ export async function POST(request: NextRequest) {
         const pdfUrl = await generateAndUploadInvoicePdf(invoice, lang);
         fileUrl = pdfUrl;
       } else {
-        // Use image URL
-        imageUrl = `${baseUrl}/api/invoices/${invoiceId}/image?lang=${lang}`;
+        // Generate image and upload to S3
+        const imgUrl = await generateAndUploadInvoiceImage(invoice, lang);
+        imageUrl = imgUrl;
       }
 
       // Also prepare a text summary
@@ -135,8 +138,9 @@ ${textLabels.footer}
         const pdfUrl = await generateAndUploadReceiptPdf(receipt, lang);
         fileUrl = pdfUrl;
       } else {
-        // Use image URL
-        imageUrl = `${baseUrl}/api/receipts/${receiptId}/image?lang=${lang}`;
+        // Generate image and upload to S3
+        const imgUrl = await generateAndUploadReceiptImage(receipt, lang);
+        imageUrl = imgUrl;
       }
 
       // Prepare text summary
@@ -641,5 +645,343 @@ async function generateAndUploadReceiptPdf(
   await uploadFile(s3Key, pdfBuffer, "application/pdf");
 
   // Generate pre-signed URL
+  return getPresignedUrl(s3Key, 3600);
+}
+
+// Helper function to generate and upload invoice image
+async function generateAndUploadInvoiceImage(
+  invoice: {
+    id: string;
+    invoiceNo: string;
+    type: string;
+    billingMonth: string;
+    dueDate: Date;
+    subtotal: number;
+    discountAmount: number;
+    withholdingTax: number;
+    totalAmount: number;
+    lineItems: unknown;
+    createdAt: Date;
+    project: {
+      name: string;
+      companyName: string | null;
+      companyAddress: string | null;
+      taxId: string | null;
+    };
+    unit: { unitNumber: string };
+    tenant: {
+      name: string;
+      nameTh: string | null;
+      phone: string | null;
+      taxId: string | null;
+    };
+  },
+  lang: string
+): Promise<string> {
+  const t = lang === "th" ? {
+    invoice: "ใบแจ้งหนี้",
+    invoiceNo: "เลขที่",
+    date: "วันที่",
+    billingMonth: "รอบบิล",
+    dueDate: "กำหนดชำระ",
+    billTo: "เรียกเก็บจาก",
+    unit: "ห้อง",
+    phone: "โทร",
+    taxId: "เลขผู้เสียภาษี",
+    subtotal: "รวม",
+    discount: "ส่วนลด",
+    withholdingTax: "หัก ณ ที่จ่าย",
+    total: "ยอดชำระ",
+    rent: "ค่าเช่า",
+    utility: "ค่าสาธารณูปโภค",
+    combined: "รวมค่าเช่าและสาธารณูปโภค",
+  } : {
+    invoice: "INVOICE",
+    invoiceNo: "Invoice No",
+    date: "Date",
+    billingMonth: "Billing Month",
+    dueDate: "Due Date",
+    billTo: "Bill To",
+    unit: "Unit",
+    phone: "Phone",
+    taxId: "Tax ID",
+    subtotal: "Subtotal",
+    discount: "Discount",
+    withholdingTax: "W/H Tax",
+    total: "Total",
+    rent: "Rent",
+    utility: "Utilities",
+    combined: "Rent & Utilities",
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "RENT": return t.rent;
+      case "UTILITY": return t.utility;
+      case "COMBINED": return t.combined;
+      default: return type;
+    }
+  };
+
+  const formatCurrency = (amount: number) => `฿${amount.toLocaleString()}`;
+  const formatDate = (date: Date) => new Date(date).toLocaleDateString(
+    lang === "th" ? "th-TH" : "en-US",
+    { year: "numeric", month: "short", day: "numeric" }
+  );
+
+  const lineItems: LineItem[] = (invoice.lineItems as LineItem[]) || [
+    { description: getTypeLabel(invoice.type), amount: invoice.subtotal },
+  ];
+  const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+
+  const imageResponse = new ImageResponse(
+    React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "white",
+          padding: "40px",
+          fontFamily: "sans-serif",
+        },
+      },
+      // Header
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold", color: "#1f2937" } }, invoice.project.companyName || invoice.project.name),
+        invoice.project.companyAddress && React.createElement("div", { style: { fontSize: "14px", color: "#6b7280", marginTop: "4px" } }, invoice.project.companyAddress),
+      ),
+      // Title
+      React.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "center", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#3b82f6", padding: "8px 24px", backgroundColor: "#eff6ff", borderRadius: "8px" } }, t.invoice)
+      ),
+      // Invoice Details
+      React.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "space-between", marginBottom: "20px", fontSize: "14px" } },
+        React.createElement(
+          "div",
+          { style: { display: "flex", flexDirection: "column" } },
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.invoiceNo}: `), React.createElement("span", { style: { fontWeight: "bold" } }, invoice.invoiceNo)),
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.billingMonth}: `), React.createElement("span", null, invoice.billingMonth)),
+        ),
+        React.createElement(
+          "div",
+          { style: { display: "flex", flexDirection: "column", alignItems: "flex-end" } },
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.date}: `), React.createElement("span", null, formatDate(invoice.createdAt))),
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.dueDate}: `), React.createElement("span", { style: { color: "#dc2626" } }, formatDate(invoice.dueDate))),
+        )
+      ),
+      // Bill To
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", backgroundColor: "#f9fafb", padding: "16px", borderRadius: "8px", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "12px", color: "#6b7280", marginBottom: "4px" } }, t.billTo),
+        React.createElement("div", { style: { fontSize: "16px", fontWeight: "bold" } }, tenantName),
+        React.createElement("div", { style: { fontSize: "14px", color: "#4b5563" } }, `${t.unit}: ${invoice.unit.unitNumber}`),
+        invoice.tenant.phone && React.createElement("div", { style: { fontSize: "14px", color: "#4b5563" } }, `${t.phone}: ${invoice.tenant.phone}`),
+      ),
+      // Line Items
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", marginBottom: "20px" } },
+        ...lineItems.map((item, i) =>
+          React.createElement(
+            "div",
+            { key: i, style: { display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #e5e7eb" } },
+            React.createElement("span", null, item.description),
+            React.createElement("span", { style: { fontWeight: "500" } }, formatCurrency(item.amount))
+          )
+        )
+      ),
+      // Totals
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", alignItems: "flex-end" } },
+        React.createElement(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", width: "200px", marginBottom: "8px" } },
+          React.createElement("span", { style: { color: "#6b7280" } }, t.subtotal),
+          React.createElement("span", null, formatCurrency(invoice.subtotal))
+        ),
+        invoice.discountAmount > 0 && React.createElement(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", width: "200px", marginBottom: "8px" } },
+          React.createElement("span", { style: { color: "#6b7280" } }, t.discount),
+          React.createElement("span", { style: { color: "#16a34a" } }, `-${formatCurrency(invoice.discountAmount)}`)
+        ),
+        invoice.withholdingTax > 0 && React.createElement(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", width: "200px", marginBottom: "8px" } },
+          React.createElement("span", { style: { color: "#6b7280" } }, t.withholdingTax),
+          React.createElement("span", null, `-${formatCurrency(invoice.withholdingTax)}`)
+        ),
+        React.createElement(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", width: "200px", padding: "12px", backgroundColor: "#3b82f6", borderRadius: "8px", marginTop: "8px" } },
+          React.createElement("span", { style: { color: "white", fontWeight: "bold" } }, t.total),
+          React.createElement("span", { style: { color: "white", fontWeight: "bold", fontSize: "18px" } }, formatCurrency(invoice.totalAmount))
+        )
+      )
+    ),
+    { width: 600, height: 800 }
+  );
+
+  // Convert Response to buffer
+  const arrayBuffer = await imageResponse.arrayBuffer();
+  const imageBuffer = Buffer.from(arrayBuffer);
+
+  // Upload to S3
+  const s3Key = `invoices/${invoice.id}/image-${lang}.png`;
+  await uploadFile(s3Key, imageBuffer, "image/png");
+
+  // Generate pre-signed URL (valid for 1 hour)
+  return getPresignedUrl(s3Key, 3600);
+}
+
+// Helper function to generate and upload receipt image
+async function generateAndUploadReceiptImage(
+  receipt: {
+    id: string;
+    receiptNo: string;
+    amount: number;
+    issuedAt: Date;
+    invoice: {
+      invoiceNo: string;
+      project: {
+        name: string;
+        companyName: string | null;
+        companyAddress: string | null;
+        taxId: string | null;
+      };
+      unit: { unitNumber: string };
+      tenant: {
+        name: string;
+        nameTh: string | null;
+        phone: string | null;
+        taxId: string | null;
+      };
+    };
+  },
+  lang: string
+): Promise<string> {
+  const t = lang === "th" ? {
+    receipt: "ใบเสร็จรับเงิน",
+    receiptNo: "เลขที่",
+    date: "วันที่",
+    invoiceRef: "อ้างอิง",
+    receivedFrom: "รับเงินจาก",
+    unit: "ห้อง",
+    phone: "โทร",
+    total: "รวมเงินที่รับ",
+    thankYou: "ขอบคุณที่ชำระเงิน",
+  } : {
+    receipt: "RECEIPT",
+    receiptNo: "Receipt No",
+    date: "Date",
+    invoiceRef: "Reference",
+    receivedFrom: "Received From",
+    unit: "Unit",
+    phone: "Phone",
+    total: "Total Received",
+    thankYou: "Thank you for your payment",
+  };
+
+  const formatCurrency = (amount: number) => `฿${amount.toLocaleString()}`;
+  const formatDate = (date: Date) => new Date(date).toLocaleDateString(
+    lang === "th" ? "th-TH" : "en-US",
+    { year: "numeric", month: "short", day: "numeric" }
+  );
+
+  const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
+
+  const imageResponse = new ImageResponse(
+    React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "white",
+          padding: "40px",
+          fontFamily: "sans-serif",
+        },
+      },
+      // Header
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold", color: "#1f2937" } }, receipt.invoice.project.companyName || receipt.invoice.project.name),
+        receipt.invoice.project.companyAddress && React.createElement("div", { style: { fontSize: "14px", color: "#6b7280", marginTop: "4px" } }, receipt.invoice.project.companyAddress),
+      ),
+      // Title (green for receipt)
+      React.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "center", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#16a34a", padding: "8px 24px", backgroundColor: "#f0fdf4", borderRadius: "8px" } }, t.receipt)
+      ),
+      // Receipt Details
+      React.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "space-between", marginBottom: "20px", fontSize: "14px" } },
+        React.createElement(
+          "div",
+          { style: { display: "flex", flexDirection: "column" } },
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.receiptNo}: `), React.createElement("span", { style: { fontWeight: "bold" } }, receipt.receiptNo)),
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.invoiceRef}: `), React.createElement("span", null, receipt.invoice.invoiceNo)),
+        ),
+        React.createElement(
+          "div",
+          { style: { display: "flex", flexDirection: "column", alignItems: "flex-end" } },
+          React.createElement("div", { style: { display: "flex" } }, React.createElement("span", { style: { color: "#6b7280" } }, `${t.date}: `), React.createElement("span", null, formatDate(receipt.issuedAt))),
+        )
+      ),
+      // Received From
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", backgroundColor: "#f0fdf4", padding: "16px", borderRadius: "8px", marginBottom: "20px" } },
+        React.createElement("div", { style: { fontSize: "12px", color: "#6b7280", marginBottom: "4px" } }, t.receivedFrom),
+        React.createElement("div", { style: { fontSize: "16px", fontWeight: "bold" } }, tenantName),
+        React.createElement("div", { style: { fontSize: "14px", color: "#4b5563" } }, `${t.unit}: ${receipt.invoice.unit.unitNumber}`),
+        receipt.invoice.tenant.phone && React.createElement("div", { style: { fontSize: "14px", color: "#4b5563" } }, `${t.phone}: ${receipt.invoice.tenant.phone}`),
+      ),
+      // Amount Box
+      React.createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", alignItems: "center", marginTop: "20px" } },
+        React.createElement(
+          "div",
+          { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 48px", backgroundColor: "#16a34a", borderRadius: "12px" } },
+          React.createElement("span", { style: { color: "white", fontSize: "14px", marginBottom: "8px" } }, t.total),
+          React.createElement("span", { style: { color: "white", fontWeight: "bold", fontSize: "32px" } }, formatCurrency(receipt.amount))
+        )
+      ),
+      // Thank You
+      React.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "center", marginTop: "auto" } },
+        React.createElement("span", { style: { color: "#6b7280", fontSize: "14px" } }, t.thankYou)
+      )
+    ),
+    { width: 600, height: 600 }
+  );
+
+  // Convert Response to buffer
+  const arrayBuffer = await imageResponse.arrayBuffer();
+  const imageBuffer = Buffer.from(arrayBuffer);
+
+  // Upload to S3
+  const s3Key = `receipts/${receipt.id}/image-${lang}.png`;
+  await uploadFile(s3Key, imageBuffer, "image/png");
+
+  // Generate pre-signed URL (valid for 1 hour)
   return getPresignedUrl(s3Key, 3600);
 }

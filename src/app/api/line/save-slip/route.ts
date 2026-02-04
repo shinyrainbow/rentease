@@ -54,8 +54,24 @@ export async function POST(request: NextRequest) {
     );
 
     if (!lineResponse.ok) {
-      console.error("LINE Content API error:", lineResponse.status);
-      return NextResponse.json({ error: "Failed to fetch image from LINE" }, { status: 500 });
+      const errorText = await lineResponse.text().catch(() => "");
+      console.error("LINE Content API error:", lineResponse.status, errorText);
+      if (lineResponse.status === 404) {
+        return NextResponse.json(
+          { error: "Message content expired or not found. LINE messages can only be retrieved for a limited time." },
+          { status: 404 }
+        );
+      }
+      if (lineResponse.status === 401) {
+        return NextResponse.json(
+          { error: "LINE access token invalid or expired. Please reconnect LINE OA." },
+          { status: 401 }
+        );
+      }
+      return NextResponse.json(
+        { error: `Failed to fetch image from LINE: ${lineResponse.status}` },
+        { status: 500 }
+      );
     }
 
     const contentType = lineResponse.headers.get("content-type") || "image/jpeg";
@@ -67,41 +83,67 @@ export async function POST(request: NextRequest) {
     const s3Key = `slips/${invoiceId}/${timestamp}.${ext}`;
 
     // Upload to S3
-    await uploadFile(s3Key, imageBuffer, contentType);
+    try {
+      await uploadFile(s3Key, imageBuffer, contentType);
+    } catch (s3Error) {
+      console.error("S3 upload error:", s3Error);
+      return NextResponse.json(
+        { error: "Failed to upload image to storage" },
+        { status: 500 }
+      );
+    }
 
     // Find or create a payment record for this invoice
-    let payment = await prisma.payment.findFirst({
-      where: {
-        invoiceId: invoiceId,
-        status: "PENDING",
-      },
-    });
-
-    if (!payment) {
-      // Create a new pending payment
-      payment = await prisma.payment.create({
-        data: {
+    let payment;
+    try {
+      payment = await prisma.payment.findFirst({
+        where: {
           invoiceId: invoiceId,
-          tenantId: invoice.tenantId,
-          amount: invoice.totalAmount - invoice.paidAmount,
-          method: "TRANSFER",
           status: "PENDING",
-          paidAt: new Date(),
         },
       });
+
+      if (!payment) {
+        // Create a new pending payment
+        payment = await prisma.payment.create({
+          data: {
+            invoiceId: invoiceId,
+            tenantId: invoice.tenantId,
+            amount: invoice.totalAmount - invoice.paidAmount,
+            method: "TRANSFER",
+            status: "PENDING",
+            paidAt: new Date(),
+          },
+        });
+      }
+    } catch (paymentError) {
+      console.error("Payment creation error:", paymentError);
+      return NextResponse.json(
+        { error: "Failed to create payment record" },
+        { status: 500 }
+      );
     }
 
     // Create PaymentSlip record
-    const slip = await prisma.paymentSlip.create({
-      data: {
-        paymentId: payment.id,
-        s3Key: s3Key,
-        fileName: `slip-${timestamp}.${ext}`,
-        contentType: contentType,
-        uploadedBy: session.user.id,
-        source: "LINE_CHAT",
-      },
-    });
+    let slip;
+    try {
+      slip = await prisma.paymentSlip.create({
+        data: {
+          paymentId: payment.id,
+          s3Key: s3Key,
+          fileName: `slip-${timestamp}.${ext}`,
+          contentType: contentType,
+          uploadedBy: session.user.id,
+          source: "LINE_CHAT",
+        },
+      });
+    } catch (slipError) {
+      console.error("PaymentSlip creation error:", slipError);
+      return NextResponse.json(
+        { error: "Failed to create slip record" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
