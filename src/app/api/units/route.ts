@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Sanitize and map data for Prisma
+    // Sanitize and map data for Prisma (only physical unit properties)
     const unitData = {
       projectId: data.projectId,
       unitNumber: data.unitNumber,
@@ -67,17 +67,10 @@ export async function POST(request: NextRequest) {
       size: data.size ? parseFloat(data.size) : null,
       type: data.type || "WAREHOUSE",
       status: data.status || "VACANT",
-      baseRent: typeof data.baseRent === "number" ? data.baseRent : parseFloat(data.baseRent) || 0,
-      commonFee: data.commonFee ? parseFloat(data.commonFee) : null,
-      deposit: data.deposit ? parseFloat(data.deposit) : null,
-      discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : 0,
-      discountAmount: data.discountAmount ? parseFloat(data.discountAmount) : 0,
       positionX: data.positionX ? parseFloat(data.positionX) : null,
       positionY: data.positionY ? parseFloat(data.positionY) : null,
       width: data.width ? parseFloat(data.width) : null,
       height: data.height ? parseFloat(data.height) : null,
-      electricMeterNo: data.electricMeterNo || null,
-      waterMeterNo: data.waterMeterNo || null,
     };
 
     const unit = await prisma.unit.create({

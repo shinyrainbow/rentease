@@ -88,6 +88,11 @@ model Project {
   companyNameTh   String?
   companyAddress  String?
 
+  // Bank account settings
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+
   // LINE OA Integration
   lineChannelId     String?
   lineChannelSecret String?
@@ -124,22 +129,11 @@ model Unit {
   type        UnitType
   status      UnitStatus @default(VACANT)
 
-  // Pricing
-  baseRent        Float
-  commonFee       Float?    @default(0)
-  deposit         Float?
-  discountPercent Float?    @default(0)
-  discountAmount  Float?    @default(0)
-
   // Position on floor plan
   positionX   Float?
   positionY   Float?
   width       Float?
   height      Float?
-
-  // Meter info
-  electricMeterNo String?
-  waterMeterNo    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -182,6 +176,17 @@ model Tenant {
   tenantType    TenantType    @default(INDIVIDUAL)
   status        TenantStatus  @default(ACTIVE)
   withholdingTax Float        @default(0)
+
+  // Contract pricing (per tenant agreement)
+  baseRent        Float         @default(0)
+  commonFee       Float?        @default(0)
+  deposit         Float?
+  discountPercent Float?        @default(0)
+  discountAmount  Float?        @default(0)
+
+  // Meter info (assigned per contract)
+  electricMeterNo String?
+  waterMeterNo    String?
 
   lineUserId    String?
 

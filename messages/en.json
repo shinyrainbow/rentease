@@ -98,6 +98,13 @@
     "taxId": "Tax ID",
     "companyName": "Company Name",
     "companyNameTh": "Company Name (Thai)",
+    "bankAccount": "Bank Account",
+    "bankName": "Bank",
+    "selectBank": "Select Bank",
+    "bankAccountName": "Account Name",
+    "bankAccountNamePlaceholder": "Bank account name",
+    "bankAccountNumber": "Account Number",
+    "bankAccountNumberPlaceholder": "Bank account number",
     "types": {
       "WAREHOUSE": "Warehouse",
       "SHOP": "Shop",

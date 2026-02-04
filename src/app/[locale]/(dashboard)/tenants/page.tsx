@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -58,6 +58,15 @@ interface Tenant {
   tenantType: string;
   status: "ACTIVE" | "EXPIRED" | "TERMINATED";
   withholdingTax: number;
+  // Contract pricing
+  baseRent: number;
+  commonFee: number | null;
+  deposit: number | null;
+  discountPercent: number | null;
+  discountAmount: number | null;
+  // Meter info
+  electricMeterNo: string | null;
+  waterMeterNo: string | null;
   contractStart: string | null;
   contractEnd: string | null;
   unit: {
@@ -86,6 +95,8 @@ export default function TenantsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortColumn, setSortColumn] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dateError, setDateError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -100,6 +111,15 @@ export default function TenantsPage() {
     taxId: "",
     tenantType: "INDIVIDUAL",
     withholdingTax: "0",
+    // Contract pricing
+    baseRent: "",
+    commonFee: "",
+    deposit: "",
+    discountPercent: "0",
+    discountAmount: "0",
+    // Meter info
+    electricMeterNo: "",
+    waterMeterNo: "",
     contractStart: "",
     contractEnd: "",
   });
@@ -205,6 +225,11 @@ export default function TenantsPage() {
           name,
           nameTh,
           withholdingTax: parseFloat(formData.withholdingTax),
+          baseRent: formData.baseRent ? parseFloat(formData.baseRent) : 0,
+          commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
+          deposit: formData.deposit ? parseFloat(formData.deposit) : null,
+          discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : 0,
+          discountAmount: formData.discountAmount ? parseFloat(formData.discountAmount) : 0,
           contractStart: formData.contractStart || null,
           contractEnd: formData.contractEnd || null,
         }),
@@ -255,6 +280,13 @@ export default function TenantsPage() {
       taxId: "",
       tenantType: tenant.tenantType,
       withholdingTax: tenant.withholdingTax.toString(),
+      baseRent: tenant.baseRent?.toString() || "",
+      commonFee: tenant.commonFee?.toString() || "",
+      deposit: tenant.deposit?.toString() || "",
+      discountPercent: tenant.discountPercent?.toString() || "0",
+      discountAmount: tenant.discountAmount?.toString() || "0",
+      electricMeterNo: tenant.electricMeterNo || "",
+      waterMeterNo: tenant.waterMeterNo || "",
       contractStart: tenant.contractStart ? tenant.contractStart.split("T")[0] : "",
       contractEnd: tenant.contractEnd ? tenant.contractEnd.split("T")[0] : "",
     });
@@ -363,10 +395,62 @@ export default function TenantsPage() {
       taxId: "",
       tenantType: "INDIVIDUAL",
       withholdingTax: "0",
+      baseRent: "",
+      commonFee: "",
+      deposit: "",
+      discountPercent: "0",
+      discountAmount: "0",
+      electricMeterNo: "",
+      waterMeterNo: "",
       contractStart: "",
       contractEnd: "",
     });
   };
+
+  // Sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 inline opacity-50" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4 inline" />
+    );
+  };
+
+  const sortedTenants = [...filteredTenants].sort((a, b) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    switch (sortColumn) {
+      case "name":
+        return direction * a.name.localeCompare(b.name);
+      case "unit":
+        return direction * a.unit.unitNumber.localeCompare(b.unit.unitNumber);
+      case "project":
+        return direction * a.unit.project.name.localeCompare(b.unit.project.name);
+      case "tenantType":
+        return direction * a.tenantType.localeCompare(b.tenantType);
+      case "status":
+        return direction * a.status.localeCompare(b.status);
+      case "phone":
+        return direction * (a.phone || "").localeCompare(b.phone || "");
+      case "contractEnd":
+        const aDate = a.contractEnd ? new Date(a.contractEnd).getTime() : 0;
+        const bDate = b.contractEnd ? new Date(b.contractEnd).getTime() : 0;
+        return direction * (aDate - bDate);
+      default:
+        return 0;
+    }
+  });
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
@@ -550,6 +634,83 @@ export default function TenantsPage() {
                 </div>
               </div>
 
+              {/* Contract Pricing Section */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">{t("contractPricing") || "ข้อมูลสัญญาเช่า"}</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("baseRent") || "ค่าเช่า"} *</Label>
+                    <Input
+                      type="number"
+                      value={formData.baseRent}
+                      onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })}
+                      placeholder="0"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("commonFee") || "ค่าส่วนกลาง"}</Label>
+                    <Input
+                      type="number"
+                      value={formData.commonFee}
+                      onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("deposit") || "เงินมัดจำ"}</Label>
+                    <Input
+                      type="number"
+                      value={formData.deposit}
+                      onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>{t("discountPercent") || "ส่วนลด (%)"}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.discountPercent}
+                      onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("discountAmount") || "ส่วนลด (บาท)"}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.discountAmount}
+                      onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>{t("electricMeterNo") || "เลขมิเตอร์ไฟ"}</Label>
+                    <Input
+                      value={formData.electricMeterNo}
+                      onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })}
+                      placeholder="เลขมิเตอร์ไฟฟ้า"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("waterMeterNo") || "เลขมิเตอร์น้ำ"}</Label>
+                    <Input
+                      value={formData.waterMeterNo}
+                      onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })}
+                      placeholder="เลขมิเตอร์น้ำ"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("contractStart")}</Label>
@@ -625,25 +786,39 @@ export default function TenantsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("name")}</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>{t("tenantType")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
-                <TableHead>{t("phone")}</TableHead>
-                <TableHead>{t("contractEnd")}</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("name")}>
+                  {t("name")} <SortIcon column="name" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                  Unit <SortIcon column="unit" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                  Project <SortIcon column="project" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenantType")}>
+                  {t("tenantType")} <SortIcon column="tenantType" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
+                  {tCommon("status")} <SortIcon column="status" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("phone")}>
+                  {t("phone")} <SortIcon column="phone" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("contractEnd")}>
+                  {t("contractEnd")} <SortIcon column="contractEnd" />
+                </TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTenants.length === 0 ? (
+              {sortedTenants.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTenants.map((tenant) => (
+                sortedTenants.map((tenant) => (
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
                     <TableCell>{tenant.unit.unitNumber}</TableCell>

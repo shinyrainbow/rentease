@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Send, FileDown, Eye, Loader2, Check, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Send, FileDown, Eye, Loader2, Check, Search, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
 
@@ -70,9 +70,17 @@ interface Invoice {
   totalAmount: number;
   paidAmount: number;
   sentViaLine: boolean;
-  project: { name: string };
+  project: {
+    name: string;
+    companyName: string | null;
+    companyNameTh: string | null;
+    taxId: string | null;
+  };
   unit: { unitNumber: string };
-  tenant: { name: string };
+  tenant: {
+    name: string;
+    taxId: string | null;
+  };
 }
 
 interface InvoiceDetail extends Invoice {
@@ -115,6 +123,8 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
@@ -404,6 +414,24 @@ export default function InvoicesPage() {
     }
   };
 
+  // Sort handler
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sort icon component
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+    return sortDirection === "asc"
+      ? <ArrowUp className="ml-1 h-3 w-3" />
+      : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
   // Filter invoices by project and search query
   const filteredInvoices = invoices.filter((invoice) => {
     // Project filter
@@ -420,6 +448,63 @@ export default function InvoicesPage() {
       );
     }
     return true;
+  });
+
+  // Sort filtered invoices
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    let aVal: string | number = "";
+    let bVal: string | number = "";
+
+    switch (sortColumn) {
+      case "invoiceNo":
+        aVal = a.invoiceNo;
+        bVal = b.invoiceNo;
+        break;
+      case "project":
+        aVal = a.project.companyName || a.project.name;
+        bVal = b.project.companyName || b.project.name;
+        break;
+      case "unit":
+        aVal = a.unit.unitNumber;
+        bVal = b.unit.unitNumber;
+        break;
+      case "tenant":
+        aVal = a.tenant.name;
+        bVal = b.tenant.name;
+        break;
+      case "type":
+        aVal = a.type;
+        bVal = b.type;
+        break;
+      case "billingMonth":
+        aVal = a.billingMonth;
+        bVal = b.billingMonth;
+        break;
+      case "totalAmount":
+        aVal = a.totalAmount;
+        bVal = b.totalAmount;
+        break;
+      case "paidAmount":
+        aVal = a.paidAmount;
+        bVal = b.paidAmount;
+        break;
+      case "status":
+        aVal = a.status;
+        bVal = b.status;
+        break;
+      default:
+        return 0;
+    }
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    return sortDirection === "asc"
+      ? (aVal as number) - (bVal as number)
+      : (bVal as number) - (aVal as number);
   });
 
   const handleViewInvoice = async (invoice: Invoice) => {
@@ -780,32 +865,64 @@ export default function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("invoiceNo")}</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>{t("type")}</TableHead>
-                <TableHead>{t("billingMonth")}</TableHead>
-                <TableHead>{t("totalAmount")}</TableHead>
-                <TableHead>{t("paidAmount")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
+                  <div className="flex items-center">{t("invoiceNo")}<SortIcon column="invoiceNo" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                  <div className="flex items-center">{t("projectCompany") || "Project/Company"}<SortIcon column="project" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                  <div className="flex items-center">Unit<SortIcon column="unit" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
+                  <div className="flex items-center">{t("tenantCompany") || "Tenant/Company"}<SortIcon column="tenant" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
+                  <div className="flex items-center">{t("type")}<SortIcon column="type" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("billingMonth")}>
+                  <div className="flex items-center">{t("billingMonth")}<SortIcon column="billingMonth" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("totalAmount")}>
+                  <div className="flex items-center">{t("totalAmount")}<SortIcon column="totalAmount" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("paidAmount")}>
+                  <div className="flex items-center">{t("paidAmount")}<SortIcon column="paidAmount" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
+                  <div className="flex items-center">{tCommon("status")}<SortIcon column="status" /></div>
+                </TableHead>
                 <TableHead className="sticky right-0 bg-background">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredInvoices.length === 0 ? (
+              {sortedInvoices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredInvoices.map((invoice) => (
+                sortedInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
-                    <TableCell>{invoice.project.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{invoice.project.companyName || invoice.project.name}</div>
+                        {invoice.project.taxId && (
+                          <div className="text-xs text-muted-foreground">{t("taxId") || "Tax ID"}: {invoice.project.taxId}</div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{invoice.unit.unitNumber}</TableCell>
-                    <TableCell>{invoice.tenant.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{invoice.tenant.name}</div>
+                        {invoice.tenant.taxId && (
+                          <div className="text-xs text-muted-foreground">{t("taxId") || "Tax ID"}: {invoice.tenant.taxId}</div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{t(`types.${invoice.type}`)}</TableCell>
                     <TableCell>{invoice.billingMonth}</TableCell>
                     <TableCell>฿{invoice.totalAmount.toLocaleString()}</TableCell>

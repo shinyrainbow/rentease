@@ -39,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -77,6 +77,8 @@ export default function UnitsPage() {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortColumn, setSortColumn] = useState<string>("unitNumber");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const [formData, setFormData] = useState({
     projectId: "",
@@ -264,6 +266,51 @@ export default function UnitsPage() {
     return true;
   });
 
+  // Sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 inline opacity-50" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4 inline" />
+    );
+  };
+
+  const sortedUnits = [...filteredUnits].sort((a, b) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    switch (sortColumn) {
+      case "unitNumber":
+        return direction * a.unitNumber.localeCompare(b.unitNumber);
+      case "project":
+        return direction * a.project.name.localeCompare(b.project.name);
+      case "type":
+        return direction * a.type.localeCompare(b.type);
+      case "floor":
+        return direction * (a.floor - b.floor);
+      case "size":
+        return direction * ((a.size || 0) - (b.size || 0));
+      case "baseRent":
+        return direction * (a.baseRent - b.baseRent);
+      case "status":
+        return direction * a.status.localeCompare(b.status);
+      case "tenant":
+        return direction * (a.tenant?.name || "").localeCompare(b.tenant?.name || "");
+      default:
+        return 0;
+    }
+  });
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
   }
@@ -438,26 +485,42 @@ export default function UnitsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("unitNumber")}</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>{t("type")}</TableHead>
-                <TableHead>{t("floor")}</TableHead>
-                <TableHead>{t("size")}</TableHead>
-                <TableHead>{t("baseRent")}</TableHead>
-                <TableHead>{t("status")}</TableHead>
-                <TableHead>Tenant</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unitNumber")}>
+                  {t("unitNumber")} <SortIcon column="unitNumber" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                  Project <SortIcon column="project" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
+                  {t("type")} <SortIcon column="type" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("floor")}>
+                  {t("floor")} <SortIcon column="floor" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("size")}>
+                  {t("size")} <SortIcon column="size" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("baseRent")}>
+                  {t("baseRent")} <SortIcon column="baseRent" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
+                  {t("status")} <SortIcon column="status" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
+                  Tenant <SortIcon column="tenant" />
+                </TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUnits.length === 0 ? (
+              {sortedUnits.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUnits.map((unit) => (
+                sortedUnits.map((unit) => (
                   <TableRow key={unit.id}>
                     <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                     <TableCell>{unit.project.name}</TableCell>

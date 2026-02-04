@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true, companyName: true, companyNameTh: true, taxId: true } },
         unit: { select: { unitNumber: true } },
-        tenant: { select: { name: true, nameTh: true, companyName: true, taxId: true } },
+        tenant: { select: { name: true, nameTh: true, taxId: true } },
         receipt: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -70,12 +70,12 @@ export async function POST(request: NextRequest) {
     let subtotal = 0;
 
     if (data.type === "RENT" || data.type === "COMBINED") {
-      const rentAmount = unit.baseRent - (unit.discountAmount || 0) - (unit.baseRent * (unit.discountPercent || 0) / 100);
+      const rentAmount = activeTenant.baseRent - (activeTenant.discountAmount || 0) - (activeTenant.baseRent * (activeTenant.discountPercent || 0) / 100);
       lineItems.push({ description: "ค่าเช่า / Rent", amount: rentAmount });
-      if (unit.commonFee) {
-        lineItems.push({ description: "ค่าส่วนกลาง / Common Fee", amount: unit.commonFee });
+      if (activeTenant.commonFee) {
+        lineItems.push({ description: "ค่าส่วนกลาง / Common Fee", amount: activeTenant.commonFee });
       }
-      subtotal += rentAmount + (unit.commonFee || 0);
+      subtotal += rentAmount + (activeTenant.commonFee || 0);
     }
 
     if (data.type === "UTILITY" || data.type === "COMBINED") {

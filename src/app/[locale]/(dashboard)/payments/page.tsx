@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, X, Image, Plus, Trash2, Loader2, Search, Pencil } from "lucide-react";
+import { Check, X, Image, Plus, Trash2, Loader2, Search, Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,6 +94,8 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isSlipsOpen, setIsSlipsOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [uploadingSlip, setUploadingSlip] = useState(false);
@@ -508,6 +510,49 @@ export default function PaymentsPage() {
     }
   };
 
+  // Sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 inline opacity-50" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4 inline" />
+    );
+  };
+
+  const sortedPayments = [...filteredPayments].sort((a, b) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    switch (sortColumn) {
+      case "invoiceNo":
+        return direction * a.invoice.invoiceNo.localeCompare(b.invoice.invoiceNo);
+      case "project":
+        return direction * a.invoice.project.name.localeCompare(b.invoice.project.name);
+      case "unit":
+        return direction * a.invoice.unit.unitNumber.localeCompare(b.invoice.unit.unitNumber);
+      case "tenant":
+        return direction * a.tenant.name.localeCompare(b.tenant.name);
+      case "amount":
+        return direction * (a.amount - b.amount);
+      case "method":
+        return direction * a.method.localeCompare(b.method);
+      case "status":
+        return direction * a.status.localeCompare(b.status);
+      default:
+        return 0;
+    }
+  });
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
   }
@@ -567,26 +612,40 @@ export default function PaymentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>{t("amount")}</TableHead>
-                <TableHead>{t("method")}</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
+                  Invoice <SortIcon column="invoiceNo" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                  Project <SortIcon column="project" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                  Unit <SortIcon column="unit" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
+                  Tenant <SortIcon column="tenant" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
+                  {t("amount")} <SortIcon column="amount" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("method")}>
+                  {t("method")} <SortIcon column="method" />
+                </TableHead>
                 <TableHead>{t("slipUrl")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
+                  {tCommon("status")} <SortIcon column="status" />
+                </TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPayments.length === 0 ? (
+              {sortedPayments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPayments.map((payment) => (
+                sortedPayments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.invoice.invoiceNo}</TableCell>
                     <TableCell>{payment.invoice.project.name}</TableCell>

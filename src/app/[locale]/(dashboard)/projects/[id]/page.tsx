@@ -63,7 +63,29 @@ interface Project {
   companyName: string | null;
   companyNameTh: string | null;
   companyAddress: string | null;
+  bankName: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
 }
+
+// Thai banks list
+const THAI_BANKS = [
+  { value: "BBL", label: "ธนาคารกรุงเทพ (Bangkok Bank)" },
+  { value: "KBANK", label: "ธนาคารกสิกรไทย (Kasikorn Bank)" },
+  { value: "KTB", label: "ธนาคารกรุงไทย (Krungthai Bank)" },
+  { value: "SCB", label: "ธนาคารไทยพาณิชย์ (SCB)" },
+  { value: "BAY", label: "ธนาคารกรุงศรีอยุธยา (Bank of Ayudhya)" },
+  { value: "TMB", label: "ธนาคารทหารไทยธนชาต (TTB)" },
+  { value: "CIMB", label: "ธนาคารซีไอเอ็มบีไทย (CIMB Thai)" },
+  { value: "UOB", label: "ธนาคารยูโอบี (UOB)" },
+  { value: "TISCO", label: "ธนาคารทิสโก้ (TISCO Bank)" },
+  { value: "KKP", label: "ธนาคารเกียรตินาคินภัทร (KKP)" },
+  { value: "LH", label: "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH Bank)" },
+  { value: "ICBC", label: "ธนาคารไอซีบีซี (ICBC)" },
+  { value: "GSB", label: "ธนาคารออมสิน (GSB)" },
+  { value: "BAAC", label: "ธ.ก.ส. (BAAC)" },
+  { value: "GHB", label: "ธนาคารอาคารสงเคราะห์ (GHB)" },
+];
 
 interface Unit {
   id: string;
@@ -72,13 +94,6 @@ interface Unit {
   size: number | null;
   type: string;
   status: string;
-  baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
-  discountPercent: number | null;
-  discountAmount: number | null;
-  electricMeterNo: string | null;
-  waterMeterNo: string | null;
   positionX: number | null;
   positionY: number | null;
   width: number | null;
@@ -123,6 +138,9 @@ export default function ProjectDetailPage() {
     companyName: "",
     companyNameTh: "",
     companyAddress: "",
+    bankName: "",
+    bankAccountName: "",
+    bankAccountNumber: "",
   });
 
   // Drag state
@@ -151,13 +169,6 @@ export default function ProjectDetailPage() {
     floor: 1,
     size: "",
     type: "WAREHOUSE",
-    baseRent: "",
-    commonFee: "",
-    deposit: "",
-    discountPercent: "0",
-    discountAmount: "0",
-    electricMeterNo: "",
-    waterMeterNo: "",
   });
 
   const fetchData = useCallback(async () => {
@@ -188,6 +199,9 @@ export default function ProjectDetailPage() {
         companyName: projectData.companyName || "",
         companyNameTh: projectData.companyNameTh || "",
         companyAddress: projectData.companyAddress || "",
+        bankName: projectData.bankName || "",
+        bankAccountName: projectData.bankAccountName || "",
+        bankAccountNumber: projectData.bankAccountNumber || "",
       });
 
       // Initialize positions for units without positions
@@ -419,13 +433,6 @@ export default function ProjectDetailPage() {
       floor: 1,
       size: "",
       type: "WAREHOUSE",
-      baseRent: "",
-      commonFee: "",
-      deposit: "",
-      discountPercent: "0",
-      discountAmount: "0",
-      electricMeterNo: "",
-      waterMeterNo: "",
     });
   };
 
@@ -442,13 +449,6 @@ export default function ProjectDetailPage() {
       floor: unit.floor,
       size: unit.size?.toString() || "",
       type: unit.type,
-      baseRent: unit.baseRent.toString(),
-      commonFee: unit.commonFee?.toString() || "",
-      deposit: unit.deposit?.toString() || "",
-      discountPercent: unit.discountPercent?.toString() || "0",
-      discountAmount: unit.discountAmount?.toString() || "0",
-      electricMeterNo: unit.electricMeterNo || "",
-      waterMeterNo: unit.waterMeterNo || "",
     });
     setIsUnitDialogOpen(true);
   };
@@ -475,13 +475,6 @@ export default function ProjectDetailPage() {
         floor: parseInt(unitFormData.floor.toString()),
         size: unitFormData.size ? parseFloat(unitFormData.size) : null,
         type: unitFormData.type,
-        baseRent: parseFloat(unitFormData.baseRent),
-        commonFee: unitFormData.commonFee ? parseFloat(unitFormData.commonFee) : null,
-        deposit: unitFormData.deposit ? parseFloat(unitFormData.deposit) : null,
-        discountPercent: parseFloat(unitFormData.discountPercent),
-        discountAmount: parseFloat(unitFormData.discountAmount),
-        electricMeterNo: unitFormData.electricMeterNo || null,
-        waterMeterNo: unitFormData.waterMeterNo || null,
       };
 
       // Only include projectId and position for new units
@@ -857,16 +850,6 @@ export default function ProjectDetailPage() {
                         <span>{selectedUnitData.size} sq.m.</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{tUnits("baseRent")}:</span>
-                      <span className="font-medium">฿{selectedUnitData.baseRent.toLocaleString()}</span>
-                    </div>
-                    {selectedUnitData.commonFee && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{tUnits("commonFee")}:</span>
-                        <span>฿{selectedUnitData.commonFee.toLocaleString()}</span>
-                      </div>
-                    )}
                     {selectedUnitData.tenant && (
                       <div className="pt-2 border-t">
                         <span className="text-sm text-muted-foreground">Tenant:</span>
@@ -1061,6 +1044,50 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
+                <div className="border-t pt-6">
+                  <h3 className="font-medium mb-4">{t("bankAccount") || "บัญชีธนาคาร"}</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bankName">{t("bankName") || "ธนาคาร"}</Label>
+                      <Select
+                        value={formData.bankName || undefined}
+                        onValueChange={(value) => setFormData({ ...formData, bankName: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectBank") || "เลือกธนาคาร"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {THAI_BANKS.map((bank) => (
+                            <SelectItem key={bank.value} value={bank.value}>
+                              {bank.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="bankAccountName">{t("bankAccountName") || "ชื่อบัญชี"}</Label>
+                        <Input
+                          id="bankAccountName"
+                          value={formData.bankAccountName}
+                          onChange={(e) => setFormData({ ...formData, bankAccountName: e.target.value })}
+                          placeholder={t("bankAccountNamePlaceholder") || "ชื่อบัญชีธนาคาร"}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bankAccountNumber">{t("bankAccountNumber") || "เลขที่บัญชี"}</Label>
+                        <Input
+                          id="bankAccountNumber"
+                          value={formData.bankAccountNumber}
+                          onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })}
+                          placeholder={t("bankAccountNumberPlaceholder") || "เลขที่บัญชีธนาคาร"}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button type="submit" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -1123,79 +1150,6 @@ export default function ProjectDetailPage() {
                   <SelectItem value="STORAGE">{tUnits("types.STORAGE") || "คลังสินค้า"}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>{tUnits("baseRent") || "ค่าเช่า"} *</Label>
-                <Input
-                  type="number"
-                  value={unitFormData.baseRent}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, baseRent: e.target.value })}
-                  placeholder="0"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{tUnits("commonFee") || "ค่าส่วนกลาง"}</Label>
-                <Input
-                  type="number"
-                  value={unitFormData.commonFee}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, commonFee: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{tUnits("deposit") || "เงินมัดจำ"}</Label>
-                <Input
-                  type="number"
-                  value={unitFormData.deposit}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, deposit: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{tUnits("discountPercent") || "ส่วนลด (%)"}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={unitFormData.discountPercent}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, discountPercent: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{tUnits("discountAmount") || "ส่วนลด (บาท)"}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={unitFormData.discountAmount}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, discountAmount: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{tUnits("electricMeterNo") || "เลขมิเตอร์ไฟ"}</Label>
-                <Input
-                  value={unitFormData.electricMeterNo}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, electricMeterNo: e.target.value })}
-                  placeholder="เลขมิเตอร์ไฟฟ้า"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{tUnits("waterMeterNo") || "เลขมิเตอร์น้ำ"}</Label>
-                <Input
-                  value={unitFormData.waterMeterNo}
-                  onChange={(e) => setUnitFormData({ ...unitFormData, waterMeterNo: e.target.value })}
-                  placeholder="เลขมิเตอร์น้ำ"
-                />
-              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

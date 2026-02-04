@@ -61,7 +61,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
-    // Only allow specific fields to be updated
+    // Only allow physical unit properties to be updated
     const updateData: Record<string, unknown> = {};
 
     if (data.unitNumber !== undefined) updateData.unitNumber = data.unitNumber;
@@ -69,13 +69,6 @@ export async function PUT(
     if (data.size !== undefined) updateData.size = data.size;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.baseRent !== undefined) updateData.baseRent = data.baseRent;
-    if (data.commonFee !== undefined) updateData.commonFee = data.commonFee;
-    if (data.deposit !== undefined) updateData.deposit = data.deposit;
-    if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
-    if (data.discountAmount !== undefined) updateData.discountAmount = data.discountAmount;
-    if (data.electricMeterNo !== undefined) updateData.electricMeterNo = data.electricMeterNo;
-    if (data.waterMeterNo !== undefined) updateData.waterMeterNo = data.waterMeterNo;
     if (data.positionX !== undefined) updateData.positionX = data.positionX;
     if (data.positionY !== undefined) updateData.positionY = data.positionY;
     if (data.width !== undefined) updateData.width = data.width;

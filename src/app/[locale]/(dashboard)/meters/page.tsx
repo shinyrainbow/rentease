@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Zap, Droplets } from "lucide-react";
+import { Plus, Zap, Droplets, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Project {
   id: string;
@@ -71,6 +71,8 @@ export default function MetersPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7)
   );
+  const [sortColumn, setSortColumn] = useState<string>("unit");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -149,6 +151,54 @@ export default function MetersPage() {
   const filteredUnits = selectedProject
     ? units.filter((u) => u.projectId === selectedProject)
     : units;
+
+  // Sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 inline opacity-50" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4 inline" />
+    );
+  };
+
+  const sortReadings = (readingsToSort: MeterReading[]) => {
+    return [...readingsToSort].sort((a, b) => {
+      const direction = sortDirection === "asc" ? 1 : -1;
+      switch (sortColumn) {
+        case "unit":
+          return direction * a.unit.unitNumber.localeCompare(b.unit.unitNumber);
+        case "project":
+          return direction * a.project.name.localeCompare(b.project.name);
+        case "previousReading":
+          return direction * (a.previousReading - b.previousReading);
+        case "currentReading":
+          return direction * (a.currentReading - b.currentReading);
+        case "usage":
+          return direction * (a.usage - b.usage);
+        case "rate":
+          return direction * (a.rate - b.rate);
+        case "amount":
+          return direction * (a.amount - b.amount);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const sortedElectricityReadings = sortReadings(electricityReadings);
+  const sortedWaterReadings = sortReadings(waterReadings);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
@@ -291,24 +341,38 @@ export default function MetersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>{t("previousReading")}</TableHead>
-                    <TableHead>{t("currentReading")}</TableHead>
-                    <TableHead>{t("usage")}</TableHead>
-                    <TableHead>{t("rate")}</TableHead>
-                    <TableHead>{t("amount")}</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                      Unit <SortIcon column="unit" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                      Project <SortIcon column="project" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
+                      {t("previousReading")} <SortIcon column="previousReading" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("currentReading")}>
+                      {t("currentReading")} <SortIcon column="currentReading" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("usage")}>
+                      {t("usage")} <SortIcon column="usage" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("rate")}>
+                      {t("rate")} <SortIcon column="rate" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
+                      {t("amount")} <SortIcon column="amount" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {electricityReadings.length === 0 ? (
+                  {sortedElectricityReadings.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {tCommon("noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    electricityReadings.map((reading) => (
+                    sortedElectricityReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
                         <TableCell>{reading.project.name}</TableCell>
@@ -338,24 +402,38 @@ export default function MetersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>{t("previousReading")}</TableHead>
-                    <TableHead>{t("currentReading")}</TableHead>
-                    <TableHead>{t("usage")}</TableHead>
-                    <TableHead>{t("rate")}</TableHead>
-                    <TableHead>{t("amount")}</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                      Unit <SortIcon column="unit" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                      Project <SortIcon column="project" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
+                      {t("previousReading")} <SortIcon column="previousReading" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("currentReading")}>
+                      {t("currentReading")} <SortIcon column="currentReading" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("usage")}>
+                      {t("usage")} <SortIcon column="usage" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("rate")}>
+                      {t("rate")} <SortIcon column="rate" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
+                      {t("amount")} <SortIcon column="amount" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {waterReadings.length === 0 ? (
+                  {sortedWaterReadings.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {tCommon("noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    waterReadings.map((reading) => (
+                    sortedWaterReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
                         <TableCell>{reading.project.name}</TableCell>

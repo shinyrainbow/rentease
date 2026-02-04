@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Send, FileDown, Loader2, Check, Search, Plus } from "lucide-react";
+import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -55,9 +55,18 @@ interface Receipt {
   invoice: {
     invoiceNo: string;
     tenantId: string;
-    project: { name: string };
+    project: {
+      name: string;
+      companyName: string | null;
+      companyNameTh: string | null;
+      taxId: string | null;
+    };
     unit: { unitNumber: string };
-    tenant: { name: string };
+    tenant: {
+      name: string;
+      companyName: string | null;
+      taxId: string | null;
+    };
   };
 }
 
@@ -77,6 +86,8 @@ export default function ReceiptsPage() {
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortColumn, setSortColumn] = useState<string>("receiptNo");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Create receipt state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -108,6 +119,24 @@ export default function ReceiptsPage() {
     }
   };
 
+  // Sort handler
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sort icon component
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+    return sortDirection === "asc"
+      ? <ArrowUp className="ml-1 h-3 w-3" />
+      : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
   // Filter receipts by project and search query
   const filteredReceipts = receipts.filter((receipt) => {
     // Project filter
@@ -125,6 +154,55 @@ export default function ReceiptsPage() {
       );
     }
     return true;
+  });
+
+  // Sort filtered receipts
+  const sortedReceipts = [...filteredReceipts].sort((a, b) => {
+    let aVal: string | number = "";
+    let bVal: string | number = "";
+
+    switch (sortColumn) {
+      case "receiptNo":
+        aVal = a.receiptNo;
+        bVal = b.receiptNo;
+        break;
+      case "invoiceNo":
+        aVal = a.invoice.invoiceNo;
+        bVal = b.invoice.invoiceNo;
+        break;
+      case "project":
+        aVal = a.invoice.project.companyName || a.invoice.project.name;
+        bVal = b.invoice.project.companyName || b.invoice.project.name;
+        break;
+      case "unit":
+        aVal = a.invoice.unit.unitNumber;
+        bVal = b.invoice.unit.unitNumber;
+        break;
+      case "tenant":
+        aVal = a.invoice.tenant.companyName || a.invoice.tenant.name;
+        bVal = b.invoice.tenant.companyName || b.invoice.tenant.name;
+        break;
+      case "amount":
+        aVal = a.amount;
+        bVal = b.amount;
+        break;
+      case "issuedAt":
+        aVal = new Date(a.issuedAt).getTime();
+        bVal = new Date(b.issuedAt).getTime();
+        break;
+      default:
+        return 0;
+    }
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    return sortDirection === "asc"
+      ? (aVal as number) - (bVal as number)
+      : (bVal as number) - (aVal as number);
   });
 
   useEffect(() => {
@@ -360,32 +438,63 @@ export default function ReceiptsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("receiptNo")}</TableHead>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>{t("amount")}</TableHead>
-                <TableHead>{t("issuedAt")}</TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("receiptNo")}>
+                  <div className="flex items-center">{t("receiptNo")}<SortIcon column="receiptNo" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
+                  <div className="flex items-center">Invoice<SortIcon column="invoiceNo" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
+                  <div className="flex items-center">{t("projectCompany") || "Project/Company"}<SortIcon column="project" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
+                  <div className="flex items-center">Unit<SortIcon column="unit" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
+                  <div className="flex items-center">{t("tenantCompany") || "Tenant/Company"}<SortIcon column="tenant" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
+                  <div className="flex items-center">{t("amount")}<SortIcon column="amount" /></div>
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("issuedAt")}>
+                  <div className="flex items-center">{t("issuedAt")}<SortIcon column="issuedAt" /></div>
+                </TableHead>
                 <TableHead>LINE</TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredReceipts.length === 0 ? (
+              {sortedReceipts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredReceipts.map((receipt) => (
+                sortedReceipts.map((receipt) => (
                   <TableRow key={receipt.id}>
                     <TableCell className="font-medium">{receipt.receiptNo}</TableCell>
                     <TableCell>{receipt.invoice.invoiceNo}</TableCell>
-                    <TableCell>{receipt.invoice.project.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{receipt.invoice.project.companyName || receipt.invoice.project.name}</div>
+                        {receipt.invoice.project.taxId && (
+                          <div className="text-xs text-muted-foreground">{t("taxId") || "Tax ID"}: {receipt.invoice.project.taxId}</div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{receipt.invoice.unit.unitNumber}</TableCell>
-                    <TableCell>{receipt.invoice.tenant.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{receipt.invoice.tenant.companyName || receipt.invoice.tenant.name}</div>
+                        {receipt.invoice.tenant.companyName && (
+                          <div className="text-xs text-muted-foreground">{receipt.invoice.tenant.name}</div>
+                        )}
+                        {receipt.invoice.tenant.taxId && (
+                          <div className="text-xs text-muted-foreground">{t("taxId") || "Tax ID"}: {receipt.invoice.tenant.taxId}</div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>฿{receipt.amount.toLocaleString()}</TableCell>
                     <TableCell>{new Date(receipt.issuedAt).toLocaleDateString()}</TableCell>
                     <TableCell>

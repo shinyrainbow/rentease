@@ -98,6 +98,13 @@
     "taxId": "เลขประจำตัวผู้เสียภาษี",
     "companyName": "ชื่อบริษัท",
     "companyNameTh": "ชื่อบริษัท (ไทย)",
+    "bankAccount": "บัญชีธนาคาร",
+    "bankName": "ธนาคาร",
+    "selectBank": "เลือกธนาคาร",
+    "bankAccountName": "ชื่อบัญชี",
+    "bankAccountNamePlaceholder": "ชื่อบัญชีธนาคาร",
+    "bankAccountNumber": "เลขที่บัญชี",
+    "bankAccountNumberPlaceholder": "เลขที่บัญชีธนาคาร",
     "types": {
       "WAREHOUSE": "โกดัง",
       "SHOP": "ร้านค้า",
