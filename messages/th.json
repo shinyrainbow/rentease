@@ -213,6 +213,8 @@
     "slipUrl": "สลิปการชำระเงิน",
     "transferRef": "เลขอ้างอิงการโอน",
     "checkNo": "เลขที่เช็ค",
+    "searchPlaceholder": "ค้นหาใบแจ้งหนี้, ผู้เช่า, ห้อง...",
+    "allProjects": "โครงการทั้งหมด",
     "methods": {
       "TRANSFER": "โอนเงิน",
       "CHECK": "เช็ค",

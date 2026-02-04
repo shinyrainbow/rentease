@@ -213,6 +213,8 @@
     "slipUrl": "Payment Slip",
     "transferRef": "Transfer Reference",
     "checkNo": "Check No.",
+    "searchPlaceholder": "Search invoice, tenant, unit...",
+    "allProjects": "All Projects",
     "methods": {
       "TRANSFER": "Bank Transfer",
       "CHECK": "Check",

@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Send, FileDown, Eye, Loader2, Check, Search } from "lucide-react";
+import { Plus, Send, FileDown, Eye, Loader2, Check, Search, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
 
@@ -116,6 +116,18 @@ export default function InvoicesPage() {
     billingMonth: new Date().toISOString().slice(0, 7),
     dueDate: "",
   });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    type: "RENT",
+    billingMonth: "",
+    dueDate: "",
+    subtotal: "",
+    discountAmount: "",
+    withholdingTax: "",
+    notes: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
@@ -183,6 +195,107 @@ export default function InvoicesPage() {
       billingMonth: new Date().toISOString().slice(0, 7),
       dueDate: nextMonth.toISOString().split("T")[0],
     });
+  };
+
+  const handleEdit = async (invoice: Invoice) => {
+    // Fetch full invoice details
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEditingInvoice(invoice);
+        setEditFormData({
+          type: data.type,
+          billingMonth: data.billingMonth,
+          dueDate: data.dueDate.split("T")[0],
+          subtotal: data.subtotal.toString(),
+          discountAmount: data.discountAmount.toString(),
+          withholdingTax: data.withholdingTax.toString(),
+          notes: data.notes || "",
+        });
+        setIsEditDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInvoice) return;
+
+    setSavingEdit(true);
+    try {
+      const subtotal = parseFloat(editFormData.subtotal) || 0;
+      const discountAmount = parseFloat(editFormData.discountAmount) || 0;
+      const withholdingTax = parseFloat(editFormData.withholdingTax) || 0;
+      const totalAmount = subtotal - discountAmount - withholdingTax;
+
+      const res = await fetch(`/api/invoices/${editingInvoice.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: editFormData.type,
+          billingMonth: editFormData.billingMonth,
+          dueDate: new Date(editFormData.dueDate).toISOString(),
+          subtotal,
+          discountAmount,
+          withholdingTax,
+          totalAmount,
+          notes: editFormData.notes || null,
+        }),
+      });
+
+      if (res.ok) {
+        setIsEditDialogOpen(false);
+        setEditingInvoice(null);
+        fetchData();
+        toast({
+          title: t("invoiceUpdated") || "Invoice Updated",
+          description: `${editingInvoice.invoiceNo} ${t("updated") || "has been updated"}`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update invoice",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async (invoice: Invoice) => {
+    if (!confirm(t("confirmDelete") || `Are you sure you want to delete ${invoice.invoiceNo}?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+        toast({
+          title: t("invoiceDeleted") || "Invoice Deleted",
+          description: `${invoice.invoiceNo} ${t("deleted") || "has been deleted"}`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete invoice",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+    }
   };
 
   const openLineSendDialog = (invoice: Invoice) => {
@@ -677,6 +790,28 @@ export default function InvoicesPage() {
                         >
                           <FileDown className="h-4 w-4" />
                         </Button>
+                        {invoice.status !== "PAID" && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              title={t("editInvoice") || "Edit Invoice"}
+                              onClick={() => handleEdit(invoice)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              title={t("deleteInvoice") || "Delete Invoice"}
+                              onClick={() => handleDelete(invoice)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -686,6 +821,117 @@ export default function InvoicesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("editInvoice") || "Edit Invoice"} - {editingInvoice?.invoiceNo}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("type")}</Label>
+              <Select
+                value={editFormData.type}
+                onValueChange={(value) => setEditFormData({ ...editFormData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
+                  <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
+                  <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("billingMonth")}</Label>
+                <Input
+                  type="month"
+                  value={editFormData.billingMonth}
+                  onChange={(e) => setEditFormData({ ...editFormData, billingMonth: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("dueDate")}</Label>
+                <Input
+                  type="date"
+                  value={editFormData.dueDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>{t("subtotal") || "Subtotal"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editFormData.subtotal}
+                  onChange={(e) => setEditFormData({ ...editFormData, subtotal: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("discount") || "Discount"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editFormData.discountAmount}
+                  onChange={(e) => setEditFormData({ ...editFormData, discountAmount: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("withholdingTax") || "WHT"}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editFormData.withholdingTax}
+                  onChange={(e) => setEditFormData({ ...editFormData, withholdingTax: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{t("totalAmount")}</span>
+                <span className="text-lg font-bold">
+                  ฿{(
+                    (parseFloat(editFormData.subtotal) || 0) -
+                    (parseFloat(editFormData.discountAmount) || 0) -
+                    (parseFloat(editFormData.withholdingTax) || 0)
+                  ).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("notes") || "Notes"}</Label>
+              <textarea
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={editFormData.notes}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={savingEdit}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={savingEdit}>
+                {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Invoice Detail Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={(open) => {
