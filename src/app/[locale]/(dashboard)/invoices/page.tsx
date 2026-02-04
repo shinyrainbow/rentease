@@ -46,6 +46,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { jsPDF } from "jspdf";
+import { exportToCSV, formatDateForExport, formatCurrencyForExport } from "@/lib/export";
+import { Download } from "lucide-react";
 
 interface Project {
   id: string;
@@ -442,6 +444,49 @@ export default function InvoicesPage() {
     } finally {
       setBulkDeleting(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    const dataToExport = selectedInvoices.size > 0
+      ? sortedInvoices.filter((i) => selectedInvoices.has(i.id))
+      : sortedInvoices;
+
+    exportToCSV(
+      dataToExport.map((invoice) => ({
+        invoiceNo: invoice.invoiceNo,
+        project: invoice.project.companyName || invoice.project.name,
+        unit: invoice.unit.unitNumber,
+        tenant: invoice.tenant.name,
+        type: invoice.type,
+        billingMonth: invoice.billingMonth,
+        subtotal: invoice.subtotal,
+        withholdingTax: invoice.withholdingTax,
+        totalAmount: invoice.totalAmount,
+        paidAmount: invoice.paidAmount,
+        status: invoice.status,
+        dueDate: invoice.dueDate,
+      })),
+      [
+        { key: "invoiceNo", header: "Invoice No" },
+        { key: "project", header: "Project" },
+        { key: "unit", header: "Unit" },
+        { key: "tenant", header: "Tenant" },
+        { key: "type", header: "Type" },
+        { key: "billingMonth", header: "Billing Month" },
+        { key: "subtotal", header: "Subtotal" },
+        { key: "withholdingTax", header: "WHT" },
+        { key: "totalAmount", header: "Total Amount" },
+        { key: "paidAmount", header: "Paid Amount" },
+        { key: "status", header: "Status" },
+        { key: "dueDate", header: "Due Date" },
+      ],
+      `invoices-${new Date().toISOString().slice(0, 10)}`
+    );
+
+    toast({
+      title: "Export Complete",
+      description: `Exported ${dataToExport.length} invoices to CSV`,
+    });
   };
 
   const openLineSendDialog = (invoice: Invoice) => {
@@ -1077,6 +1122,10 @@ export default function InvoicesPage() {
             <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={handleExportCSV}>
+          <Download className="h-4 w-4 mr-2" />
+          {tCommon("export")}
+        </Button>
       </div>
 
       {/* Batch Action Bar */}
@@ -1095,9 +1144,17 @@ export default function InvoicesPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleExportCSV}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Selected
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setSelectedInvoices(new Set())}
           >
-            Clear Selection
+            Clear
           </Button>
         </div>
       )}
