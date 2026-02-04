@@ -194,6 +194,8 @@
   "meters": {
     "title": "Meter Readings",
     "addReading": "Add Reading",
+    "editReading": "Edit Reading",
+    "deleteReading": "Delete Reading",
     "electricity": "Electricity",
     "water": "Water",
     "previousReading": "Previous Reading",

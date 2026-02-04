@@ -194,6 +194,8 @@
   "meters": {
     "title": "จดมิเตอร์",
     "addReading": "เพิ่มการจดมิเตอร์",
+    "editReading": "แก้ไขมิเตอร์",
+    "deleteReading": "ลบมิเตอร์",
     "electricity": "ไฟฟ้า",
     "water": "น้ำประปา",
     "previousReading": "เลขมิเตอร์ก่อนหน้า",

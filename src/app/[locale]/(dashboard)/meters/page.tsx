@@ -29,7 +29,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Zap, Droplets, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Zap, Droplets, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
@@ -62,11 +63,17 @@ export default function MetersPage() {
   const t = useTranslations("meters");
   const tCommon = useTranslations("common");
 
+  const { toast } = useToast();
   const [readings, setReadings] = useState<MeterReading[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingReading, setEditingReading] = useState<MeterReading | null>(null);
+  const [readingToDelete, setReadingToDelete] = useState<MeterReading | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7)
@@ -114,10 +121,14 @@ export default function MetersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
 
     try {
-      const res = await fetch("/api/meters", {
-        method: "POST",
+      const url = editingReading ? `/api/meters/${editingReading.id}` : "/api/meters";
+      const method = editingReading ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
@@ -126,12 +137,81 @@ export default function MetersPage() {
       });
 
       if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: editingReading ? tCommon("updated") : tCommon("created"),
+        });
         setIsDialogOpen(false);
+        setEditingReading(null);
         resetForm();
         fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to save",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error saving meter reading:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEdit = (reading: MeterReading) => {
+    setEditingReading(reading);
+    setFormData({
+      unitId: "",
+      type: reading.type,
+      currentReading: reading.currentReading.toString(),
+      readingDate: reading.readingDate.split("T")[0],
+      billingMonth: reading.billingMonth,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openDeleteDialog = (reading: MeterReading) => {
+    setReadingToDelete(reading);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!readingToDelete) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/meters/${readingToDelete.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: tCommon("deleted"),
+        });
+        setDeleteDialogOpen(false);
+        setReadingToDelete(null);
+        fetchData();
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to delete",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting meter reading:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -228,52 +308,62 @@ export default function MetersPage() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="w-[180px]"
           />
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReading(null); }}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm}>
+              <Button onClick={() => { setEditingReading(null); resetForm(); }}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t("addReading")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{t("addReading")}</DialogTitle>
+                <DialogTitle>{editingReading ? t("editReading") : t("addReading")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select
-                    value={formData.unitId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, unitId: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredUnits.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.project.name} - {unit.unitNumber} ({unit.tenant?.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!editingReading && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Unit</Label>
+                      <Select
+                        value={formData.unitId || undefined}
+                        onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredUnits.map((unit) => (
+                            <SelectItem key={unit.id} value={unit.id}>
+                              {unit.project.name} - {unit.unitNumber} ({unit.tenant?.name})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ELECTRICITY">{t("electricity")}</SelectItem>
-                      <SelectItem value="WATER">{t("water")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <div className="space-y-2">
+                      <Label>Type</Label>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value) => setFormData({ ...formData, type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ELECTRICITY">{t("electricity")}</SelectItem>
+                          <SelectItem value="WATER">{t("water")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {editingReading && (
+                  <div className="text-sm text-muted-foreground">
+                    {editingReading.project.name} - {editingReading.unit.unitNumber} ({t(editingReading.type.toLowerCase())})
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>{t("currentReading")}</Label>
@@ -295,21 +385,26 @@ export default function MetersPage() {
                       onChange={(e) => setFormData({ ...formData, readingDate: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("billingMonth")}</Label>
-                    <Input
-                      type="month"
-                      value={formData.billingMonth}
-                      onChange={(e) => setFormData({ ...formData, billingMonth: e.target.value })}
-                    />
-                  </div>
+                  {!editingReading && (
+                    <div className="space-y-2">
+                      <Label>{t("billingMonth")}</Label>
+                      <Input
+                        type="month"
+                        value={formData.billingMonth}
+                        onChange={(e) => setFormData({ ...formData, billingMonth: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
                     {tCommon("cancel")}
                   </Button>
-                  <Button type="submit">{tCommon("save")}</Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {tCommon("save")}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
@@ -362,12 +457,13 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                       {t("amount")} <SortIcon column="amount" />
                     </TableHead>
+                    <TableHead>{tCommon("actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedElectricityReadings.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {tCommon("noData")}
                       </TableCell>
                     </TableRow>
@@ -381,6 +477,16 @@ export default function MetersPage() {
                         <TableCell>{reading.usage}</TableCell>
                         <TableCell>฿{reading.rate}</TableCell>
                         <TableCell className="font-medium">฿{reading.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -423,12 +529,13 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                       {t("amount")} <SortIcon column="amount" />
                     </TableHead>
+                    <TableHead>{tCommon("actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedWaterReadings.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         {tCommon("noData")}
                       </TableCell>
                     </TableRow>
@@ -442,6 +549,16 @@ export default function MetersPage() {
                         <TableCell>{reading.usage}</TableCell>
                         <TableCell>฿{reading.rate}</TableCell>
                         <TableCell className="font-medium">฿{reading.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -451,6 +568,31 @@ export default function MetersPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("deleteReading")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {readingToDelete?.project.name} - {readingToDelete?.unit.unitNumber} ({readingToDelete?.billingMonth})
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

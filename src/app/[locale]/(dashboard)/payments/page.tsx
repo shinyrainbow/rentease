@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
   id: string;
@@ -554,7 +555,7 @@ export default function PaymentsPage() {
   });
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={7} rows={6} />;
   }
 
   return (

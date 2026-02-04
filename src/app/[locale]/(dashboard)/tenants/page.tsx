@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { CalendarView } from "@/components/ui/calendar-view";
+import { LayoutList, Calendar } from "lucide-react";
 
 interface Project {
   id: string;
@@ -98,6 +101,7 @@ export default function TenantsPage() {
   const [sortColumn, setSortColumn] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dateError, setDateError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -471,7 +475,7 @@ export default function TenantsPage() {
 }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={7} rows={6} />;
   }
 
   return (
@@ -691,6 +695,39 @@ export default function TenantsPage() {
         </Dialog>
       </div>
 
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={statusFilter === "" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter("")}
+        >
+          {tCommon("all")}
+        </Button>
+        <Button
+          variant={statusFilter === "ACTIVE" ? "default" : "outline"}
+          size="sm"
+          className={statusFilter === "ACTIVE" ? "bg-green-600 hover:bg-green-700" : ""}
+          onClick={() => setStatusFilter(statusFilter === "ACTIVE" ? "" : "ACTIVE")}
+        >
+          {t("statuses.ACTIVE")}
+        </Button>
+        <Button
+          variant={statusFilter === "EXPIRED" ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter(statusFilter === "EXPIRED" ? "" : "EXPIRED")}
+        >
+          {t("statuses.EXPIRED")}
+        </Button>
+        <Button
+          variant={statusFilter === "TERMINATED" ? "destructive" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter(statusFilter === "TERMINATED" ? "" : "TERMINATED")}
+        >
+          {t("statuses.TERMINATED")}
+        </Button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 min-w-[200px] max-w-md">
@@ -726,8 +763,54 @@ export default function TenantsPage() {
             <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* View Toggle */}
+        <div className="flex border rounded-md">
+          <Button
+            variant={viewMode === "table" ? "secondary" : "ghost"}
+            size="sm"
+            className="rounded-r-none"
+            onClick={() => setViewMode("table")}
+          >
+            <LayoutList className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "calendar" ? "secondary" : "ghost"}
+            size="sm"
+            className="rounded-l-none"
+            onClick={() => setViewMode("calendar")}
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
+      {viewMode === "calendar" ? (
+        <CalendarView
+          events={sortedTenants.flatMap((tenant) => {
+            const events = [];
+            if (tenant.contractEnd) {
+              events.push({
+                id: `end-${tenant.id}`,
+                title: tenant.name,
+                date: new Date(tenant.contractEnd),
+                type: "expiring" as const,
+                details: `${tenant.unit.project.name} - ${tenant.unit.unitNumber}`,
+              });
+            }
+            if (tenant.contractStart) {
+              events.push({
+                id: `start-${tenant.id}`,
+                title: tenant.name,
+                date: new Date(tenant.contractStart),
+                type: "starting" as const,
+                details: `${tenant.unit.project.name} - ${tenant.unit.unitNumber}`,
+              });
+            }
+            return events;
+          })}
+        />
+      ) : (
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -807,6 +890,7 @@ export default function TenantsPage() {
           </Table>
         </CardContent>
       </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

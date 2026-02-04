@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Search, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
   id: string;
@@ -282,7 +283,7 @@ export default function UnitsPage() {
   });
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={6} rows={6} />;
   }
 
   return (

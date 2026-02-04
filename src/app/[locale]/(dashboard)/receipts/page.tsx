@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
   id: string;
@@ -462,7 +463,7 @@ export default function ReceiptsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={7} rows={6} />;
   }
 
   return (

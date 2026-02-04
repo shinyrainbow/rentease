@@ -43,6 +43,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Send, FileDown, Eye, Loader2, Check, Search, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { jsPDF } from "jspdf";
 
 interface Project {
@@ -151,6 +153,16 @@ export default function InvoicesPage() {
     notes: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Bulk generation state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkFormData, setBulkFormData] = useState({
+    projectId: "",
+    type: "RENT",
+    billingMonth: new Date().toISOString().slice(0, 7),
+    dueDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().slice(0, 10),
+  });
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
@@ -159,6 +171,8 @@ export default function InvoicesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -207,6 +221,45 @@ export default function InvoicesPage() {
       }
     } catch (error) {
       console.error("Error creating invoice:", error);
+    }
+  };
+
+  const handleBulkGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBulkGenerating(true);
+
+    try {
+      const res = await fetch("/api/invoices/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bulkFormData),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: "Bulk Generation Complete",
+          description: `Created ${result.created} invoices. ${result.skipped > 0 ? `Skipped ${result.skipped} (already exist).` : ""}`,
+        });
+        setIsBulkDialogOpen(false);
+        fetchData();
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to generate invoices",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error bulk generating invoices:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate invoices",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkGenerating(false);
     }
   };
 
@@ -340,6 +393,54 @@ export default function InvoicesPage() {
       });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Batch selection handlers
+  const toggleInvoiceSelection = (invoiceId: string) => {
+    const newSelected = new Set(selectedInvoices);
+    if (newSelected.has(invoiceId)) {
+      newSelected.delete(invoiceId);
+    } else {
+      newSelected.add(invoiceId);
+    }
+    setSelectedInvoices(newSelected);
+  };
+
+  const toggleAllInvoices = () => {
+    if (selectedInvoices.size === sortedInvoices.length) {
+      setSelectedInvoices(new Set());
+    } else {
+      setSelectedInvoices(new Set(sortedInvoices.map((i) => i.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedInvoices.size === 0) return;
+
+    setBulkDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedInvoices).map((id) =>
+        fetch(`/api/invoices/${id}`, { method: "DELETE" })
+      );
+      const results = await Promise.all(deletePromises);
+      const successCount = results.filter((r) => r.ok).length;
+
+      toast({
+        title: "Bulk Delete Complete",
+        description: `Deleted ${successCount} of ${selectedInvoices.size} invoices`,
+      });
+      setSelectedInvoices(new Set());
+      fetchData();
+    } catch (error) {
+      console.error("Error bulk deleting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete some invoices",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -710,20 +811,102 @@ export default function InvoicesPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={8} rows={6} />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t("createInvoice")}
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* Bulk Generate Button */}
+          <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Bulk Generate
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bulk Generate Invoices</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleBulkGenerate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Project (Optional)</Label>
+                  <Select
+                    value={bulkFormData.projectId || "__all__"}
+                    onValueChange={(value) => setBulkFormData({ ...bulkFormData, projectId: value === "__all__" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">All Projects</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("type")}</Label>
+                  <Select
+                    value={bulkFormData.type}
+                    onValueChange={(value) => setBulkFormData({ ...bulkFormData, type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
+                      <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
+                      <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("billingMonth")}</Label>
+                  <Input
+                    type="month"
+                    value={bulkFormData.billingMonth}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, billingMonth: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("dueDate")}</Label>
+                  <Input
+                    type="date"
+                    value={bulkFormData.dueDate}
+                    onChange={(e) => setBulkFormData({ ...bulkFormData, dueDate: e.target.value })}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This will generate invoices for all active tenants. Tenants who already have an invoice for this billing month will be skipped.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsBulkDialogOpen(false)}>
+                    {tCommon("cancel")}
+                  </Button>
+                  <Button type="submit" disabled={bulkGenerating}>
+                    {bulkGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Generate Invoices
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Single Invoice Create Button */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t("createInvoice")}
+              </Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{t("createInvoice")}</DialogTitle>
@@ -822,6 +1005,40 @@ export default function InvoicesPage() {
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={statusFilter === "" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter("")}
+        >
+          All
+        </Button>
+        <Button
+          variant={statusFilter === "OVERDUE" ? "destructive" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter(statusFilter === "OVERDUE" ? "" : "OVERDUE")}
+        >
+          Overdue
+        </Button>
+        <Button
+          variant={statusFilter === "PENDING" ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter(statusFilter === "PENDING" ? "" : "PENDING")}
+        >
+          Pending
+        </Button>
+        <Button
+          variant={statusFilter === "PAID" ? "default" : "outline"}
+          size="sm"
+          className={statusFilter === "PAID" ? "bg-green-600 hover:bg-green-700" : ""}
+          onClick={() => setStatusFilter(statusFilter === "PAID" ? "" : "PAID")}
+        >
+          Paid
+        </Button>
       </div>
 
       {/* Filters */}
@@ -862,11 +1079,40 @@ export default function InvoicesPage() {
         </Select>
       </div>
 
+      {/* Batch Action Bar */}
+      {selectedInvoices.size > 0 && (
+        <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+          <span className="text-sm font-medium">{selectedInvoices.size} selected</span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+          >
+            {bulkDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Delete Selected
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedInvoices(new Set())}
+          >
+            Clear Selection
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedInvoices.size === sortedInvoices.length && sortedInvoices.length > 0}
+                    onCheckedChange={toggleAllInvoices}
+                  />
+                </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
                   <div className="flex items-center">{t("invoiceNo")}<SortIcon column="invoiceNo" /></div>
                 </TableHead>
@@ -900,13 +1146,19 @@ export default function InvoicesPage() {
             <TableBody>
               {sortedInvoices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
+                  <TableRow key={invoice.id} className={selectedInvoices.has(invoice.id) ? "bg-muted/50" : ""}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedInvoices.has(invoice.id)}
+                        onCheckedChange={() => toggleInvoiceSelection(invoice.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
                     <TableCell>
                       <div>
