@@ -472,14 +472,14 @@ export default function TenantsPage() {
               {t("addTenant")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingTenant ? t("editTenant") : t("addTenant")}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2">
               {!editingTenant && (
-                <div className="space-y-2">
-                  <Label>Unit</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Unit</Label>
                   <Select
                     value={formData.unitId || undefined}
                     onValueChange={(value) => {
@@ -487,7 +487,7 @@ export default function TenantsPage() {
                       setDateError(null);
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
@@ -499,39 +499,30 @@ export default function TenantsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {/* Show warning if selected unit has active tenant */}
                   {formData.unitId && (() => {
                     const selectedUnit = allUnits.find(u => u.id === formData.unitId);
                     if (selectedUnit?.tenant) {
                       return (
-                        <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
-                          <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                        <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-xs">
+                          <AlertTriangle className="h-3 w-3 text-yellow-600 mt-0.5 shrink-0" />
                           <div>
-                            <p className="font-medium text-yellow-800">Unit has active tenant</p>
-                            <p className="text-yellow-700">
-                              Current tenant: {selectedUnit.tenant.name}
-                              {selectedUnit.tenant.contractEnd && (
-                                <> (ends {new Date(selectedUnit.tenant.contractEnd).toLocaleDateString()})</>
-                              )}
-                            </p>
-                            <p className="text-yellow-600 mt-1">
-                              New contract must start after current contract ends.
-                            </p>
+                            <p className="font-medium text-yellow-800">Unit has active tenant: {selectedUnit.tenant.name}</p>
+                            {selectedUnit.tenant.contractEnd && (
+                              <p className="text-yellow-600">Ends {new Date(selectedUnit.tenant.contractEnd).toLocaleDateString()}</p>
+                            )}
                           </div>
                         </div>
                       );
                     }
                     return null;
                   })()}
-                  {dateError && (
-                    <p className="text-sm text-red-600">{dateError}</p>
-                  )}
+                  {dateError && <p className="text-xs text-red-600">{dateError}</p>}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("tenantType")}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("tenantType")}</Label>
                   <Select
                     value={formData.tenantType}
                     onValueChange={(value) => {
@@ -542,7 +533,7 @@ export default function TenantsPage() {
                       });
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -551,213 +542,133 @@ export default function TenantsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("withholdingTax")}</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("withholdingTax")} %</Label>
                   <Input
+                    className="h-9"
                     type="number"
                     step="0.01"
                     value={formData.withholdingTax}
                     onChange={(e) => setFormData({ ...formData, withholdingTax: e.target.value })}
                   />
                 </div>
+                {editingTenant && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">{tCommon("status")}</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
+                        <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
+                        <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
-              {/* Conditional fields based on tenant type */}
+              {/* Name fields */}
               {formData.tenantType === "INDIVIDUAL" ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("name")}</Label>
-                      <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("nameTh")}</Label>
-                      <Input
-                        value={formData.nameTh}
-                        onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
-                      />
-                    </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("name")} *</Label>
+                    <Input className="h-9" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("idCard")}</Label>
-                    <Input
-                      value={formData.idCard}
-                      onChange={(e) => setFormData({ ...formData, idCard: e.target.value })}
-                      placeholder="X-XXXX-XXXXX-XX-X"
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("nameTh")}</Label>
+                    <Input className="h-9" value={formData.nameTh} onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })} />
                   </div>
-                </>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("idCard")}</Label>
+                    <Input className="h-9" value={formData.idCard} onChange={(e) => setFormData({ ...formData, idCard: e.target.value })} placeholder="X-XXXX-XXXXX-XX-X" />
+                  </div>
+                </div>
               ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("companyName")}</Label>
-                      <Input
-                        value={formData.companyName}
-                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t("companyNameTh")}</Label>
-                      <Input
-                        value={formData.companyNameTh}
-                        onChange={(e) => setFormData({ ...formData, companyNameTh: e.target.value })}
-                      />
-                    </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("companyName")} *</Label>
+                    <Input className="h-9" value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} required />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("taxId")}</Label>
-                    <Input
-                      value={formData.taxId}
-                      onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
-                      placeholder="XXXXXXXXXXXXX"
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("companyNameTh")}</Label>
+                    <Input className="h-9" value={formData.companyNameTh} onChange={(e) => setFormData({ ...formData, companyNameTh: e.target.value })} />
                   </div>
-                </>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("email")}</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("phone")}</Label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Contract Pricing Section */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">{t("contractPricing")}</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("baseRent")} *</Label>
-                    <Input
-                      type="number"
-                      value={formData.baseRent}
-                      onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })}
-                      placeholder="0"
-                      required
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("taxId")}</Label>
+                    <Input className="h-9" value={formData.taxId} onChange={(e) => setFormData({ ...formData, taxId: e.target.value })} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("commonFee")}</Label>
-                    <Input
-                      type="number"
-                      value={formData.commonFee}
-                      onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("deposit")}</Label>
-                    <Input
-                      type="number"
-                      value={formData.deposit}
-                      onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>{t("discountPercent")}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.discountPercent}
-                      onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("discountAmount")}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.discountAmount}
-                      onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>{t("electricMeterNo")}</Label>
-                    <Input
-                      value={formData.electricMeterNo}
-                      onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("waterMeterNo")}</Label>
-                    <Input
-                      value={formData.waterMeterNo}
-                      onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("contractStart")}</Label>
-                  <Input
-                    type="date"
-                    value={formData.contractStart}
-                    onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("contractEnd")}</Label>
-                  <Input
-                    type="date"
-                    value={formData.contractEnd}
-                    onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Status field - only show when editing */}
-              {editingTenant && (
-                <div className="space-y-2">
-                  <Label>{tCommon("status")}</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
-                      <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
-                      <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               )}
 
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setDateError(null); }} disabled={saving}>
+              {/* Contact */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("email")}</Label>
+                  <Input className="h-9" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("phone")}</Label>
+                  <Input className="h-9" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                </div>
+              </div>
+
+              {/* Contract Pricing */}
+              <div className="border-t pt-2">
+                <h4 className="text-xs font-medium mb-2 text-muted-foreground">{t("contractPricing")}</h4>
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("baseRent")} *</Label>
+                    <Input className="h-9" type="number" value={formData.baseRent} onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })} required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("commonFee")}</Label>
+                    <Input className="h-9" type="number" value={formData.commonFee} onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("deposit")}</Label>
+                    <Input className="h-9" type="number" value={formData.deposit} onChange={(e) => setFormData({ ...formData, deposit: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("discountPercent")}</Label>
+                    <Input className="h-9" type="number" step="0.01" value={formData.discountPercent} onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("discountAmount")}</Label>
+                    <Input className="h-9" type="number" step="0.01" value={formData.discountAmount} onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Meters & Contract */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("electricMeterNo")}</Label>
+                  <Input className="h-9" value={formData.electricMeterNo} onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("waterMeterNo")}</Label>
+                  <Input className="h-9" value={formData.waterMeterNo} onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("contractStart")}</Label>
+                  <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("contractEnd")}</Label>
+                  <Input className="h-9" type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setIsDialogOpen(false); setDateError(null); }} disabled={saving}>
                   {tCommon("cancel")}
                 </Button>
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" size="sm" disabled={saving}>
                   {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {tCommon("save")}
                 </Button>
