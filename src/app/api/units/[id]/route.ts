@@ -61,9 +61,29 @@ export async function PUT(
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
+    // Only allow specific fields to be updated
+    const updateData: Record<string, unknown> = {};
+
+    if (data.unitNumber !== undefined) updateData.unitNumber = data.unitNumber;
+    if (data.floor !== undefined) updateData.floor = data.floor;
+    if (data.size !== undefined) updateData.size = data.size;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.baseRent !== undefined) updateData.baseRent = data.baseRent;
+    if (data.commonFee !== undefined) updateData.commonFee = data.commonFee;
+    if (data.deposit !== undefined) updateData.deposit = data.deposit;
+    if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
+    if (data.discountAmount !== undefined) updateData.discountAmount = data.discountAmount;
+    if (data.electricMeterNo !== undefined) updateData.electricMeterNo = data.electricMeterNo;
+    if (data.waterMeterNo !== undefined) updateData.waterMeterNo = data.waterMeterNo;
+    if (data.positionX !== undefined) updateData.positionX = data.positionX;
+    if (data.positionY !== undefined) updateData.positionY = data.positionY;
+    if (data.width !== undefined) updateData.width = data.width;
+    if (data.height !== undefined) updateData.height = data.height;
+
     const unit = await prisma.unit.update({
       where: { id },
-      data,
+      data: updateData,
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: { where: { status: "ACTIVE" }, take: 1 },

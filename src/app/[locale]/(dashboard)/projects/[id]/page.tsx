@@ -414,27 +414,33 @@ export default function ProjectDetailPage() {
         positionY = Math.floor(existingCount / 5) * 100 + 20;
       }
 
+      const payload: Record<string, unknown> = {
+        unitNumber: unitFormData.unitNumber,
+        floor: parseInt(unitFormData.floor.toString()),
+        size: unitFormData.size ? parseFloat(unitFormData.size) : null,
+        type: unitFormData.type,
+        baseRent: parseFloat(unitFormData.baseRent),
+        commonFee: unitFormData.commonFee ? parseFloat(unitFormData.commonFee) : null,
+        deposit: unitFormData.deposit ? parseFloat(unitFormData.deposit) : null,
+        discountPercent: parseFloat(unitFormData.discountPercent),
+        discountAmount: parseFloat(unitFormData.discountAmount),
+        electricMeterNo: unitFormData.electricMeterNo || null,
+        waterMeterNo: unitFormData.waterMeterNo || null,
+      };
+
+      // Only include projectId and position for new units
+      if (!editingUnit) {
+        payload.projectId = projectId;
+        payload.positionX = positionX;
+        payload.positionY = positionY;
+        payload.width = DEFAULT_WIDTH;
+        payload.height = DEFAULT_HEIGHT;
+      }
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId: projectId,
-          ...unitFormData,
-          floor: parseInt(unitFormData.floor.toString()),
-          size: unitFormData.size ? parseFloat(unitFormData.size) : null,
-          baseRent: parseFloat(unitFormData.baseRent),
-          commonFee: unitFormData.commonFee ? parseFloat(unitFormData.commonFee) : null,
-          deposit: unitFormData.deposit ? parseFloat(unitFormData.deposit) : null,
-          discountPercent: parseFloat(unitFormData.discountPercent),
-          discountAmount: parseFloat(unitFormData.discountAmount),
-          // Set initial position for new units
-          ...(!editingUnit && {
-            positionX,
-            positionY,
-            width: DEFAULT_WIDTH,
-            height: DEFAULT_HEIGHT,
-          }),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -652,7 +658,12 @@ export default function ProjectDetailPage() {
                           height: (unit.height || DEFAULT_HEIGHT) * zoom,
                         }}
                         onMouseDown={(e) => handleMouseDown(e, unit.id)}
-                        onClick={() => !editMode && setSelectedUnit(unit.id)}
+                        onClick={() => {
+                          if (!editMode) {
+                            setSelectedUnit(unit.id);
+                            handleEditUnit(unit);
+                          }
+                        }}
                       >
                         <div className="p-2 text-white h-full flex flex-col justify-center items-center text-center">
                           <div className="font-bold" style={{ fontSize: 14 * zoom }}>
@@ -795,12 +806,19 @@ export default function ProjectDetailPage() {
                             <Label className="text-xs">Width</Label>
                             <Input
                               type="number"
-                              value={selectedUnitData.width || DEFAULT_WIDTH}
-                              onChange={(e) => updateUnitSize(
-                                selectedUnitData.id,
-                                parseInt(e.target.value) || DEFAULT_WIDTH,
-                                selectedUnitData.height || DEFAULT_HEIGHT
-                              )}
+                              min={60}
+                              defaultValue={selectedUnitData.width || DEFAULT_WIDTH}
+                              key={`width-${selectedUnitData.id}`}
+                              onBlur={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val) && val >= 60) {
+                                  updateUnitSize(
+                                    selectedUnitData.id,
+                                    val,
+                                    selectedUnitData.height || DEFAULT_HEIGHT
+                                  );
+                                }
+                              }}
                               className="h-8"
                             />
                           </div>
@@ -808,12 +826,19 @@ export default function ProjectDetailPage() {
                             <Label className="text-xs">Height</Label>
                             <Input
                               type="number"
-                              value={selectedUnitData.height || DEFAULT_HEIGHT}
-                              onChange={(e) => updateUnitSize(
-                                selectedUnitData.id,
-                                selectedUnitData.width || DEFAULT_WIDTH,
-                                parseInt(e.target.value) || DEFAULT_HEIGHT
-                              )}
+                              min={40}
+                              defaultValue={selectedUnitData.height || DEFAULT_HEIGHT}
+                              key={`height-${selectedUnitData.id}`}
+                              onBlur={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val) && val >= 40) {
+                                  updateUnitSize(
+                                    selectedUnitData.id,
+                                    selectedUnitData.width || DEFAULT_WIDTH,
+                                    val
+                                  );
+                                }
+                              }}
                               className="h-8"
                             />
                           </div>
