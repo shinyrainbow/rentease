@@ -26,7 +26,12 @@
     "none": "ไม่มี",
     "select": "เลือก",
     "noData": "ไม่มีข้อมูล",
-    "required": "จำเป็น"
+    "required": "จำเป็น",
+    "error": "ข้อผิดพลาด",
+    "success": "สำเร็จ",
+    "created": "ถูกสร้างแล้ว",
+    "updated": "ถูกอัปเดตแล้ว",
+    "deleted": "ถูกลบแล้ว"
   },
   "auth": {
     "login": "เข้าสู่ระบบ",
@@ -116,6 +121,8 @@
     "commonFee": "ค่าส่วนกลาง",
     "deposit": "เงินมัดจำ",
     "discount": "ส่วนลด",
+    "discountPercent": "ส่วนลด (%)",
+    "discountAmount": "ส่วนลด (บาท)",
     "electricMeterNo": "เลขมิเตอร์ไฟ",
     "waterMeterNo": "เลขมิเตอร์น้ำ",
     "types": {
@@ -130,7 +137,13 @@
       "RESERVED": "จอง",
       "MAINTENANCE": "ซ่อมบำรุง"
     },
-    "allProjects": "โครงการทั้งหมด"
+    "allProjects": "โครงการทั้งหมด",
+    "searchPlaceholder": "ค้นหาหมายเลขห้อง, ผู้เช่า...",
+    "noUnits": "ยังไม่มีห้องในโครงการนี้",
+    "unitCreated": "สร้างห้องแล้ว",
+    "unitUpdated": "อัปเดตห้องแล้ว",
+    "unitDeleted": "ลบห้องแล้ว",
+    "confirmDelete": "คุณต้องการลบห้องนี้หรือไม่"
   },
   "tenants": {
     "title": "ผู้เช่า",
@@ -188,6 +201,12 @@
     "totalAmount": "ยอดสุทธิ",
     "paidAmount": "ชำระแล้ว",
     "balance": "คงเหลือ",
+    "project": "โครงการ",
+    "selectProject": "เลือกโครงการ",
+    "unit": "ห้อง/ยูนิต",
+    "selectUnit": "เลือกห้อง",
+    "selectProjectFirst": "กรุณาเลือกโครงการก่อน",
+    "noUnitsWithTenant": "ไม่มีห้องที่มีผู้เช่า",
     "types": {
       "RENT": "ค่าเช่า",
       "UTILITY": "ค่าสาธารณูปโภค",
@@ -208,6 +227,7 @@
   "payments": {
     "title": "การชำระเงิน",
     "addPayment": "เพิ่มการชำระเงิน",
+    "createPayment": "บันทึกการชำระเงิน",
     "verifyPayment": "ยืนยันการชำระเงิน",
     "rejectPayment": "ปฏิเสธการชำระเงิน",
     "amount": "จำนวนเงิน",
@@ -215,9 +235,21 @@
     "status": "สถานะ",
     "slipUrl": "สลิปการชำระเงิน",
     "transferRef": "เลขอ้างอิงการโอน",
+    "transferBank": "ธนาคาร",
     "checkNo": "เลขที่เช็ค",
+    "checkBank": "ธนาคารเช็ค",
+    "checkDate": "วันที่เช็ค",
+    "notes": "หมายเหตุ",
     "searchPlaceholder": "ค้นหาใบแจ้งหนี้, ผู้เช่า, ห้อง...",
     "allProjects": "โครงการทั้งหมด",
+    "project": "โครงการ",
+    "selectInvoice": "เลือกใบแจ้งหนี้",
+    "selectInvoicePlaceholder": "เลือกใบแจ้งหนี้ที่ต้องการชำระ",
+    "noUnpaidInvoices": "ไม่มีใบแจ้งหนี้ที่รอชำระ",
+    "autoVerify": "ยืนยันอัตโนมัติ",
+    "autoVerifyHint": "สำหรับการชำระเงินสด/เช็ค จะยืนยันและสร้างใบเสร็จทันที",
+    "paymentCreated": "บันทึกการชำระเงินแล้ว",
+    "paymentCreatedDesc": "การชำระเงินถูกบันทึกเรียบร้อย",
     "methods": {
       "TRANSFER": "โอนเงิน",
       "CHECK": "เช็ค",
@@ -237,7 +269,18 @@
     "downloadPdf": "ดาวน์โหลด PDF",
     "receiptNo": "เลขที่ใบเสร็จ",
     "amount": "จำนวนเงิน",
-    "issuedAt": "วันที่ออก"
+    "issuedAt": "วันที่ออกใบเสร็จ",
+    "project": "โครงการ",
+    "allProjects": "ทุกโครงการ",
+    "selectInvoice": "เลือกใบแจ้งหนี้",
+    "selectInvoicePlaceholder": "เลือกใบแจ้งหนี้ที่ชำระแล้ว",
+    "noPaidInvoicesWithoutReceipt": "ไม่มีใบแจ้งหนี้ที่ยังไม่มีใบเสร็จ",
+    "tenant": "ผู้เช่า",
+    "totalAmount": "ยอดรวม",
+    "amountHint": "ถ้าไม่กรอก จะใช้ยอดรวมจากใบแจ้งหนี้",
+    "receiptCreated": "สร้างใบเสร็จแล้ว",
+    "receiptCreatedDesc": "ใบเสร็จถูกสร้างเรียบร้อย",
+    "searchPlaceholder": "ค้นหาใบเสร็จ, ใบแจ้งหนี้, ผู้เช่า..."
   },
   "maintenance": {
     "title": "แจ้งซ่อม",

@@ -26,7 +26,12 @@
     "none": "None",
     "select": "Select",
     "noData": "No data available",
-    "required": "Required"
+    "required": "Required",
+    "error": "Error",
+    "success": "Success",
+    "created": "has been created",
+    "updated": "has been updated",
+    "deleted": "has been deleted"
   },
   "auth": {
     "login": "Login",
@@ -116,6 +121,8 @@
     "commonFee": "Common Fee",
     "deposit": "Deposit",
     "discount": "Discount",
+    "discountPercent": "Discount (%)",
+    "discountAmount": "Discount Amount",
     "electricMeterNo": "Electric Meter No.",
     "waterMeterNo": "Water Meter No.",
     "types": {
@@ -130,7 +137,13 @@
       "RESERVED": "Reserved",
       "MAINTENANCE": "Maintenance"
     },
-    "allProjects": "All Projects"
+    "allProjects": "All Projects",
+    "searchPlaceholder": "Search unit number, tenant...",
+    "noUnits": "No units in this project yet",
+    "unitCreated": "Unit Created",
+    "unitUpdated": "Unit Updated",
+    "unitDeleted": "Unit Deleted",
+    "confirmDelete": "Are you sure you want to delete"
   },
   "tenants": {
     "title": "Tenants",
@@ -188,6 +201,12 @@
     "totalAmount": "Total Amount",
     "paidAmount": "Paid Amount",
     "balance": "Balance",
+    "project": "Project",
+    "selectProject": "Select Project",
+    "unit": "Unit",
+    "selectUnit": "Select Unit",
+    "selectProjectFirst": "Please select a project first",
+    "noUnitsWithTenant": "No units with tenants",
     "types": {
       "RENT": "Rent",
       "UTILITY": "Utility",
@@ -208,6 +227,7 @@
   "payments": {
     "title": "Payments",
     "addPayment": "Add Payment",
+    "createPayment": "Record Payment",
     "verifyPayment": "Verify Payment",
     "rejectPayment": "Reject Payment",
     "amount": "Amount",
@@ -215,9 +235,21 @@
     "status": "Status",
     "slipUrl": "Payment Slip",
     "transferRef": "Transfer Reference",
+    "transferBank": "Bank",
     "checkNo": "Check No.",
+    "checkBank": "Check Bank",
+    "checkDate": "Check Date",
+    "notes": "Notes",
     "searchPlaceholder": "Search invoice, tenant, unit...",
     "allProjects": "All Projects",
+    "project": "Project",
+    "selectInvoice": "Select Invoice",
+    "selectInvoicePlaceholder": "Select invoice to pay",
+    "noUnpaidInvoices": "No unpaid invoices",
+    "autoVerify": "Auto-verify",
+    "autoVerifyHint": "For cash/check payments, will verify and create receipt immediately",
+    "paymentCreated": "Payment Recorded",
+    "paymentCreatedDesc": "Payment has been recorded successfully",
     "methods": {
       "TRANSFER": "Bank Transfer",
       "CHECK": "Check",
@@ -237,7 +269,18 @@
     "downloadPdf": "Download PDF",
     "receiptNo": "Receipt No.",
     "amount": "Amount",
-    "issuedAt": "Issued At"
+    "issuedAt": "Issued Date",
+    "project": "Project",
+    "allProjects": "All Projects",
+    "selectInvoice": "Select Invoice",
+    "selectInvoicePlaceholder": "Select a paid invoice",
+    "noPaidInvoicesWithoutReceipt": "No paid invoices without receipts",
+    "tenant": "Tenant",
+    "totalAmount": "Total Amount",
+    "amountHint": "If empty, will use invoice total amount",
+    "receiptCreated": "Receipt Created",
+    "receiptCreatedDesc": "Receipt has been created successfully",
+    "searchPlaceholder": "Search receipt, invoice, tenant..."
   },
   "maintenance": {
     "title": "Maintenance Requests",

@@ -628,18 +628,23 @@ export default function ProjectDetailPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-auto border rounded-lg bg-slate-50">
+                <div
+                  className="overflow-auto border rounded-lg"
+                  style={{
+                    backgroundImage: showGrid
+                      ? `linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+                         linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`
+                      : 'none',
+                    backgroundSize: `${10 * zoom}px ${10 * zoom}px`,
+                    backgroundColor: '#f8fafc',
+                  }}
+                >
                   <div
                     ref={canvasRef}
                     className="relative"
                     style={{
-                      width: CANVAS_WIDTH * zoom,
-                      height: CANVAS_HEIGHT * zoom,
-                      backgroundImage: showGrid
-                        ? `linear-gradient(to right, #e2e8f0 1px, transparent 1px),
-                           linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`
-                        : 'none',
-                      backgroundSize: `${10 * zoom}px ${10 * zoom}px`,
+                      minWidth: CANVAS_WIDTH * zoom,
+                      minHeight: CANVAS_HEIGHT * zoom,
                     }}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
