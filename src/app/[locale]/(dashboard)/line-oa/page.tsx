@@ -30,6 +30,7 @@ import {
   XCircle,
   Send,
   Link2,
+  Loader2,
 } from "lucide-react";
 
 interface Project {
@@ -80,6 +81,9 @@ export default function LineOAPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [linkingTenant, setLinkingTenant] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -136,7 +140,12 @@ export default function LineOAPage() {
 
   const handleSelectContact = async (contact: LineContact) => {
     setSelectedContact(contact);
-    await fetchMessages(contact.id);
+    setLoadingMessages(true);
+    try {
+      await fetchMessages(contact.id);
+    } finally {
+      setLoadingMessages(false);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -179,6 +188,7 @@ export default function LineOAPage() {
     e.preventDefault();
     if (!editingProject) return;
 
+    setSavingSettings(true);
     try {
       const res = await fetch(`/api/projects/${editingProject.id}`, {
         method: "PUT",
@@ -192,12 +202,15 @@ export default function LineOAPage() {
       }
     } catch (error) {
       console.error("Error updating LINE settings:", error);
+    } finally {
+      setSavingSettings(false);
     }
   };
 
   const handleLinkTenant = async () => {
     if (!selectedContact) return;
 
+    setLinkingTenant(true);
     try {
       const res = await fetch("/api/line/contacts", {
         method: "PUT",
@@ -217,6 +230,8 @@ export default function LineOAPage() {
       }
     } catch (error) {
       console.error("Error linking tenant:", error);
+    } finally {
+      setLinkingTenant(false);
     }
   };
 
@@ -351,7 +366,11 @@ export default function LineOAPage() {
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
-                      {messages.length === 0 ? (
+                      {loadingMessages ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : messages.length === 0 ? (
                         <div className="text-center text-muted-foreground text-sm py-8">
                           No messages yet
                         </div>
@@ -528,10 +547,13 @@ export default function LineOAPage() {
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsSettingsOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsSettingsOpen(false)} disabled={savingSettings}>
                 {tCommon("cancel")}
               </Button>
-              <Button type="submit">{tCommon("save")}</Button>
+              <Button type="submit" disabled={savingSettings}>
+                {savingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save")}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -557,11 +579,17 @@ export default function LineOAPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">-- No Link --</SelectItem>
-                  {projectTenants.map((tenant) => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.name} - {tenant.unit.unitNumber}
-                    </SelectItem>
-                  ))}
+                  {projectTenants.length === 0 ? (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      No active tenants in {selectedContact?.project.name}
+                    </div>
+                  ) : (
+                    projectTenants.map((tenant) => (
+                      <SelectItem key={tenant.id} value={tenant.id}>
+                        {tenant.name} - {tenant.unit.unitNumber}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -571,10 +599,13 @@ export default function LineOAPage() {
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsLinkOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsLinkOpen(false)} disabled={linkingTenant}>
                 {tCommon("cancel")}
               </Button>
-              <Button onClick={handleLinkTenant}>{tCommon("save")}</Button>
+              <Button onClick={handleLinkTenant} disabled={linkingTenant}>
+                {linkingTenant && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save")}
+              </Button>
             </div>
           </div>
         </DialogContent>

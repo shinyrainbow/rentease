@@ -32,6 +32,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# credentials
+rent-ease-iam_accessKeys.csv
+
 # vercel
 .vercel
 

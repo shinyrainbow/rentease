@@ -109,6 +109,10 @@ export default function InvoicesPage() {
     dueDate: "",
   });
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
+  const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
+  const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
+  const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
+  const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -167,13 +171,24 @@ export default function InvoicesPage() {
     });
   };
 
-  const handleSendViaLine = async (invoice: Invoice) => {
-    setSendingInvoiceId(invoice.id);
+  const openLineSendDialog = (invoice: Invoice) => {
+    setLineSendInvoice(invoice);
+    setLineSendLang("th");
+    setLineSendFormat("image");
+    setLineSendDialogOpen(true);
+  };
+
+  const handleSendViaLine = async () => {
+    if (!lineSendInvoice) return;
+
+    setSendingInvoiceId(lineSendInvoice.id);
+    setLineSendDialogOpen(false);
+
     try {
       const res = await fetch("/api/line/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId: invoice.id }),
+        body: JSON.stringify({ invoiceId: lineSendInvoice.id, lang: lineSendLang, format: lineSendFormat }),
       });
 
       const data = await res.json();
@@ -197,13 +212,13 @@ export default function InvoicesPage() {
 
       toast({
         title: t("sendSuccess"),
-        description: `${invoice.invoiceNo} ${t("sentToLine")}`,
+        description: `${lineSendInvoice.invoiceNo} ${t("sentToLine")}`,
       });
 
       // Update local state to reflect sent status
       setInvoices((prev) =>
         prev.map((inv) =>
-          inv.id === invoice.id ? { ...inv, sentViaLine: true } : inv
+          inv.id === lineSendInvoice.id ? { ...inv, sentViaLine: true } : inv
         )
       );
     } catch (error) {
@@ -586,7 +601,7 @@ export default function InvoicesPage() {
                           variant="ghost"
                           size="icon"
                           title={t("sendViaLine")}
-                          onClick={() => handleSendViaLine(invoice)}
+                          onClick={() => openLineSendDialog(invoice)}
                           disabled={sendingInvoiceId === invoice.id}
                         >
                           {sendingInvoiceId === invoice.id ? (
@@ -785,6 +800,64 @@ export default function InvoicesPage() {
               </div>
             </Tabs>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* LINE Send Language Selection Dialog */}
+      <Dialog open={lineSendDialogOpen} onOpenChange={setLineSendDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("sendViaLine")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("invoiceFormat") || "Format"}</Label>
+              <Select value={lineSendFormat} onValueChange={(v) => setLineSendFormat(v as "image" | "pdf")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="image">{t("sendAsImage") || "Image"}</SelectItem>
+                  <SelectItem value="pdf">{t("sendAsPdf") || "PDF"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("invoiceLanguage") || "Language"}</Label>
+              <Select value={lineSendLang} onValueChange={(v) => setLineSendLang(v as "th" | "en")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="th">ไทย (Thai)</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {lineSendInvoice && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <p className="text-sm font-medium">{lineSendInvoice.invoiceNo}</p>
+                <p className="text-xs text-muted-foreground">
+                  {lineSendInvoice.tenant.name} - {lineSendInvoice.unit.unitNumber}
+                </p>
+                <p className="text-sm font-semibold mt-1">
+                  ฿{lineSendInvoice.totalAmount.toLocaleString()}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setLineSendDialogOpen(false)}>
+                {tCommon("cancel")}
+              </Button>
+              <Button onClick={handleSendViaLine}>
+                <Send className="h-4 w-4 mr-2" />
+                {t("sendViaLine")}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

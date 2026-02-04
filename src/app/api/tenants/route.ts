@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
       },
       include: {
         unit: {
-          include: {
+          select: {
+            unitNumber: true,
+            projectId: true,
             project: { select: { name: true, nameTh: true } },
           },
         },
