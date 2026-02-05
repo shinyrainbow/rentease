@@ -869,9 +869,8 @@ export default function TenantsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusBadgeColor(tenant.status)}>
-                        {/* {t(`statuses.${tenant.status}`)} */}
-                        {getContractStatus(tenant.contractEnd || "")}
+                      <Badge className={getStatusBadgeColor(getDisplayStatus(tenant))}>
+                        {t(`statuses.${getDisplayStatus(tenant)}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>{tenant.phone || "-"}</TableCell>
