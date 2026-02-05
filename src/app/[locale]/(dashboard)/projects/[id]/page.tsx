@@ -103,8 +103,8 @@ interface Unit {
 
 const DEFAULT_WIDTH = 100;
 const DEFAULT_HEIGHT = 80;
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const MIN_CANVAS_WIDTH = 800;
+const MIN_CANVAS_HEIGHT = 600;
 
 export default function ProjectDetailPage() {
   const t = useTranslations("projects");
@@ -320,8 +320,8 @@ export default function ProjectDetailPage() {
     if (dragging) {
       setUnits(prev => prev.map(unit => {
         if (unit.id === dragging) {
-          const newX = Math.max(0, Math.min(x - dragOffset.x, CANVAS_WIDTH - (unit.width || DEFAULT_WIDTH)));
-          const newY = Math.max(0, Math.min(y - dragOffset.y, CANVAS_HEIGHT - (unit.height || DEFAULT_HEIGHT)));
+          const newX = Math.max(0, x - dragOffset.x);
+          const newY = Math.max(0, y - dragOffset.y);
           const snapX = showGrid ? Math.round(newX / 10) * 10 : newX;
           const snapY = showGrid ? Math.round(newY / 10) * 10 : newY;
           return { ...unit, positionX: snapX, positionY: snapY };
@@ -583,6 +583,16 @@ export default function ProjectDetailPage() {
 
   const selectedUnitData = selectedUnit ? units.find(u => u.id === selectedUnit) : null;
 
+  // Calculate dynamic canvas size based on unit positions
+  const canvasWidth = Math.max(
+    MIN_CANVAS_WIDTH,
+    ...units.map(u => (u.positionX || 0) + (u.width || DEFAULT_WIDTH) + 50)
+  );
+  const canvasHeight = Math.max(
+    MIN_CANVAS_HEIGHT,
+    ...units.map(u => (u.positionY || 0) + (u.height || DEFAULT_HEIGHT) + 50)
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -692,8 +702,8 @@ export default function ProjectDetailPage() {
                     ref={canvasRef}
                     className="relative"
                     style={{
-                      width: CANVAS_WIDTH * zoom,
-                      height: CANVAS_HEIGHT * zoom,
+                      width: canvasWidth * zoom,
+                      height: canvasHeight * zoom,
                       backgroundImage: showGrid
                         ? `linear-gradient(to right, #e2e8f0 1px, transparent 1px),
                            linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`

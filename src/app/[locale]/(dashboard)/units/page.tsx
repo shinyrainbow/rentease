@@ -420,9 +420,9 @@ export default function UnitsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
                   Tenant <SortIcon column="tenant" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("floor")}>
+                {/* <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("floor")}>
                   {t("floor")} <SortIcon column="floor" />
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("size")}>
                   {t("size")} <SortIcon column="size" />
                 </TableHead>
@@ -445,7 +445,6 @@ export default function UnitsPage() {
                     <TableCell>{unit.project.name}</TableCell>
                     <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                     <TableCell>{unit.tenant?.name || "-"}</TableCell>
-                    <TableCell>{unit.floor}</TableCell>
                     <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(unit.status)}>
