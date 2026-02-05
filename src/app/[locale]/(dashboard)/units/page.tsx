@@ -283,7 +283,7 @@ export default function UnitsPage() {
   });
 
   if (loading) {
-    return <PageSkeleton columns={6} rows={6} />;
+    return <PageSkeleton columns={7} rows={6} />;
   }
 
   return (
@@ -411,14 +411,14 @@ export default function UnitsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unitNumber")}>
-                  {t("unitNumber")} <SortIcon column="unitNumber" />
-                </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
                   Project <SortIcon column="project" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
-                  {t("type")} <SortIcon column="type" />
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unitNumber")}>
+                  {t("unitNumber")} <SortIcon column="unitNumber" />
+                </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
+                  Tenant <SortIcon column="tenant" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("floor")}>
                   {t("floor")} <SortIcon column="floor" />
@@ -429,25 +429,22 @@ export default function UnitsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                   {t("status")} <SortIcon column="status" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
-                  Tenant <SortIcon column="tenant" />
-                </TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedUnits.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedUnits.map((unit) => (
                   <TableRow key={unit.id}>
-                    <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                     <TableCell>{unit.project.name}</TableCell>
-                    <TableCell>{t(`types.${unit.type}`)}</TableCell>
+                    <TableCell className="font-medium">{unit.unitNumber}</TableCell>
+                    <TableCell>{unit.tenant?.name || "-"}</TableCell>
                     <TableCell>{unit.floor}</TableCell>
                     <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
                     <TableCell>
@@ -455,7 +452,6 @@ export default function UnitsPage() {
                         {t(`statuses.${unit.status}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{unit.tenant?.name || "-"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(unit)}>
