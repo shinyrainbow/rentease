@@ -850,10 +850,10 @@ export default function ProjectDetailPage() {
                       <span className="text-muted-foreground">{tUnits("type")}:</span>
                       <span>{tUnits(`types.${selectedUnitData.type}`)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    {/* <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{tUnits("floor")}:</span>
                       <span>{selectedUnitData.floor}</span>
-                    </div>
+                    </div> */}
                     {selectedUnitData.size && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{tUnits("size")}:</span>
@@ -1117,7 +1117,7 @@ export default function ProjectDetailPage() {
             <DialogTitle>{editingUnit ? (tUnits("editUnit") || "แก้ไขห้อง") : (tUnits("addUnit") || "เพิ่มห้อง")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveUnit} className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{tUnits("unitNumber") || "หมายเลขห้อง"}</Label>
                 <Input
@@ -1127,14 +1127,14 @@ export default function ProjectDetailPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>{tUnits("floor") || "ชั้น"}</Label>
                 <Input
                   type="number"
                   value={unitFormData.floor}
                   onChange={(e) => setUnitFormData({ ...unitFormData, floor: parseInt(e.target.value) || 1 })}
                 />
-              </div>
+              </div> */}
               <div className="space-y-2">
                 <Label>{tUnits("size") || "ขนาด (ตร.ม.)"}</Label>
                 <Input

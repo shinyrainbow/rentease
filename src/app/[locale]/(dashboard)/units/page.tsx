@@ -283,7 +283,7 @@ export default function UnitsPage() {
   });
 
   if (loading) {
-    return <PageSkeleton columns={7} rows={6} />;
+    return <PageSkeleton columns={6} rows={6} />;
   }
 
   return (
@@ -323,7 +323,7 @@ export default function UnitsPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t("unitNumber")}</Label>
                     <Input
@@ -332,14 +332,14 @@ export default function UnitsPage() {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label>{t("floor")}</Label>
                     <Input
                       type="number"
                       value={formData.floor}
                       onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) })}
                     />
-                  </div>
+                  </div> */}
                   <div className="space-y-2">
                     <Label>{t("size")}</Label>
                     <Input
@@ -435,7 +435,7 @@ export default function UnitsPage() {
             <TableBody>
               {sortedUnits.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
@@ -445,6 +445,7 @@ export default function UnitsPage() {
                     <TableCell>{unit.project.name}</TableCell>
                     <TableCell className="font-medium">{unit.unitNumber}</TableCell>
                     <TableCell>{unit.tenant?.name || "-"}</TableCell>
+                    {/* <TableCell>{unit.floor}</TableCell> */}
                     <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(unit.status)}>
