@@ -95,8 +95,8 @@ export default function UnitsPage() {
         fetch("/api/projects"),
       ]);
       const [unitsData, projectsData] = await Promise.all([unitsRes.json(), projectsRes.json()]);
-      setUnits(unitsData);
-      setProjects(projectsData);
+      setUnits(Array.isArray(unitsData) ? unitsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

@@ -119,9 +119,9 @@ export default function MetersPage() {
         projectsRes.json(),
         unitsRes.json(),
       ]);
-      setReadings(readingsData);
-      setProjects(projectsData);
-      setUnits(unitsData.filter((u: Unit) => u.tenant !== null));
+      setReadings(Array.isArray(readingsData) ? readingsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+      setUnits(Array.isArray(unitsData) ? unitsData.filter((u: Unit) => u.tenant !== null) : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

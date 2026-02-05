@@ -82,8 +82,8 @@ export default function MaintenancePage() {
         fetch("/api/units"),
       ]);
       const [requestsData, unitsData] = await Promise.all([requestsRes.json(), unitsRes.json()]);
-      setRequests(requestsData);
-      setUnits(unitsData.filter((u: Unit) => u.tenant !== null));
+      setRequests(Array.isArray(requestsData) ? requestsData : []);
+      setUnits(Array.isArray(unitsData) ? unitsData.filter((u: Unit) => u.tenant !== null) : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

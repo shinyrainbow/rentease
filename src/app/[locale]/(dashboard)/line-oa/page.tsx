@@ -154,7 +154,7 @@ export default function LineOAPage() {
         contactsRes.json(),
         tenantsRes.json(),
       ]);
-      setProjects(projectsData);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
       setContacts(Array.isArray(contactsData) ? contactsData : []);
       setTenants(Array.isArray(tenantsData) ? tenantsData : []);
     } catch (error) {

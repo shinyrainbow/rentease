@@ -154,8 +154,8 @@ export default function PaymentsPage() {
         paymentsRes.json(),
         projectsRes.json(),
       ]);
-      setPayments(paymentsData);
-      setProjects(projectsData);
+      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching payments:", error);
     } finally {

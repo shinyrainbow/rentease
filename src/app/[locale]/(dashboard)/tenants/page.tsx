@@ -142,10 +142,10 @@ export default function TenantsPage() {
         unitsRes.json(),
         projectsRes.json(),
       ]);
-      setTenants(tenantsData);
+      setTenants(Array.isArray(tenantsData) ? tenantsData : []);
       // Show all units (not just vacant) - allow selecting units with existing tenants
-      setAllUnits(unitsData);
-      setProjects(projectsData);
+      setAllUnits(Array.isArray(unitsData) ? unitsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

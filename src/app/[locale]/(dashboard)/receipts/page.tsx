@@ -150,8 +150,8 @@ export default function ReceiptsPage() {
         receiptsRes.json(),
         projectsRes.json(),
       ]);
-      setReceipts(receiptsData);
-      setProjects(projectsData);
+      setReceipts(Array.isArray(receiptsData) ? receiptsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching receipts:", error);
     } finally {

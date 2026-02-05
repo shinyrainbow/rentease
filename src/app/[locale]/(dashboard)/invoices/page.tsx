@@ -192,9 +192,9 @@ export default function InvoicesPage() {
         unitsRes.json(),
         projectsRes.json(),
       ]);
-      setInvoices(invoicesData);
-      setUnits(unitsData.filter((u: Unit) => u.tenant !== null));
-      setProjects(projectsData);
+      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
+      setUnits(Array.isArray(unitsData) ? unitsData.filter((u: Unit) => u.tenant !== null) : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
