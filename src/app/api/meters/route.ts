@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         unit: {
           select: {
             unitNumber: true,
-            tenant: { select: { name: true, nameTh: true } },
+            tenants: { select: { name: true, nameTh: true } },
           },
         },
       },

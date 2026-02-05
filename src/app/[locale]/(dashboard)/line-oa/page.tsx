@@ -35,6 +35,7 @@ import {
   ChevronRight,
   Receipt,
 } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
   id: string;
@@ -341,7 +342,7 @@ export default function LineOAPage() {
     : [];
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={4} rows={5} />;
   }
 
   return (

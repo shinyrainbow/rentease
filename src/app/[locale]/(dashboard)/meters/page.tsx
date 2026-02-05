@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Zap, Droplets, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
   id: string;
@@ -330,7 +331,7 @@ export default function MetersPage() {
   const sortedWaterReadings = sortReadings(waterReadings);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={8} rows={6} />;
   }
 
   return (

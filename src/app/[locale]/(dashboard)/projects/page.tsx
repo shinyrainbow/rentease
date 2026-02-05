@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Building2, MapPin, Calendar } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Unit {
   id: string;
@@ -217,7 +218,7 @@ export default function ProjectsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={5} rows={5} />;
   }
 
   return (
