@@ -85,9 +85,16 @@ export default function MetersPage() {
     unitId: "",
     type: "ELECTRICITY",
     currentReading: "",
+    previousReading: "",
     readingDate: new Date().toISOString().split("T")[0],
     billingMonth: new Date().toISOString().slice(0, 7),
   });
+  const [previousInfo, setPreviousInfo] = useState<{
+    hasPrevious: boolean;
+    previousReading: number | null;
+    previousMonth: string | null;
+  } | null>(null);
+  const [checkingPrevious, setCheckingPrevious] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -119,6 +126,36 @@ export default function MetersPage() {
     fetchData();
   }, [selectedProject, selectedMonth]);
 
+  // Check for previous reading when unit, type, or billing month changes
+  const checkPreviousReading = async (unitId: string, type: string, billingMonth: string) => {
+    if (!unitId || !type || !billingMonth) {
+      setPreviousInfo(null);
+      return;
+    }
+    setCheckingPrevious(true);
+    try {
+      const res = await fetch(
+        `/api/meters/previous?unitId=${unitId}&type=${type}&billingMonth=${billingMonth}`
+      );
+      const data = await res.json();
+      setPreviousInfo(data);
+      if (data.hasPrevious) {
+        setFormData((prev) => ({ ...prev, previousReading: "" }));
+      }
+    } catch (error) {
+      console.error("Error checking previous reading:", error);
+      setPreviousInfo(null);
+    } finally {
+      setCheckingPrevious(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!editingReading && formData.unitId && formData.type && formData.billingMonth) {
+      checkPreviousReading(formData.unitId, formData.type, formData.billingMonth);
+    }
+  }, [formData.unitId, formData.type, formData.billingMonth, editingReading]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -127,13 +164,18 @@ export default function MetersPage() {
       const url = editingReading ? `/api/meters/${editingReading.id}` : "/api/meters";
       const method = editingReading ? "PUT" : "POST";
 
+      const payload: Record<string, unknown> = {
+        ...formData,
+        currentReading: parseFloat(formData.currentReading),
+      };
+      // Include previousReading only if manually entered (first-time entry)
+      if (formData.previousReading && !previousInfo?.hasPrevious) {
+        payload.previousReading = parseFloat(formData.previousReading);
+      }
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          currentReading: parseFloat(formData.currentReading),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -220,9 +262,11 @@ export default function MetersPage() {
       unitId: "",
       type: "ELECTRICITY",
       currentReading: "",
+      previousReading: "",
       readingDate: new Date().toISOString().split("T")[0],
       billingMonth: new Date().toISOString().slice(0, 7),
     });
+    setPreviousInfo(null);
   };
 
   const electricityReadings = readings.filter((r) => r.type === "ELECTRICITY");
@@ -362,6 +406,37 @@ export default function MetersPage() {
                 {editingReading && (
                   <div className="text-sm text-muted-foreground">
                     {editingReading.project.name} - {editingReading.unit.unitNumber} ({t(editingReading.type.toLowerCase())})
+                  </div>
+                )}
+
+                {/* Previous reading info/input */}
+                {!editingReading && formData.unitId && (
+                  <div className="space-y-2">
+                    <Label>{t("previousReading")}</Label>
+                    {checkingPrevious ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {tCommon("loading")}
+                      </div>
+                    ) : previousInfo?.hasPrevious ? (
+                      <div className="text-sm p-2 bg-muted rounded-md">
+                        <span className="font-medium">{previousInfo.previousReading}</span>
+                        <span className="text-muted-foreground ml-2">
+                          ({previousInfo.previousMonth})
+                        </span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.previousReading}
+                        onChange={(e) => setFormData({ ...formData, previousReading: e.target.value })}
+                        placeholder={t("enterPreviousReading")}
+                      />
+                    )}
+                    {!previousInfo?.hasPrevious && !checkingPrevious && formData.unitId && (
+                      <p className="text-xs text-muted-foreground">{t("firstTimeReading")}</p>
+                    )}
                   </div>
                 )}
 

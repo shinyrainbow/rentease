@@ -61,7 +61,10 @@ export async function POST(request: NextRequest) {
       orderBy: { billingMonth: "desc" },
     });
 
-    const prevValue = previousReading?.currentReading || 0;
+    // Use manual previousReading if provided (for first-time entries), otherwise use from history
+    const prevValue = data.previousReading !== undefined
+      ? data.previousReading
+      : (previousReading?.currentReading || 0);
     const usage = Math.max(0, data.currentReading - prevValue);
     const rate = data.type === "ELECTRICITY" ? unit.project.electricityRate : unit.project.waterRate;
     const amount = usage * rate;

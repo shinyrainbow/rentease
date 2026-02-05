@@ -204,7 +204,9 @@
     "rate": "อัตรา",
     "amount": "จำนวนเงิน",
     "readingDate": "วันที่จดมิเตอร์",
-    "billingMonth": "รอบบิล"
+    "billingMonth": "รอบบิล",
+    "enterPreviousReading": "กรอกเลขมิเตอร์ก่อนหน้า",
+    "firstTimeReading": "ไม่พบข้อมูลมิเตอร์ก่อนหน้า กรุณากรอกเลขมิเตอร์เริ่มต้น"
   },
   "invoices": {
     "title": "ใบแจ้งหนี้",

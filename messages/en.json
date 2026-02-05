@@ -204,7 +204,9 @@
     "rate": "Rate",
     "amount": "Amount",
     "readingDate": "Reading Date",
-    "billingMonth": "Billing Month"
+    "billingMonth": "Billing Month",
+    "enterPreviousReading": "Enter previous meter reading",
+    "firstTimeReading": "No previous reading found. Enter the starting meter value."
   },
   "invoices": {
     "title": "Invoices",
