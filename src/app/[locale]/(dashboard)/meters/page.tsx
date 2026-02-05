@@ -216,6 +216,7 @@ export default function MetersPage() {
       unitId: "",
       type: reading.type,
       currentReading: reading.currentReading.toString(),
+      previousReading: reading.previousReading.toString(),
       readingDate: reading.readingDate.split("T")[0],
       billingMonth: reading.billingMonth,
     });
