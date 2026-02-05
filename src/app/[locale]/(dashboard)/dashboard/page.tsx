@@ -73,10 +73,9 @@ async function getDashboardData(userId: string) {
       },
       _sum: { amount: true },
     }),
-    // Contracts expiring in 30 days
+    // Contracts expiring in 30 days (active = contractEnd >= today)
     prisma.tenant.findMany({
       where: {
-        status: "ACTIVE",
         unit: { project: { ownerId: userId } },
         contractEnd: {
           gte: today,

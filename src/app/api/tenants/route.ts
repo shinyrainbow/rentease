@@ -11,40 +11,19 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
-    const status = searchParams.get("status");
+    const statusFilter = searchParams.get("status");
 
-    // Auto-expire tenants whose contract has ended
+    // Build filter based on status query param (calculated from contractEnd)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const expiredTenants = await prisma.tenant.findMany({
-      where: {
-        status: "ACTIVE",
-        contractEnd: { lt: today },
-        unit: { project: { ownerId: session.user.id } },
-      },
-      select: { id: true, unitId: true },
-    });
-
-    if (expiredTenants.length > 0) {
-      // Update expired tenants to EXPIRED status
-      await prisma.tenant.updateMany({
-        where: { id: { in: expiredTenants.map((t) => t.id) } },
-        data: { status: "EXPIRED" },
-      });
-
-      // Update units to VACANT if they have no other ACTIVE tenant
-      for (const tenant of expiredTenants) {
-        const activeTenantsInUnit = await prisma.tenant.count({
-          where: { unitId: tenant.unitId, status: "ACTIVE" },
-        });
-        if (activeTenantsInUnit === 0) {
-          await prisma.unit.update({
-            where: { id: tenant.unitId },
-            data: { status: "VACANT" },
-          });
-        }
-      }
+    let contractEndFilter: object | undefined;
+    if (statusFilter === "ACTIVE") {
+      // Active means contract hasn't ended yet
+      contractEndFilter = { contractEnd: { gte: today } };
+    } else if (statusFilter === "EXPIRED") {
+      // Expired means contract has ended
+      contractEndFilter = { contractEnd: { lt: today } };
     }
 
     const tenants = await prisma.tenant.findMany({
@@ -53,7 +32,7 @@ export async function GET(request: NextRequest) {
           project: { ownerId: session.user.id },
           ...(projectId && { projectId }),
         },
-        ...(status && { status: status as "ACTIVE" | "EXPIRED" | "TERMINATED" }),
+        ...contractEndFilter,
       },
       include: {
         unit: {
@@ -96,7 +75,6 @@ export async function POST(request: NextRequest) {
 
     // Properly map and sanitize the data for Prisma
     const tenantData = {
-      status: "ACTIVE" as const,
       unitId: data.unitId,
       name: data.name,
       nameTh: data.nameTh || null,

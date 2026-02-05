@@ -116,6 +116,7 @@
   },
   "units": {
     "title": "Units",
+    "currentTenant": "Current Tenant",
     "addUnit": "Add Unit",
     "editUnit": "Edit Unit",
     "deleteUnit": "Delete Unit",
@@ -193,6 +194,7 @@
   },
   "meters": {
     "title": "Meter Readings",
+    "currentTenant": "Current Tenant",
     "addReading": "Add Reading",
     "editReading": "Edit Reading",
     "deleteReading": "Delete Reading",

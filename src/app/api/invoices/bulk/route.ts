@@ -13,10 +13,10 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { projectId, type, billingMonth, dueDate } = data;
 
-    // Get all active tenants with their units
+    // Get all active tenants with their units (active = contractEnd >= today)
     const activeTenants = await prisma.tenant.findMany({
       where: {
-        status: "ACTIVE",
+        contractEnd: { gte: new Date() },
         unit: {
           project: {
             ownerId: session.user.id,

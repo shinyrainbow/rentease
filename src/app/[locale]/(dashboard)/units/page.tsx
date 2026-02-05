@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +63,7 @@ interface Unit {
 export default function UnitsPage() {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { toast } = useToast();
 
   const [units, setUnits] = useState<Unit[]>([]);
@@ -315,7 +316,7 @@ export default function UnitsPage() {
                       <SelectContent>
                         {projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
-                            {project.name}
+                            {(locale === "th" ? project.nameTh : null) || project.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -399,7 +400,7 @@ export default function UnitsPage() {
             <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.id}>
-                {project.name}
+                {(locale === "th" ? project.nameTh : null) || project.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -418,7 +419,7 @@ export default function UnitsPage() {
                   {t("unitNumber")} <SortIcon column="unitNumber" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
-                  Tenant <SortIcon column="tenant" />
+                  {t("currentTenant")} <SortIcon column="tenant" />
                 </TableHead>
                 {/* <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("floor")}>
                   {t("floor")} <SortIcon column="floor" />
@@ -442,9 +443,9 @@ export default function UnitsPage() {
               ) : (
                 sortedUnits.map((unit) => (
                   <TableRow key={unit.id}>
-                    <TableCell>{unit.project.name}</TableCell>
+                    <TableCell>{(locale === "th" ? unit.project.nameTh : null) || unit.project.name}</TableCell>
                     <TableCell className="font-medium">{unit.unitNumber}</TableCell>
-                    <TableCell>{unit.tenant?.name || "-"}</TableCell>
+                    <TableCell>{(locale === "th" ? unit.tenant?.nameTh : null) || unit.tenant?.name || "-"}</TableCell>
                     {/* <TableCell>{unit.floor}</TableCell> */}
                     <TableCell>{unit.size ? `${unit.size} sq.m.` : "-"}</TableCell>
                     <TableCell>
@@ -476,7 +477,7 @@ export default function UnitsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {unitToDelete?.unitNumber} - {unitToDelete?.project.name}
+              {unitToDelete?.unitNumber} - {(locale === "th" ? unitToDelete?.project.nameTh : null) || unitToDelete?.project.name}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

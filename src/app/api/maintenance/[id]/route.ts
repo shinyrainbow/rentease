@@ -18,7 +18,7 @@ export async function GET(
       where: { id, project: { ownerId: session.user.id } },
       include: {
         project: true,
-        unit: { include: { tenants: { where: { status: "ACTIVE" }, take: 1 } } },
+        unit: { include: { tenants: { where: { contractEnd: { gte: new Date() } }, take: 1 } } },
       },
     });
 

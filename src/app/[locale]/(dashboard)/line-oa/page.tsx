@@ -147,7 +147,7 @@ export default function LineOAPage() {
       const [projectsRes, contactsRes, tenantsRes] = await Promise.all([
         fetch("/api/projects"),
         fetch("/api/line/contacts"),
-        fetch("/api/tenants?status=ACTIVE"),
+        fetch("/api/tenants?status=ACTIVE"),  // Filter by contract end date
       ]);
       const [projectsData, contactsData, tenantsData] = await Promise.all([
         projectsRes.json(),

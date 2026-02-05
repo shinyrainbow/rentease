@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: { status: "ACTIVE" },
+          where: { contractEnd: { gte: new Date() } },
           select: { name: true, contractStart: true, contractEnd: true },
           take: 1,
         },
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: { status: "ACTIVE" },
+          where: { contractEnd: { gte: new Date() } },
           select: { name: true, contractStart: true, contractEnd: true },
           take: 1,
         },

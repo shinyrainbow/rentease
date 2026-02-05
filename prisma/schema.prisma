@@ -174,7 +174,6 @@ model Tenant {
   taxId         String?
 
   tenantType    TenantType    @default(INDIVIDUAL)
-  status        TenantStatus  @default(ACTIVE)
   withholdingTax Float        @default(0)
 
   // Contract pricing (per tenant agreement)
@@ -205,12 +204,6 @@ model Tenant {
 enum TenantType {
   INDIVIDUAL
   COMPANY
-}
-
-enum TenantStatus {
-  ACTIVE
-  EXPIRED
-  TERMINATED
 }
 
 // ============ LINE Integration Models ============

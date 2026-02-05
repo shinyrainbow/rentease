@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,14 +37,15 @@ import { PageSkeleton } from "@/components/ui/table-skeleton";
 interface Project {
   id: string;
   name: string;
+  nameTh: string | null;
 }
 
 interface Unit {
   id: string;
   unitNumber: string;
   projectId: string;
-  project: { name: string };
-  tenant: { name: string } | null;
+  project: { name: string; nameTh: string | null };
+  tenant: { name: string; nameTh: string | null } | null;
 }
 
 interface MeterReading {
@@ -59,14 +60,15 @@ interface MeterReading {
   billingMonth: string;
   unit: {
     unitNumber: string;
-    tenant: { name: string; nameTh: string | null } | null;
+    tenants: { name: string; nameTh: string | null }[];
   };
-  project: { name: string };
+  project: { name: string; nameTh: string | null };
 }
 
 export default function MetersPage() {
   const t = useTranslations("meters");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
 
   const { toast } = useToast();
   const [readings, setReadings] = useState<MeterReading[]>([]);
@@ -347,7 +349,7 @@ export default function MetersPage() {
               <SelectItem value="__all__">{tCommon("all")}</SelectItem>
               {projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
-                  {project.name}
+                  {(locale === "th" ? project.nameTh : null) || project.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -384,7 +386,7 @@ export default function MetersPage() {
                         <SelectContent>
                           {filteredUnits.map((unit) => (
                             <SelectItem key={unit.id} value={unit.id}>
-                              {unit.project.name} - {unit.unitNumber} ({unit.tenant?.name})
+                              {(locale === "th" ? unit.project.nameTh : null) || unit.project.name} - {unit.unitNumber} ({(locale === "th" ? unit.tenant?.nameTh : null) || unit.tenant?.name})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -411,7 +413,7 @@ export default function MetersPage() {
 
                 {editingReading && (
                   <div className="text-sm text-muted-foreground">
-                    {editingReading.project.name} - {editingReading.unit.unitNumber} ({t(editingReading.type.toLowerCase())})
+                    {(locale === "th" ? editingReading.project.nameTh : null) || editingReading.project.name} - {editingReading.unit.unitNumber} ({t(editingReading.type.toLowerCase())})
                   </div>
                 )}
 
@@ -517,7 +519,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
                       Unit <SortIcon column="unit" />
                     </TableHead>
-                    <TableHead>Tenant</TableHead>
+                    <TableHead>{t("currentTenant")}</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
                       {t("previousReading")} <SortIcon column="previousReading" />
                     </TableHead>
@@ -547,7 +549,7 @@ export default function MetersPage() {
                     sortedElectricityReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
-                        <TableCell className="text-muted-foreground">{reading.unit.tenant?.name || "-"}</TableCell>
+                        <TableCell className="text-muted-foreground">{(locale === "th" ? reading.unit.tenants[0]?.nameTh : null) || reading.unit.tenants[0]?.name || "-"}</TableCell>
                         <TableCell>{reading.previousReading}</TableCell>
                         <TableCell>{reading.currentReading}</TableCell>
                         <TableCell>{reading.usage}</TableCell>
@@ -587,7 +589,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
                       Unit <SortIcon column="unit" />
                     </TableHead>
-                    <TableHead>Tenant</TableHead>
+                    <TableHead>{t("currentTenant")}</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
                       {t("previousReading")} <SortIcon column="previousReading" />
                     </TableHead>
@@ -617,7 +619,7 @@ export default function MetersPage() {
                     sortedWaterReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
-                        <TableCell className="text-muted-foreground">{reading.unit.tenant?.name || "-"}</TableCell>
+                        <TableCell className="text-muted-foreground">{(locale === "th" ? reading.unit.tenants[0]?.nameTh : null) || reading.unit.tenants[0]?.name || "-"}</TableCell>
                         <TableCell>{reading.previousReading}</TableCell>
                         <TableCell>{reading.currentReading}</TableCell>
                         <TableCell>{reading.usage}</TableCell>
@@ -650,7 +652,7 @@ export default function MetersPage() {
             <DialogTitle>{t("deleteReading")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {readingToDelete?.project.name} - {readingToDelete?.unit.unitNumber} ({readingToDelete?.billingMonth})
+            {(locale === "th" ? readingToDelete?.project.nameTh : null) || readingToDelete?.project.name} - {readingToDelete?.unit.unitNumber} ({readingToDelete?.billingMonth})
           </p>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>

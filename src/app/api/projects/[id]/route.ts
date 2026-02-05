@@ -19,7 +19,7 @@ export async function GET(
       include: {
         units: {
           include: {
-            tenants: { where: { status: "ACTIVE" }, take: 1 },
+            tenants: { where: { contractEnd: { gte: new Date() } }, take: 1 },
           },
         },
         _count: {

@@ -24,7 +24,14 @@ export async function GET(request: NextRequest) {
         unit: {
           select: {
             unitNumber: true,
-            tenants: { select: { name: true, nameTh: true } },
+            tenants: {
+              where: {
+                contractEnd: { gte: new Date() },
+              },
+              select: { name: true, nameTh: true },
+              orderBy: { contractEnd: "asc" },
+              take: 1,
+            },
           },
         },
       },

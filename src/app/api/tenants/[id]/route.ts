@@ -94,7 +94,7 @@ export async function PUT(
   }
 }
 
-// End contract - set tenant to EXPIRED and unit to VACANT
+// End contract - set contract end date to now to mark as expired
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -117,24 +117,39 @@ export async function PATCH(
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
-    // End contract
+    // End contract by setting contractEnd to now (or specified date)
     if (data.action === "end_contract") {
+      const contractEndDate = data.contractEnd ? new Date(data.contractEnd) : new Date();
+
       const tenant = await prisma.tenant.update({
         where: { id },
         data: {
-          status: "EXPIRED",
-          contractEnd: data.contractEnd ? new Date(data.contractEnd) : new Date(),
+          contractEnd: contractEndDate,
         },
         include: {
           unit: { include: { project: { select: { name: true, nameTh: true } } } },
         },
       });
 
-      // Update unit status to vacant
-      await prisma.unit.update({
-        where: { id: existingTenant.unitId },
-        data: { status: "VACANT" },
+      // Check if unit has any other active tenants (contractEnd >= today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const activeTenantsInUnit = await prisma.tenant.count({
+        where: {
+          unitId: existingTenant.unitId,
+          contractEnd: { gte: today },
+          id: { not: id },
+        },
       });
+
+      // Update unit status to vacant if no other active tenants
+      if (activeTenantsInUnit === 0) {
+        await prisma.unit.update({
+          where: { id: existingTenant.unitId },
+          data: { status: "VACANT" },
+        });
+      }
 
       return NextResponse.json(tenant);
     }
@@ -169,12 +184,26 @@ export async function DELETE(
 
     await prisma.tenant.delete({ where: { id } });
 
-    // Update unit status to vacant only if tenant was active
-    if (existingTenant.status === "ACTIVE") {
-      await prisma.unit.update({
-        where: { id: existingTenant.unitId },
-        data: { status: "VACANT" },
+    // Check if tenant was active (contractEnd >= today) before deletion
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const wasActive = existingTenant.contractEnd && existingTenant.contractEnd >= today;
+
+    // Update unit status to vacant only if tenant was active and no other active tenants
+    if (wasActive) {
+      const activeTenantsInUnit = await prisma.tenant.count({
+        where: {
+          unitId: existingTenant.unitId,
+          contractEnd: { gte: today },
+        },
       });
+
+      if (activeTenantsInUnit === 0) {
+        await prisma.unit.update({
+          where: { id: existingTenant.unitId },
+          data: { status: "VACANT" },
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

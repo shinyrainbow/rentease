@@ -116,6 +116,7 @@
   },
   "units": {
     "title": "ห้อง/ยูนิต",
+    "currentTenant": "ผู้เช่าปัจจุบัน",
     "addUnit": "เพิ่มห้อง",
     "editUnit": "แก้ไขห้อง",
     "deleteUnit": "ลบห้อง",
@@ -193,6 +194,7 @@
   },
   "meters": {
     "title": "จดมิเตอร์",
+    "currentTenant": "ผู้เช่าปัจจุบัน",
     "addReading": "เพิ่มการจดมิเตอร์",
     "editReading": "แก้ไขมิเตอร์",
     "deleteReading": "ลบมิเตอร์",

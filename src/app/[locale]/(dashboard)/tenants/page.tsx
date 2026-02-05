@@ -59,7 +59,6 @@ interface Tenant {
   email: string | null;
   phone: string | null;
   tenantType: string;
-  status: "ACTIVE" | "EXPIRED" | "TERMINATED";
   withholdingTax: number;
   // Contract pricing
   baseRent: number;
@@ -114,7 +113,6 @@ export default function TenantsPage() {
     idCard: "",
     taxId: "",
     tenantType: "INDIVIDUAL",
-    status: "ACTIVE",
     withholdingTax: "0",
     // Contract pricing
     baseRent: "",
@@ -229,8 +227,6 @@ export default function TenantsPage() {
           ...formData,
           name,
           nameTh,
-          // Only include status when editing
-          ...(editingTenant && { status: formData.status }),
           withholdingTax: parseFloat(formData.withholdingTax),
           baseRent: formData.baseRent ? parseFloat(formData.baseRent) : 0,
           commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
@@ -286,7 +282,6 @@ export default function TenantsPage() {
       idCard: "",
       taxId: "",
       tenantType: tenant.tenantType,
-      status: tenant.status,
       withholdingTax: tenant.withholdingTax.toString(),
       baseRent: tenant.baseRent?.toString() || "",
       commonFee: tenant.commonFee?.toString() || "",
@@ -381,11 +376,10 @@ export default function TenantsPage() {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeColor = (status: "ACTIVE" | "EXPIRED") => {
     switch (status) {
       case "ACTIVE": return "bg-green-100 text-green-800";
       case "EXPIRED": return "bg-gray-100 text-gray-800";
-      case "TERMINATED": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -402,7 +396,6 @@ export default function TenantsPage() {
       idCard: "",
       taxId: "",
       tenantType: "INDIVIDUAL",
-      status: "ACTIVE",
       withholdingTax: "0",
       baseRent: "",
       commonFee: "",
@@ -449,7 +442,7 @@ export default function TenantsPage() {
       case "tenantType":
         return direction * a.tenantType.localeCompare(b.tenantType);
       case "status":
-        return direction * a.status.localeCompare(b.status);
+        return direction * getDisplayStatus(a).localeCompare(getDisplayStatus(b));
       case "phone":
         return direction * (a.phone || "").localeCompare(b.phone || "");
       case "contractEnd":
@@ -462,15 +455,10 @@ export default function TenantsPage() {
   });
 
   // Client-side status calculation based on contract end date
-  const getDisplayStatus = (tenant: Tenant): "ACTIVE" | "EXPIRED" | "TERMINATED" => {
-    // If terminated in database, always show as terminated
-    if (tenant.status === "TERMINATED") {
-      return "TERMINATED";
-    }
-
-    // If no contract end date, use database status
+  const getDisplayStatus = (tenant: Tenant): "ACTIVE" | "EXPIRED" => {
+    // If no contract end date, assume active
     if (!tenant.contractEnd) {
-      return tenant.status;
+      return "ACTIVE";
     }
 
     // Compare today with contract end date
@@ -579,24 +567,6 @@ export default function TenantsPage() {
                     onChange={(e) => setFormData({ ...formData, withholdingTax: e.target.value })}
                   />
                 </div>
-                {editingTenant && (
-                  <div className="space-y-1">
-                    <Label className="text-xs">{tCommon("status")}</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData({ ...formData, status: value })}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
-                        <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
-                        <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
 
               {/* Name fields */}
@@ -882,7 +852,7 @@ export default function TenantsPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {tenant.status === "ACTIVE" && (
+                        {getDisplayStatus(tenant) === "ACTIVE" && (
                           <Button variant="ghost" size="icon" onClick={() => openEndContractDialog(tenant)} title={t("endContract")}>
                             <UserX className="h-4 w-4 text-orange-500" />
                           </Button>

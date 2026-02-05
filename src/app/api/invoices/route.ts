@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
-      include: { project: true, tenants: { where: { status: "ACTIVE" }, take: 1 } },
+      include: { project: true, tenants: { where: { contractEnd: { gte: new Date() } }, take: 1 } },
     });
 
     const activeTenant = unit?.tenants[0];
