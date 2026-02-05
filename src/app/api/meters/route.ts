@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
       },
       include: {
         project: { select: { name: true, nameTh: true } },
-        unit: { select: { unitNumber: true } },
+        unit: {
+          select: {
+            unitNumber: true,
+            tenant: { select: { name: true, nameTh: true } },
+          },
+        },
       },
       orderBy: [{ billingMonth: "desc" }, { unitId: "asc" }],
     });

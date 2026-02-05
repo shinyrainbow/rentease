@@ -55,7 +55,10 @@ interface MeterReading {
   amount: number;
   readingDate: string;
   billingMonth: string;
-  unit: { unitNumber: string };
+  unit: {
+    unitNumber: string;
+    tenant: { name: string; nameTh: string | null } | null;
+  };
   project: { name: string };
 }
 
@@ -514,9 +517,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
                       Unit <SortIcon column="unit" />
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
-                      Project <SortIcon column="project" />
-                    </TableHead>
+                    <TableHead>Tenant</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
                       {t("previousReading")} <SortIcon column="previousReading" />
                     </TableHead>
@@ -546,7 +547,7 @@ export default function MetersPage() {
                     sortedElectricityReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
-                        <TableCell>{reading.project.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{reading.unit.tenant?.name || "-"}</TableCell>
                         <TableCell>{reading.previousReading}</TableCell>
                         <TableCell>{reading.currentReading}</TableCell>
                         <TableCell>{reading.usage}</TableCell>
@@ -586,9 +587,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
                       Unit <SortIcon column="unit" />
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
-                      Project <SortIcon column="project" />
-                    </TableHead>
+                    <TableHead>Tenant</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("previousReading")}>
                       {t("previousReading")} <SortIcon column="previousReading" />
                     </TableHead>
@@ -618,7 +617,7 @@ export default function MetersPage() {
                     sortedWaterReadings.map((reading) => (
                       <TableRow key={reading.id}>
                         <TableCell className="font-medium">{reading.unit.unitNumber}</TableCell>
-                        <TableCell>{reading.project.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{reading.unit.tenant?.name || "-"}</TableCell>
                         <TableCell>{reading.previousReading}</TableCell>
                         <TableCell>{reading.currentReading}</TableCell>
                         <TableCell>{reading.usage}</TableCell>

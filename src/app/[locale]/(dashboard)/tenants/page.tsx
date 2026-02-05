@@ -461,18 +461,28 @@ export default function TenantsPage() {
     }
   });
 
-  function getContractStatus(contractEnd: string): "เช่าอยู่" | "หมดอายุสัญญา" {
-  // contractEnd format: M/D/YYYY (e.g. 2/4/2026)
-  const [month, day, year] = contractEnd.split("/").map(Number);
+  // Client-side status calculation based on contract end date
+  const getDisplayStatus = (tenant: Tenant): "ACTIVE" | "EXPIRED" | "TERMINATED" => {
+    // If terminated in database, always show as terminated
+    if (tenant.status === "TERMINATED") {
+      return "TERMINATED";
+    }
 
-  const endDate = new Date(year, month - 1, day);
-  const today = new Date();
+    // If no contract end date, use database status
+    if (!tenant.contractEnd) {
+      return tenant.status;
+    }
 
-  // normalize today (ignore time)
-  today.setHours(0, 0, 0, 0);
+    // Compare today with contract end date
+    const endDate = new Date(tenant.contractEnd);
+    const today = new Date();
 
-  return today <= endDate ? "เช่าอยู่" : "หมดอายุสัญญา";
-}
+    // Normalize both dates (ignore time)
+    endDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return today <= endDate ? "ACTIVE" : "EXPIRED";
+  };
 
   if (loading) {
     return <PageSkeleton columns={7} rows={6} />;
