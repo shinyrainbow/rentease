@@ -48,6 +48,7 @@ import {
   Edit,
   Loader2,
 } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -574,7 +575,7 @@ export default function ProjectDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">{tCommon("loading")}</div>;
+    return <PageSkeleton columns={5} rows={6} />;
   }
 
   if (!project) {
