@@ -116,6 +116,7 @@
   },
   "units": {
     "title": "Units",
+    "project": "Project",
     "currentTenant": "Current Tenant",
     "addUnit": "Add Unit",
     "editUnit": "Edit Unit",
@@ -232,6 +233,8 @@
     "selectUnit": "Select Unit",
     "selectProjectFirst": "Please select a project first",
     "noUnitsWithTenant": "No units with tenants",
+    "projectCompany": "Project/Company",
+    "tenantCompany": "Tenant/Company",
     "types": {
       "RENT": "Rent",
       "UTILITY": "Utility",
@@ -315,6 +318,10 @@
     "amount": "Amount",
     "issuedAt": "Issued Date",
     "project": "Project",
+    "invoice": "Invoice",
+    "unit": "Unit",
+    "projectCompany": "Project/Company",
+    "tenantCompany": "Tenant/Company",
     "allProjects": "All Projects",
     "selectInvoice": "Select Invoice",
     "selectInvoicePlaceholder": "Select a paid invoice",
@@ -337,6 +344,10 @@
     "priority": "Priority",
     "status": "Status",
     "resolution": "Resolution",
+    "project": "Project",
+    "unit": "Unit",
+    "date": "Date",
+    "selectUnit": "Select unit",
     "categories": {
       "ELECTRICAL": "Electrical",
       "PLUMBING": "Plumbing",

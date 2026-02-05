@@ -116,6 +116,7 @@
   },
   "units": {
     "title": "ห้อง/ยูนิต",
+    "project": "โครงการ",
     "currentTenant": "ผู้เช่าปัจจุบัน",
     "addUnit": "เพิ่มห้อง",
     "editUnit": "แก้ไขห้อง",
@@ -232,6 +233,8 @@
     "selectUnit": "เลือกห้อง",
     "selectProjectFirst": "กรุณาเลือกโครงการก่อน",
     "noUnitsWithTenant": "ไม่มีห้องที่มีผู้เช่า",
+    "projectCompany": "โครงการ/บริษัท",
+    "tenantCompany": "ผู้เช่า/บริษัท",
     "types": {
       "RENT": "ค่าเช่า",
       "UTILITY": "ค่าสาธารณูปโภค",
@@ -315,6 +318,10 @@
     "amount": "จำนวนเงิน",
     "issuedAt": "วันที่ออกใบเสร็จ",
     "project": "โครงการ",
+    "invoice": "ใบแจ้งหนี้",
+    "unit": "ห้อง",
+    "projectCompany": "โครงการ/บริษัท",
+    "tenantCompany": "ผู้เช่า/บริษัท",
     "allProjects": "ทุกโครงการ",
     "selectInvoice": "เลือกใบแจ้งหนี้",
     "selectInvoicePlaceholder": "เลือกใบแจ้งหนี้ที่ชำระแล้ว",
@@ -337,6 +344,10 @@
     "priority": "ความเร่งด่วน",
     "status": "สถานะ",
     "resolution": "การแก้ไข",
+    "project": "โครงการ",
+    "unit": "ห้อง",
+    "date": "วันที่",
+    "selectUnit": "เลือกห้อง",
     "categories": {
       "ELECTRICAL": "ไฟฟ้า",
       "PLUMBING": "ประปา",

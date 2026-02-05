@@ -211,13 +211,13 @@ export default function MaintenancePage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!editingRequest && (
                   <div className="space-y-2">
-                    <Label>Unit</Label>
+                    <Label>{t("unit")}</Label>
                     <Select
                       value={formData.unitId || undefined}
                       onValueChange={(value) => setFormData({ ...formData, unitId: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("selectUnit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units.map((unit) => (
@@ -333,12 +333,12 @@ export default function MaintenancePage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("requestTitle")}</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Unit</TableHead>
+                <TableHead>{t("project")}</TableHead>
+                <TableHead>{t("unit")}</TableHead>
                 <TableHead>{t("category")}</TableHead>
                 <TableHead>{t("priority")}</TableHead>
                 <TableHead>{t("status")}</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>{t("date")}</TableHead>
                 <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>

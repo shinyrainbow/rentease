@@ -511,16 +511,16 @@ export default function ReceiptsPage() {
                   <div className="flex items-center">{t("receiptNo")}<SortIcon column="receiptNo" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
-                  <div className="flex items-center">Invoice<SortIcon column="invoiceNo" /></div>
+                  <div className="flex items-center">{t("invoice")}<SortIcon column="invoiceNo" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
-                  <div className="flex items-center">{t("projectCompany") || "Project/Company"}<SortIcon column="project" /></div>
+                  <div className="flex items-center">{t("projectCompany")}<SortIcon column="project" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
-                  <div className="flex items-center">Unit<SortIcon column="unit" /></div>
+                  <div className="flex items-center">{t("unit")}<SortIcon column="unit" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
-                  <div className="flex items-center">{t("tenantCompany") || "Tenant/Company"}<SortIcon column="tenant" /></div>
+                  <div className="flex items-center">{t("tenantCompany")}<SortIcon column="tenant" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                   <div className="flex items-center">{t("amount")}<SortIcon column="amount" /></div>

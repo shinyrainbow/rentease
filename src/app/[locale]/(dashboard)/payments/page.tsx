@@ -614,16 +614,16 @@ export default function PaymentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
-                  Invoice <SortIcon column="invoiceNo" />
+                  {t("invoice")} <SortIcon column="invoiceNo" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
-                  Project <SortIcon column="project" />
+                  {t("project")} <SortIcon column="project" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
-                  Unit <SortIcon column="unit" />
+                  {t("unit")} <SortIcon column="unit" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
-                  Tenant <SortIcon column="tenant" />
+                  {t("tenant")} <SortIcon column="tenant" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                   {t("amount")} <SortIcon column="amount" />

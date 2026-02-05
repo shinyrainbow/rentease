@@ -1177,7 +1177,7 @@ export default function InvoicesPage() {
                   <div className="flex items-center">{t("projectCompany") || "Project/Company"}<SortIcon column="project" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit")}>
-                  <div className="flex items-center">Unit<SortIcon column="unit" /></div>
+                  <div className="flex items-center">{t("unit")}<SortIcon column="unit" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("tenant")}>
                   <div className="flex items-center">{t("tenantCompany") || "Tenant/Company"}<SortIcon column="tenant" /></div>

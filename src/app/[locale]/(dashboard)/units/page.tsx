@@ -305,7 +305,7 @@ export default function UnitsPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!editingUnit && (
                   <div className="space-y-2">
-                    <Label>Project</Label>
+                    <Label>{t("project")}</Label>
                     <Select
                       value={formData.projectId || undefined}
                       onValueChange={(value) => setFormData({ ...formData, projectId: value })}
@@ -413,7 +413,7 @@ export default function UnitsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
-                  Project <SortIcon column="project" />
+                  {t("project")} <SortIcon column="project" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unitNumber")}>
                   {t("unitNumber")} <SortIcon column="unitNumber" />
