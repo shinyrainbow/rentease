@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Zap, Droplets, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
   id: string;
@@ -418,10 +419,7 @@ export default function MetersPage() {
                   <div className="space-y-2">
                     <Label>{t("previousReading")}</Label>
                     {checkingPrevious ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {tCommon("loading")}
-                      </div>
+                      <Skeleton className="h-9 w-full" />
                     ) : previousInfo?.hasPrevious ? (
                       <div className="text-sm p-2 bg-muted rounded-md">
                         <span className="font-medium">{previousInfo.previousReading}</span>

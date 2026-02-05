@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { MeterType } from "@prisma/client";
 
 // Get previous meter reading for a unit
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     const previousReading = await prisma.meterReading.findFirst({
       where: {
         unitId,
-        type,
+        type: type as MeterType,
         billingMonth: { lt: billingMonth },
         project: { ownerId: session.user.id },
       },
