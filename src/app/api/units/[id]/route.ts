@@ -20,18 +20,13 @@ export async function GET(
         project: true,
         tenants: {
           where: {
+            // Show tenants whose contract hasn't expired yet (including future tenants)
             OR: [
-              { contractStart: null },
-              { contractStart: { lte: new Date() } },
+              { contractEnd: null },
+              { contractEnd: { gte: new Date() } },
             ],
-            AND: {
-              OR: [
-                { contractEnd: null },
-                { contractEnd: { gte: new Date() } },
-              ],
-            },
           },
-          orderBy: { contractEnd: "desc" },
+          orderBy: { contractStart: "asc" },
           take: 1,
         },
         meterReadings: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -96,18 +91,13 @@ export async function PUT(
         project: { select: { name: true, nameTh: true } },
         tenants: {
           where: {
+            // Show tenants whose contract hasn't expired yet (including future tenants)
             OR: [
-              { contractStart: null },
-              { contractStart: { lte: new Date() } },
+              { contractEnd: null },
+              { contractEnd: { gte: new Date() } },
             ],
-            AND: {
-              OR: [
-                { contractEnd: null },
-                { contractEnd: { gte: new Date() } },
-              ],
-            },
           },
-          orderBy: { contractEnd: "desc" },
+          orderBy: { contractStart: "asc" },
           take: 1,
         },
       },
