@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getS3Key, isS3Key } from "@/lib/s3";
 import { jsPDF } from "jspdf";
 
 interface LineItem {
@@ -61,6 +61,15 @@ export async function POST(request: NextRequest) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
       const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
       const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
+
+      // Convert logo S3 key to presigned URL if needed
+      let logoUrl = "";
+      if (invoice.project.logoUrl) {
+        logoUrl = isS3Key(invoice.project.logoUrl)
+          ? await getPresignedUrl(invoice.project.logoUrl, 3600)
+          : invoice.project.logoUrl;
+      }
+
       const params = new URLSearchParams({
         lang,
         invoiceNo: invoice.invoiceNo,
@@ -77,7 +86,7 @@ export async function POST(request: NextRequest) {
         companyNameTh: invoice.project.companyNameTh || "",
         companyAddress: invoice.project.companyAddress || "",
         taxId: invoice.project.taxId || "",
-        logoUrl: invoice.project.logoUrl || "",
+        logoUrl,
         ownerName: invoice.project.owner?.name || "",
         // Additional details
         subtotal: String(invoice.subtotal),
@@ -168,6 +177,14 @@ ${textLabels.footer}
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
       const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
 
+      // Convert logo S3 key to presigned URL if needed
+      let receiptLogoUrl = "";
+      if (receipt.invoice.project.logoUrl) {
+        receiptLogoUrl = isS3Key(receipt.invoice.project.logoUrl)
+          ? await getPresignedUrl(receipt.invoice.project.logoUrl, 3600)
+          : receipt.invoice.project.logoUrl;
+      }
+
       const params = new URLSearchParams({
         lang,
         receiptNo: receipt.receiptNo,
@@ -183,7 +200,7 @@ ${textLabels.footer}
         companyNameTh: receipt.invoice.project.companyNameTh || "",
         companyAddress: receipt.invoice.project.companyAddress || "",
         companyTaxId: receipt.invoice.project.taxId || "",
-        logoUrl: receipt.invoice.project.logoUrl || "",
+        logoUrl: receiptLogoUrl,
         ownerName: receipt.invoice.project.owner?.name || "",
         // Additional details
         billingMonth: receipt.invoice.billingMonth,
