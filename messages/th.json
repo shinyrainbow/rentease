@@ -268,7 +268,18 @@
     "invoiceFormat": "รูปแบบ",
     "sendAsImage": "รูปภาพ",
     "sendAsPdf": "PDF",
-    "invoiceLanguage": "ภาษา"
+    "invoiceLanguage": "ภาษา",
+    "bulkGenerate": "สร้างทั้งหมด",
+    "bulkGenerateTitle": "สร้างใบแจ้งหนี้ทั้งหมด",
+    "bulkGenerateComplete": "สร้างใบแจ้งหนี้เสร็จสิ้น",
+    "bulkGenerateMessage": "สร้าง {created} ใบ, ข้าม {skipped} ใบ",
+    "bulkDeleteComplete": "ลบใบแจ้งหนี้เสร็จสิ้น",
+    "bulkDeleteMessage": "ลบ {count} ใบแจ้งหนี้แล้ว",
+    "deleteSelected": "ลบที่เลือก",
+    "confirmBulkDelete": "คุณต้องการลบ {count} ใบแจ้งหนี้ที่เลือกหรือไม่?",
+    "generate": "สร้าง",
+    "original": "ต้นฉบับ",
+    "copy": "สำเนา"
   },
   "payments": {
     "title": "การชำระเงิน",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { generateInvoiceNo } from "@/lib/utils";
+import type { Prisma } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,16 +68,32 @@ export async function POST(request: NextRequest) {
       const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), new Date());
 
       // Calculate amounts based on type
-      let lineItems: { description: string; amount: number }[] = [];
+      const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number }[] = [];
       let subtotal = 0;
 
       if (type === "RENT" || type === "COMBINED") {
-        const rentAmount = tenant.baseRent - (tenant.discountAmount || 0) - (tenant.baseRent * (tenant.discountPercent || 0) / 100);
-        lineItems.push({ description: "ค่าเช่า / Rent", amount: rentAmount });
-        if (tenant.commonFee) {
-          lineItems.push({ description: "ค่าส่วนกลาง / Common Fee", amount: tenant.commonFee });
+        const discountAmount = tenant.discountAmount || 0;
+        const discountPercent = tenant.discountPercent || 0;
+        const rentDiscount = tenant.baseRent * (discountPercent / 100);
+        const rentAmount = tenant.baseRent - discountAmount - rentDiscount;
+
+        lineItems.push({
+          description: "ค่าเช่า / Rent",
+          amount: rentAmount,
+          quantity: 1,
+          unitPrice: rentAmount,
+        });
+        subtotal += rentAmount;
+
+        if (tenant.commonFee && tenant.commonFee > 0) {
+          lineItems.push({
+            description: "ค่าส่วนกลาง / Common Fee",
+            amount: tenant.commonFee,
+            quantity: 1,
+            unitPrice: tenant.commonFee,
+          });
+          subtotal += tenant.commonFee;
         }
-        subtotal += rentAmount + (tenant.commonFee || 0);
       }
 
       if (type === "UTILITY" || type === "COMBINED") {
@@ -87,9 +104,17 @@ export async function POST(request: NextRequest) {
 
         for (const reading of meterReadings) {
           const description = reading.type === "ELECTRICITY"
-            ? `ค่าไฟฟ้า / Electricity (${reading.usage} units x ฿${reading.rate})`
-            : `ค่าน้ำ / Water (${reading.usage} units x ฿${reading.rate})`;
-          lineItems.push({ description, amount: reading.amount });
+            ? `ค่าไฟฟ้า / Electricity`
+            : `ค่าน้ำ / Water`;
+
+          lineItems.push({
+            description,
+            amount: reading.amount,
+            quantity: reading.usage,
+            unitPrice: reading.rate,
+            usage: reading.usage,
+            rate: reading.rate,
+          });
           subtotal += reading.amount;
         }
       }
@@ -118,7 +143,7 @@ export async function POST(request: NextRequest) {
           subtotal,
           withholdingTax,
           totalAmount,
-          lineItems,
+          lineItems: lineItems as Prisma.InputJsonValue,
         },
       });
 

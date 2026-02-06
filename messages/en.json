@@ -268,7 +268,18 @@
     "invoiceFormat": "Format",
     "sendAsImage": "Image",
     "sendAsPdf": "PDF",
-    "invoiceLanguage": "Language"
+    "invoiceLanguage": "Language",
+    "bulkGenerate": "Bulk Generate",
+    "bulkGenerateTitle": "Bulk Generate Invoices",
+    "bulkGenerateComplete": "Bulk Generation Complete",
+    "bulkGenerateMessage": "Created {created} invoices, skipped {skipped}",
+    "bulkDeleteComplete": "Bulk Delete Complete",
+    "bulkDeleteMessage": "Deleted {count} invoices",
+    "deleteSelected": "Delete Selected",
+    "confirmBulkDelete": "Are you sure you want to delete {count} selected invoices?",
+    "generate": "Generate",
+    "original": "Original",
+    "copy": "Copy"
   },
   "payments": {
     "title": "Payments",

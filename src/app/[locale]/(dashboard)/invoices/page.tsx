@@ -241,22 +241,22 @@ export default function InvoicesPage() {
 
       if (res.ok) {
         toast({
-          title: "Bulk Generation Complete",
-          description: `Created ${result.created} invoices. ${result.skipped > 0 ? `Skipped ${result.skipped} (already exist).` : ""}`,
+          title: t("bulkGenerateComplete"),
+          description: t("bulkGenerateMessage").replace("{created}", result.created).replace("{skipped}", result.skipped),
         });
         setIsBulkDialogOpen(false);
         fetchData();
       } else {
         toast({
-          title: "Error",
-          description: result.error || "Failed to generate invoices",
+          title: tCommon("error"),
+          description: result.error,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error bulk generating invoices:", error);
       toast({
-        title: "Error",
+        title: tCommon("error"),
         description: "Failed to generate invoices",
         variant: "destructive",
       });
@@ -429,15 +429,15 @@ export default function InvoicesPage() {
       const successCount = results.filter((r) => r.ok).length;
 
       toast({
-        title: "Bulk Delete Complete",
-        description: `Deleted ${successCount} of ${selectedInvoices.size} invoices`,
+        title: t("bulkDeleteComplete"),
+        description: t("bulkDeleteMessage").replace("{count}", String(successCount)),
       });
       setSelectedInvoices(new Set());
       fetchData();
     } catch (error) {
       console.error("Error bulk deleting:", error);
       toast({
-        title: "Error",
+        title: tCommon("error"),
         description: "Failed to delete some invoices",
         variant: "destructive",
       });
@@ -869,25 +869,25 @@ export default function InvoicesPage() {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Bulk Generate
+                {t("bulkGenerate")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Bulk Generate Invoices</DialogTitle>
+                <DialogTitle>{t("bulkGenerateTitle")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleBulkGenerate} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Project (Optional)</Label>
+                  <Label>{t("project")}</Label>
                   <Select
                     value={bulkFormData.projectId || "__all__"}
                     onValueChange={(value) => setBulkFormData({ ...bulkFormData, projectId: value === "__all__" ? "" : value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="All Projects" />
+                      <SelectValue placeholder={t("allProjects")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__all__">All Projects</SelectItem>
+                      <SelectItem value="__all__">{t("allProjects")}</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
@@ -928,16 +928,13 @@ export default function InvoicesPage() {
                     onChange={(e) => setBulkFormData({ ...bulkFormData, dueDate: e.target.value })}
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  This will generate invoices for all active tenants. Tenants who already have an invoice for this billing month will be skipped.
-                </p>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsBulkDialogOpen(false)}>
                     {tCommon("cancel")}
                   </Button>
                   <Button type="submit" disabled={bulkGenerating}>
                     {bulkGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Generate Invoices
+                    {t("generate")}
                   </Button>
                 </div>
               </form>
@@ -1131,7 +1128,7 @@ export default function InvoicesPage() {
       {/* Batch Action Bar */}
       {selectedInvoices.size > 0 && (
         <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-          <span className="text-sm font-medium">{selectedInvoices.size} selected</span>
+          <span className="text-sm font-medium">{selectedInvoices.size} {tCommon("select")}</span>
           <Button
             variant="destructive"
             size="sm"
@@ -1139,7 +1136,7 @@ export default function InvoicesPage() {
             disabled={bulkDeleting}
           >
             {bulkDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Delete Selected
+            {t("deleteSelected")}
           </Button>
           <Button
             variant="outline"
@@ -1147,14 +1144,14 @@ export default function InvoicesPage() {
             onClick={handleExportCSV}
           >
             <Download className="h-4 w-4 mr-2" />
-            Export Selected
+            {tCommon("export")}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedInvoices(new Set())}
           >
-            Clear
+            {tCommon("cancel")}
           </Button>
         </div>
       )}
