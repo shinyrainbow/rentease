@@ -13,12 +13,15 @@ export function formatCurrency(amount: number, locale: string = "th-TH"): string
   }).format(amount);
 }
 
-export function formatDate(date: Date, locale: string = "th-TH"): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+// Format date as dd/mm/yyyy
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 export function generateInvoiceNo(projectCode: string, date: Date): string {

@@ -447,8 +447,10 @@ export default function TenantsPage() {
         return direction * a.tenantType.localeCompare(b.tenantType);
       case "status":
         return direction * getDisplayStatus(a).localeCompare(getDisplayStatus(b));
-      case "phone":
-        return direction * (a.phone || "").localeCompare(b.phone || "");
+      case "contractStart":
+        const aStartDate = a.contractStart ? new Date(a.contractStart).getTime() : 0;
+        const bStartDate = b.contractStart ? new Date(b.contractStart).getTime() : 0;
+        return direction * (aStartDate - bStartDate);
       case "contractEnd":
         const aDate = a.contractEnd ? new Date(a.contractEnd).getTime() : 0;
         const bDate = b.contractEnd ? new Date(b.contractEnd).getTime() : 0;
@@ -821,8 +823,8 @@ export default function TenantsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                   {tCommon("status")} <SortIcon column="status" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("phone")}>
-                  {t("phone")} <SortIcon column="phone" />
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("contractStart")}>
+                  {t("contractStart")} <SortIcon column="contractStart" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("contractEnd")}>
                   {t("contractEnd")} <SortIcon column="contractEnd" />
@@ -853,7 +855,9 @@ export default function TenantsPage() {
                         {t(`statuses.${getDisplayStatus(tenant)}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{tenant.phone || "-"}</TableCell>
+                    <TableCell>
+                      {tenant.contractStart ? new Date(tenant.contractStart).toLocaleDateString() : "-"}
+                    </TableCell>
                     <TableCell>
                       {tenant.contractEnd ? new Date(tenant.contractEnd).toLocaleDateString() : "-"}
                     </TableCell>

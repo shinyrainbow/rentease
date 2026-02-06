@@ -75,12 +75,12 @@ function formatCurrency(amount: number): string {
   });
 }
 
-function formatDate(date: Date, lang: "en" | "th"): string {
-  return new Date(date).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function formatDate(date: Date): string {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 export async function POST(
@@ -163,7 +163,7 @@ export async function POST(
     doc.setFontSize(10);
     setThaiFont(doc, "normal");
     doc.text(`${t.receiptNo}: ${receipt.receiptNo}`, 20, y);
-    doc.text(`${t.date}: ${formatDate(receipt.issuedAt, lang as "en" | "th")}`, pageWidth - 60, y);
+    doc.text(`${t.date}: ${formatDate(receipt.issuedAt)}`, pageWidth - 60, y);
     y += 6;
     doc.text(`${t.referenceInvoice}: ${receipt.invoice.invoiceNo}`, 20, y);
     doc.text(`${t.billingMonth}: ${receipt.invoice.billingMonth}`, pageWidth - 60, y);

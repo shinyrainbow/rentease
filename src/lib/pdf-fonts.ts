@@ -31,13 +31,13 @@ async function loadFonts(): Promise<{ regular: string; bold: string }> {
     return fontCache;
   }
 
-  // Sarabun font from Google Fonts CDN
+  // Sarabun font from Google Fonts CDN (v17)
   const [regular, bold] = await Promise.all([
     fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/sarabun/v15/DtVjJx26TKEr37c9YL5rilwm.ttf"
+      "https://fonts.gstatic.com/s/sarabun/v17/DtVjJx26TKEr37c9WBI.ttf"
     ),
     fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YNpoulwm6gDX.ttf"
+      "https://fonts.gstatic.com/s/sarabun/v17/DtVmJx26TKEr37c9YK5sulw.ttf"
     ),
   ]);
 
