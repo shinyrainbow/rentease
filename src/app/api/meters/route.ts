@@ -63,6 +63,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
+    // Check if reading already exists for this unit/type/billingMonth
+    const existingReading = await prisma.meterReading.findFirst({
+      where: {
+        unitId: data.unitId,
+        type: data.type,
+        billingMonth: data.billingMonth,
+      },
+    });
+
+    if (existingReading) {
+      return NextResponse.json(
+        { error: "Meter reading already exists for this unit, type, and billing month" },
+        { status: 409 }
+      );
+    }
+
     // Get previous reading
     const previousReading = await prisma.meterReading.findFirst({
       where: {
