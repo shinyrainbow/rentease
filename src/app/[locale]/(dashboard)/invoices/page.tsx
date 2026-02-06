@@ -167,6 +167,7 @@ export default function InvoicesPage() {
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
   const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -644,30 +645,57 @@ export default function InvoicesPage() {
     setLoadingInvoice(true);
     setViewDialogOpen(true);
     setPdfPreviewUrl(null);
+    setImagePreviewUrl(null);
     try {
-      // Fetch invoice details and generate PDF in parallel
-      const [detailRes, pdfRes] = await Promise.all([
-        fetch(`/api/invoices/${invoice.id}`),
-        fetch(`/api/invoices/${invoice.id}/pdf`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lang: "th" }),
-        }),
-      ]);
+      // Fetch invoice details first
+      const detailRes = await fetch(`/api/invoices/${invoice.id}`);
 
       if (detailRes.ok) {
         const data = await detailRes.json();
         setSelectedInvoice(data);
-      }
 
-      if (pdfRes.ok) {
-        const pdfData = await pdfRes.json();
-        if (pdfData.url) {
-          setPdfPreviewUrl(pdfData.url);
+        // Generate LINE image URL with invoice details
+        const params = new URLSearchParams({
+          lang: "th",
+          invoiceNo: data.invoiceNo,
+          billingMonth: data.billingMonth,
+          dueDate: new Date(data.dueDate).toISOString(),
+          dateCreated: new Date(data.createdAt).toISOString(),
+          totalAmount: String(data.totalAmount),
+          unitNumber: data.unit.unitNumber,
+          tenantName: data.tenant.nameTh || data.tenant.name,
+          tenantAddress: data.tenant.address || "",
+          tenantTaxId: data.tenant.taxId || "",
+          tenantIdCard: data.tenant.idCard || "",
+          companyName: data.project.companyNameTh || data.project.companyName || data.project.name,
+          companyNameTh: data.project.companyNameTh || "",
+          companyAddress: data.project.companyAddress || "",
+          taxId: data.project.taxId || "",
+          logoUrl: "", // Logo will be handled by the route
+          ownerName: data.project.owner?.name || "",
+          subtotal: String(data.subtotal),
+          withholdingTax: String(data.withholdingTax || 0),
+          lineItems: JSON.stringify(data.lineItems || []),
+          bankName: data.project.bankName || "",
+          bankAccountName: data.project.bankAccountName || "",
+          bankAccountNumber: data.project.bankAccountNumber || "",
+        });
+        setImagePreviewUrl(`/api/invoices/${invoice.id}/line-image?${params.toString()}`);
+
+        // Also generate PDF in background
+        const pdfRes = await fetch(`/api/invoices/${invoice.id}/pdf`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lang: "th" }),
+        });
+
+        if (pdfRes.ok) {
+          const pdfData = await pdfRes.json();
+          if (pdfData.url) {
+            setPdfPreviewUrl(pdfData.url);
+          }
         }
-      }
-
-      if (!detailRes.ok) {
+      } else {
         toast({
           title: "Error",
           description: "Failed to load invoice details",
@@ -1265,12 +1293,25 @@ export default function InvoicesPage() {
               </TabsList>
 
               <TabsContent value="preview" className="flex-1 overflow-hidden mt-4">
-                {pdfPreviewUrl ? (
-                  <iframe
-                    src={pdfPreviewUrl}
-                    className="w-full h-[60vh] border rounded-lg"
-                    title="Invoice PDF Preview"
-                  />
+                {imagePreviewUrl ? (
+                  <div className="flex flex-col items-center gap-4">
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Invoice Preview"
+                      className="max-w-full h-auto border rounded-lg shadow-lg"
+                      style={{ maxHeight: "60vh" }}
+                    />
+                    {pdfPreviewUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(pdfPreviewUrl, "_blank")}
+                      >
+                        <FileDown className="h-4 w-4 mr-2" />
+                        {t("downloadPdf") || "Download PDF"}
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[60vh]">
                     <Loader2 className="h-8 w-8 animate-spin" />
