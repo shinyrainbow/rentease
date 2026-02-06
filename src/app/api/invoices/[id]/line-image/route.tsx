@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       description: "Description",
       price: "Price",
       subTotal: "Sub-Total",
-      vat: "Vat 7%",
+      withholdingTax: "ภาษีหัก ณ ที่จ่าย",
       totalAmount: "Total",
       termsTitle: "Terms & Conditions:",
       termsText: "Above information is not an invoice and only an estimate of goods/services.",
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
       description: "Description",
       price: "Price",
       subTotal: "Sub-Total",
-      vat: "Vat 7%",
+      withholdingTax: "Withholding Tax",
       totalAmount: "Total",
       termsTitle: "Terms & Conditions:",
       termsText: "Above information is not an invoice and only an estimate of goods/services.",
@@ -105,9 +105,7 @@ export async function GET(request: NextRequest) {
       );
     };
 
-    // Calculate VAT (7%)
-    const vatAmount = Math.round(subtotal * 0.07);
-    const totalWithVat = subtotal + vatAmount;
+    // Use withholdingTax passed from invoice (only for company tenants)
 
     return new ImageResponse(
       (
@@ -323,10 +321,12 @@ export async function GET(request: NextRequest) {
                   <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.subTotal}</span>
                   <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.vat}</span>
-                  <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(vatAmount)}</span>
-                </div>
+                {withholdingTax > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                    <span style={{ fontSize: "10px", color: "#111827" }}>-{formatCurrency(withholdingTax)}</span>
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -337,7 +337,7 @@ export async function GET(request: NextRequest) {
                   }}
                 >
                   <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>{t.totalAmount}</span>
-                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalWithVat)}</span>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalAmount)}</span>
                 </div>
               </div>
             </div>

@@ -140,6 +140,7 @@ ${textLabels.footer}
                   nameTh: true,
                   companyName: true,
                   companyNameTh: true,
+                  companyAddress: true,
                   taxId: true,
                   lineAccessToken: true,
                   ownerId: true,
@@ -190,8 +191,12 @@ ${textLabels.footer}
         unitNumber: receipt.invoice.unit.unitNumber,
         tenantName,
         companyName,
-        // Additional details
+        // Additional details for new receipt format
         billingMonth: receipt.invoice.billingMonth,
+        companyAddress: receipt.invoice.project.companyAddress || "",
+        companyTaxId: receipt.invoice.project.taxId || "",
+        tenantTaxId: receipt.invoice.tenant.taxId || "",
+        withholdingTax: String(receipt.invoice.withholdingTax || 0),
         paymentMethod: payment?.method || "",
         paymentDate: payment?.createdAt?.toISOString() || "",
       });

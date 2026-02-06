@@ -16,7 +16,7 @@ const translations = {
     price: "Price",
     total: "Total",
     subTotal: "Sub-Total",
-    vat: "Vat 7%",
+    withholdingTax: "Withholding Tax",
     totalAmount: "Total",
     rent: "Monthly Rent",
     utility: "Utilities",
@@ -50,7 +50,7 @@ const translations = {
     price: "Price",
     total: "Total",
     subTotal: "Sub-Total",
-    vat: "Vat 7%",
+    withholdingTax: "ภาษีหัก ณ ที่จ่าย",
     totalAmount: "Total",
     rent: "ค่าเช่ารายเดือน",
     utility: "ค่าสาธารณูปโภค",
@@ -139,9 +139,8 @@ export async function GET(
       { description: getTypeLabel(invoice.type), amount: invoice.subtotal, quantity: 1 },
     ];
 
-    // Calculate VAT (7%)
-    const vatAmount = Math.round(invoice.subtotal * 0.07);
-    const totalWithVat = invoice.subtotal + vatAmount;
+    // Use withholdingTax from invoice (only for company tenants)
+    const withholdingTaxAmount = invoice.withholdingTax || 0;
 
     return new ImageResponse(
       (
@@ -372,10 +371,12 @@ export async function GET(
                   <span style={{ fontSize: "11px", color: "#6B7280" }}>{t.subTotal}</span>
                   <span style={{ fontSize: "11px", color: "#111827" }}>{formatCurrency(invoice.subtotal)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "11px", color: "#6B7280" }}>{t.vat}</span>
-                  <span style={{ fontSize: "11px", color: "#111827" }}>{formatCurrency(vatAmount)}</span>
-                </div>
+                {withholdingTaxAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "11px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                    <span style={{ fontSize: "11px", color: "#111827" }}>-{formatCurrency(withholdingTaxAmount)}</span>
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -386,7 +387,7 @@ export async function GET(
                   }}
                 >
                   <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>{t.totalAmount}</span>
-                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalWithVat)}</span>
+                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(invoice.totalAmount)}</span>
                 </div>
               </div>
             </div>

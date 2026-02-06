@@ -7,49 +7,119 @@ import { jsPDF } from "jspdf";
 const translations = {
   en: {
     receipt: "RECEIPT",
-    receiptNo: "Receipt No",
+    original: "(Original)",
+    receiptNo: "No.",
     date: "Date",
-    invoiceRef: "Invoice Reference",
-    receivedFrom: "Received From",
-    unit: "Unit",
-    phone: "Phone",
-    taxId: "Tax ID",
+    reference: "Reference",
+    room: "Room",
+    name: "Name",
+    taxId: "TAX ID",
+    no: "#",
     description: "Description",
-    amount: "Amount (THB)",
-    total: "Total Received",
-    payment: "Payment",
-    thankYou: "Thank you for your payment",
+    price: "Price",
+    whTax: "WH 5%",
+    total: "Total",
+    grandTotal: "Grand Total",
+    receiver: "Receiver",
   },
   th: {
     receipt: "ใบเสร็จรับเงิน",
+    original: "(ต้นฉบับ)",
     receiptNo: "เลขที่",
     date: "วันที่",
-    invoiceRef: "อ้างอิงใบแจ้งหนี้",
-    receivedFrom: "รับเงินจาก",
-    unit: "ห้อง",
-    phone: "โทร",
-    taxId: "เลขประจำตัวผู้เสียภาษี",
-    description: "รายการ",
-    amount: "จำนวนเงิน (บาท)",
-    total: "รวมเงินที่รับ",
-    payment: "ชำระเงิน",
-    thankYou: "ขอบคุณที่ชำระเงิน",
+    reference: "อ้างอิง",
+    room: "ห้อง",
+    name: "ชื่อ",
+    taxId: "TAX ID",
+    no: "#",
+    description: "Description / รายละเอียด",
+    price: "Price / ราคา",
+    whTax: "WH 5% / ณ ที่จ่าย",
+    total: "Total / จำนวนเงิน",
+    grandTotal: "จำนวนเงินทั้งสิ้น",
+    receiver: "ผู้รับเงิน",
   },
 };
 
+// Convert number to Thai baht text
+function numberToThaiText(num: number): string {
+  const thaiNumbers = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  const thaiPositions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+
+  if (num === 0) return "ศูนย์บาทถ้วน";
+
+  const intPart = Math.floor(num);
+  const decimalPart = Math.round((num - intPart) * 100);
+
+  let result = "";
+
+  const numStr = intPart.toString();
+  const len = numStr.length;
+
+  for (let i = 0; i < len; i++) {
+    const digit = parseInt(numStr[i]);
+    const position = len - i - 1;
+    const posInGroup = position % 6;
+
+    if (position >= 6 && posInGroup === 0 && digit !== 0) {
+      result += "ล้าน";
+    }
+
+    if (digit === 0) continue;
+
+    if (posInGroup === 1 && digit === 1) {
+      result += "สิบ";
+    } else if (posInGroup === 1 && digit === 2) {
+      result += "ยี่สิบ";
+    } else if (posInGroup === 0 && digit === 1 && len > 1) {
+      result += "เอ็ด";
+    } else {
+      result += thaiNumbers[digit] + thaiPositions[posInGroup];
+    }
+  }
+
+  result += "บาท";
+
+  if (decimalPart > 0) {
+    const decStr = decimalPart.toString().padStart(2, "0");
+    const d1 = parseInt(decStr[0]);
+    const d2 = parseInt(decStr[1]);
+
+    if (d1 === 1) {
+      result += "สิบ";
+    } else if (d1 === 2) {
+      result += "ยี่สิบ";
+    } else if (d1 > 0) {
+      result += thaiNumbers[d1] + "สิบ";
+    }
+
+    if (d2 === 1 && d1 > 0) {
+      result += "เอ็ด";
+    } else if (d2 > 0) {
+      result += thaiNumbers[d2];
+    }
+
+    result += "สตางค์";
+  } else {
+    result += "ถ้วน";
+  }
+
+  return result;
+}
+
 function formatCurrency(amount: number): string {
-  return amount.toLocaleString("th-TH", {
+  return amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-function formatDate(date: Date, lang: "en" | "th"): string {
-  return new Date(date).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function formatDate(date: Date): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export async function POST(
@@ -83,105 +153,192 @@ export async function POST(
       return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
     }
 
+    // Get tenant and company info
+    const tenantName = lang === "th" && receipt.invoice.tenant.nameTh
+      ? receipt.invoice.tenant.nameTh
+      : receipt.invoice.tenant.name;
+    const tenantTaxId = receipt.invoice.tenant.taxId || "";
+
+    const companyName = lang === "th" && receipt.invoice.project.companyNameTh
+      ? receipt.invoice.project.companyNameTh
+      : (receipt.invoice.project.companyName || receipt.invoice.project.name);
+    const companyAddress = receipt.invoice.project.companyAddress || "";
+    const companyTaxId = receipt.invoice.project.taxId || "";
+
+    // Calculate values
+    const withholdingTax = receipt.invoice.withholdingTax || 0;
+    const subtotal = receipt.amount + withholdingTax;
+    const totalAmount = receipt.amount;
+
+    // Get billing month for description
+    const billingMonth = receipt.invoice.billingMonth;
+    const billingDate = billingMonth ? new Date(billingMonth + "-01") : new Date();
+    const monthName = billingDate.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+    const monthNameEn = billingDate.toLocaleDateString("en-US", { month: "long" });
+
     // Generate PDF
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    // Company header
-    doc.setFontSize(18);
+    // ===== HEADER SECTION =====
+    // Company info - Left side
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(receipt.invoice.project.companyName || receipt.invoice.project.name, pageWidth / 2, y, { align: "center" });
+    doc.text(companyName, 20, y);
+    y += 6;
+
+    if (companyAddress) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      // Split long addresses
+      const addressLines = doc.splitTextToSize(companyAddress, 90);
+      addressLines.forEach((line: string) => {
+        doc.text(line, 20, y);
+        y += 4;
+      });
+    }
+
+    if (companyTaxId) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`เลขผู้เสียภาษี ${companyTaxId}`, 20, y);
+    }
+
+    // Receipt title and info box - Right side
+    const rightX = pageWidth - 80;
+    let rightY = 20;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${t.receipt} ${t.original}`, rightX, rightY);
+    rightY += 8;
+
+    // Info box
+    doc.setDrawColor(180, 180, 180);
+    doc.rect(rightX - 5, rightY - 4, 70, 28);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(t.receiptNo, rightX, rightY + 2);
+    doc.text(receipt.receiptNo, rightX + 50, rightY + 2, { align: "right" });
+    rightY += 8;
+
+    doc.text(t.date, rightX, rightY + 2);
+    doc.text(formatDate(receipt.issuedAt), rightX + 50, rightY + 2, { align: "right" });
+    rightY += 8;
+
+    doc.text(t.reference, rightX, rightY + 2);
+    doc.text(receipt.invoice.invoiceNo, rightX + 50, rightY + 2, { align: "right" });
+
+    y = Math.max(y, rightY) + 15;
+
+    // ===== TENANT INFO SECTION =====
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+
+    doc.text(`${t.room}:`, 20, y);
+    doc.text(receipt.invoice.unit.unitNumber, 50, y);
+    y += 6;
+
+    doc.text(`${t.name}:`, 20, y);
+    doc.text(tenantName, 50, y);
+    y += 6;
+
+    if (tenantTaxId) {
+      doc.text(`${t.taxId}`, 20, y);
+      doc.text(tenantTaxId, 50, y);
+      y += 6;
+    }
+
     y += 8;
 
-    if (receipt.invoice.project.companyAddress) {
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(receipt.invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-      y += 6;
-    }
+    // ===== ITEMS TABLE =====
+    const tableStartY = y;
+    const colWidths = { no: 15, desc: 70, price: 35, wh: 35, total: 35 };
+    const tableWidth = colWidths.no + colWidths.desc + colWidths.price + colWidths.wh + colWidths.total;
+    const tableX = 20;
 
-    if (receipt.invoice.project.taxId) {
-      doc.text(`${t.taxId}: ${receipt.invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
-      y += 6;
-    }
+    // Table header
+    doc.setFillColor(245, 245, 245);
+    doc.rect(tableX, y - 4, tableWidth, 12, "F");
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(tableX, y - 4, tableWidth, 12);
 
-    y += 10;
-
-    // Receipt title
-    doc.setFontSize(16);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(22, 163, 74); // Green
-    doc.text(t.receipt, pageWidth / 2, y, { align: "center" });
-    doc.setTextColor(0, 0, 0);
+
+    let colX = tableX + 3;
+    doc.text(t.no, colX, y + 2);
+    colX += colWidths.no;
+
+    doc.text(t.description, colX, y + 2);
+    colX += colWidths.desc;
+
+    doc.text(t.price, colX + colWidths.price - 3, y + 2, { align: "right" });
+    colX += colWidths.price;
+
+    doc.text(t.whTax, colX + colWidths.wh - 3, y + 2, { align: "right" });
+    colX += colWidths.wh;
+
+    doc.text(t.total, colX + colWidths.total - 3, y + 2, { align: "right" });
+
     y += 12;
 
-    // Receipt details
-    doc.setFontSize(10);
+    // Table row
     doc.setFont("helvetica", "normal");
-    doc.text(`${t.receiptNo}: ${receipt.receiptNo}`, 20, y);
-    doc.text(`${t.date}: ${formatDate(receipt.issuedAt, lang as "en" | "th")}`, pageWidth - 60, y);
-    y += 6;
-    doc.text(`${t.invoiceRef}: ${receipt.invoice.invoiceNo}`, 20, y);
-    y += 12;
+    doc.rect(tableX, y - 4, tableWidth, 10);
 
-    // Received from section
-    doc.setFont("helvetica", "bold");
-    doc.text(`${t.receivedFrom}:`, 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
-    doc.text(tenantName, 20, y);
-    y += 5;
-    doc.text(`${t.unit}: ${receipt.invoice.unit.unitNumber}`, 20, y);
-    y += 5;
-    if (receipt.invoice.tenant.phone) {
-      doc.text(`${t.phone}: ${receipt.invoice.tenant.phone}`, 20, y);
-      y += 5;
-    }
-    if (receipt.invoice.tenant.taxId) {
-      doc.text(`${t.taxId}: ${receipt.invoice.tenant.taxId}`, 20, y);
-      y += 5;
-    }
-    y += 10;
+    colX = tableX + 3;
+    doc.text("1", colX, y + 2);
+    colX += colWidths.no;
 
-    // Amount table header
-    doc.setFillColor(22, 163, 74); // Green
-    doc.rect(20, y, pageWidth - 40, 8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text(t.description, 25, y + 6);
-    doc.text(t.amount, pageWidth - 45, y + 6, { align: "right" });
-    y += 12;
+    const description = `ค่าเช่า เดือน${monthName} / Rental fee ${monthNameEn}`;
+    const descLines = doc.splitTextToSize(description, colWidths.desc - 5);
+    doc.text(descLines[0], colX, y + 2);
+    colX += colWidths.desc;
 
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
+    doc.text(formatCurrency(subtotal), colX + colWidths.price - 3, y + 2, { align: "right" });
+    colX += colWidths.price;
 
-    // Payment row
-    doc.setFont("helvetica", "normal");
-    doc.setFillColor(240, 253, 244); // Light green
-    doc.rect(20, y - 4, pageWidth - 40, 10, "F");
-    doc.text(`${t.payment} - ${receipt.invoice.invoiceNo}`, 25, y + 2);
-    doc.setTextColor(22, 163, 74);
-    doc.text(formatCurrency(receipt.amount), pageWidth - 45, y + 2, { align: "right" });
-    doc.setTextColor(0, 0, 0);
+    doc.text(formatCurrency(withholdingTax), colX + colWidths.wh - 3, y + 2, { align: "right" });
+    colX += colWidths.wh;
+
+    doc.text(formatCurrency(totalAmount), colX + colWidths.total - 3, y + 2, { align: "right" });
+
     y += 15;
 
-    // Total box
-    doc.setFillColor(22, 163, 74);
-    doc.rect(pageWidth - 100, y, 80, 12, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text(t.total, pageWidth - 95, y + 8);
-    doc.text(formatCurrency(receipt.amount), pageWidth - 25, y + 8, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-
-    // Footer
-    y = doc.internal.pageSize.getHeight() - 20;
+    // ===== TOTAL SECTION =====
+    // Thai text total - left side
+    doc.setFillColor(220, 252, 231); // Light green
+    doc.rect(tableX, y - 4, 90, 10, "F");
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(107, 114, 128);
-    doc.text(t.thankYou, pageWidth / 2, y, { align: "center" });
+    doc.text(numberToThaiText(totalAmount), tableX + 3, y + 2);
+
+    // Grand total - right side
+    const totalBoxX = tableX + tableWidth - 60;
+    doc.setFillColor(220, 252, 231);
+    doc.setDrawColor(134, 239, 172);
+    doc.rect(totalBoxX, y - 4, 60, 10, "FD");
+
+    doc.setFontSize(9);
+    doc.text(t.grandTotal, totalBoxX + 3, y + 2);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatCurrency(totalAmount), totalBoxX + 57, y + 2, { align: "right" });
+
+    // ===== SIGNATURE SECTION =====
+    y = doc.internal.pageSize.getHeight() - 50;
+
+    // Signature line - right side
+    const sigX = pageWidth - 70;
+    doc.setDrawColor(150, 150, 150);
+    doc.line(sigX, y, sigX + 50, y);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(t.receiver, sigX + 25, y + 8, { align: "center" });
 
     // Get PDF as buffer
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
