@@ -306,14 +306,14 @@ export async function GET(
           </div>
 
           {/* Items Table */}
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: "16px", flex: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: "16px" }}>
             {/* Table Header */}
             <div
               style={{
                 display: "flex",
                 backgroundColor: GREEN_COLOR,
                 borderRadius: "4px 4px 0 0",
-                padding: "10px 12px",
+                padding: "8px 12px",
               }}
             >
               <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
@@ -340,7 +340,7 @@ export async function GET(
                 key={index}
                 style={{
                   display: "flex",
-                  padding: "10px 12px",
+                  padding: "6px 12px",
                   borderBottom: "1px solid #E5E7EB",
                   backgroundColor: index % 2 === 0 ? "#ffffff" : "#F0FDF4",
                 }}

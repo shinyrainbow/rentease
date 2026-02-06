@@ -280,7 +280,7 @@ export async function POST(
     lineItems.forEach((item, index) => {
       if (index % 2 === 0) {
         doc.setFillColor(249, 250, 251);
-        doc.rect(20, y - 4, pageWidth - 40, 8, "F");
+        doc.rect(20, y - 3, pageWidth - 40, 6, "F");
       }
       doc.text(item.description, 25, y);
       if (hasUtilityItems) {
@@ -294,7 +294,7 @@ export async function POST(
         }
       }
       doc.text(formatCurrency(item.amount), pageWidth - 45, y, { align: "right" });
-      y += 8;
+      y += 6;
     });
 
     y += 5;
