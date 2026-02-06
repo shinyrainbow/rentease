@@ -155,290 +155,351 @@ export async function GET(request: NextRequest) {
             height: "100%",
             backgroundColor: "#ffffff",
             fontFamily: "sans-serif",
-            padding: "64px",
           }}
         >
-          {/* Header - Company Info & Receipt Title */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px" }}>
-            {/* Left - Company Info */}
-            <div style={{ display: "flex", flexDirection: "column", maxWidth: "50%" }}>
-              {/* Logo and Company Name */}
-              <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "12px" }}>
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt="Logo"
-                    width={96}
-                    height={96}
-                    style={{ objectFit: "contain", borderRadius: "8px" }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "96px",
-                      height: "96px",
-                      backgroundColor: GREEN_COLOR,
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ffffff",
-                      fontSize: "40px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {companyName.charAt(0)}
-                  </div>
-                )}
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
-                    {companyName}
-                  </span>
-                  {companyNameTh && (
-                    <span style={{ fontSize: "20px", color: "#6B7280" }}>
-                      {companyNameTh}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {/* Company Address */}
-              {companyAddress && (
-                <span style={{ fontSize: "18px", color: "#6B7280", marginBottom: "4px" }}>
-                  {companyAddress}
-                </span>
-              )}
-              {/* Company Tax ID */}
-              {companyTaxId && (
-                <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                  {t.taxId}: {companyTaxId}
-                </span>
-              )}
-            </div>
-
-            {/* Right - Receipt Title & Badge */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "12px" }}>
-                <span style={{ fontSize: "48px", fontWeight: "bold", color: GREEN_COLOR }}>
-                  {t.receipt}
-                </span>
-                <div
-                  style={{
-                    backgroundColor: version === "original" ? GREEN_COLOR : "#6B7280",
-                    color: "#ffffff",
-                    padding: "6px 20px",
-                    borderRadius: "8px",
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {version === "original" ? t.original : t.copy}
-                </div>
-              </div>
-              {/* Receipt Details */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-                <span style={{ fontSize: "20px", color: "#4B5563" }}>
-                  {t.receiptNo}: <span style={{ fontWeight: "bold" }}>{receiptNo}</span>
-                </span>
-                <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                  {t.dateCreated}: {formatDate(issuedAt)}
-                </span>
-                <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                  {t.referenceInvoice}: {invoiceNo}
-                </span>
-                <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                  {t.billingMonth}: {billingMonth}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Received From Section */}
+          {/* Top accent bar */}
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              backgroundColor: "#F0FDF4",
-              padding: "24px",
-              borderRadius: "12px",
-              marginBottom: "32px",
+              height: "12px",
+              background: `linear-gradient(90deg, ${GREEN_COLOR} 0%, #22C55E 100%)`,
             }}
-          >
-            <span style={{ fontSize: "20px", fontWeight: "bold", color: GREEN_COLOR, marginBottom: "12px" }}>
-              {t.receivedFrom}
-            </span>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>
-                  {tenantName}
-                </span>
-                {tenantAddress && (
-                  <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "4px" }}>
-                    {tenantAddress}
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", padding: "48px 64px" }}>
+            {/* Header - Company Info & Receipt Title */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px" }}>
+              {/* Left - Company Info */}
+              <div style={{ display: "flex", flexDirection: "column", maxWidth: "55%" }}>
+                {/* Logo and Company Name */}
+                <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: "16px" }}>
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
+                      width={100}
+                      height={100}
+                      style={{ objectFit: "contain", borderRadius: "12px", border: "2px solid #E5E7EB" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        background: `linear-gradient(135deg, ${GREEN_COLOR} 0%, #22C55E 100%)`,
+                        borderRadius: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ffffff",
+                        fontSize: "44px",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {companyName.charAt(0)}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "32px", fontWeight: "bold", color: "#111827" }}>
+                      {companyName}
+                    </span>
+                    {companyNameTh && companyName !== companyNameTh && (
+                      <span style={{ fontSize: "22px", color: "#6B7280", marginTop: "4px" }}>
+                        {companyNameTh}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* Company Address */}
+                {companyAddress && (
+                  <span style={{ fontSize: "18px", color: "#6B7280", marginBottom: "4px", lineHeight: 1.4 }}>
+                    {companyAddress}
                   </span>
                 )}
-                {tenantTaxId && (
-                  <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "4px" }}>
-                    {t.taxId}: {tenantTaxId}
-                  </span>
-                )}
-                {tenantIdCard && !tenantTaxId && (
-                  <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "4px" }}>
-                    {t.idCard}: {tenantIdCard}
+                {/* Company Tax ID */}
+                {companyTaxId && (
+                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
+                    {t.taxId}: {companyTaxId}
                   </span>
                 )}
               </div>
+
+              {/* Right - Receipt Title & Badge */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <span style={{ fontSize: "20px", color: "#6B7280" }}>
-                  {t.unit}: <span style={{ fontWeight: "bold", color: "#111827" }}>{unitNumber}</span>
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "52px", fontWeight: "bold", color: GREEN_COLOR, letterSpacing: "-1px" }}>
+                    {t.receipt}
+                  </span>
+                  <div
+                    style={{
+                      background: version === "original"
+                        ? `linear-gradient(135deg, ${GREEN_COLOR} 0%, #22C55E 100%)`
+                        : "linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)",
+                      color: "#ffffff",
+                      padding: "8px 24px",
+                      borderRadius: "24px",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {version === "original" ? t.original : t.copy}
+                  </div>
+                </div>
+                {/* Receipt Details Card */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    backgroundColor: "#F0FDF4",
+                    padding: "16px 24px",
+                    borderRadius: "12px",
+                    gap: "6px",
+                  }}
+                >
+                  <span style={{ fontSize: "22px", color: "#111827", fontWeight: "600" }}>
+                    {t.receiptNo}: {receiptNo}
+                  </span>
+                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
+                    {t.dateCreated}: {formatDate(issuedAt)}
+                  </span>
+                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
+                    {t.referenceInvoice}: {invoiceNo}
+                  </span>
+                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
+                    {t.billingMonth}: {billingMonth}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Items Table */}
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: "24px" }}>
-            {/* Table Header */}
+            {/* Received From Section */}
             <div
               style={{
                 display: "flex",
-                backgroundColor: GREEN_COLOR,
-                borderRadius: "8px 8px 0 0",
-                padding: "16px 20px",
+                flexDirection: "column",
+                backgroundColor: "#F0FDF4",
+                padding: "28px",
+                borderRadius: "16px",
+                marginBottom: "32px",
+                borderLeft: `6px solid ${GREEN_COLOR}`,
               }}
             >
-              <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
-                <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
-              </div>
-              {hasUtilityItems && (
-                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
+              <span style={{ fontSize: "16px", fontWeight: "bold", color: GREEN_COLOR, marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                {t.receivedFrom}
+              </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+                    {tenantName}
+                  </span>
+                  {tenantAddress && (
+                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "8px" }}>
+                      {tenantAddress}
+                    </span>
+                  )}
+                  {tenantTaxId && (
+                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "6px" }}>
+                      {t.taxId}: {tenantTaxId}
+                    </span>
+                  )}
+                  {tenantIdCard && !tenantTaxId && (
+                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "6px" }}>
+                      {t.idCard}: {tenantIdCard}
+                    </span>
+                  )}
                 </div>
-              )}
-              {hasUtilityItems && (
-                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    backgroundColor: GREEN_COLOR,
+                    padding: "16px 28px",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", marginBottom: "4px" }}>
+                    {t.unit}
+                  </span>
+                  <span style={{ fontSize: "28px", fontWeight: "bold", color: "#ffffff" }}>
+                    {unitNumber}
+                  </span>
                 </div>
-              )}
-              <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
               </div>
             </div>
 
-            {/* Table Rows */}
-            {lineItems.map((item, index) => (
+            {/* Items Table */}
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "28px" }}>
+              {/* Table Header */}
               <div
-                key={index}
                 style={{
                   display: "flex",
-                  padding: "16px 20px",
-                  borderBottom: "2px solid #E5E7EB",
-                  backgroundColor: index % 2 === 0 ? "#ffffff" : "#F0FDF4",
+                  background: `linear-gradient(90deg, ${GREEN_COLOR} 0%, #15803D 100%)`,
+                  borderRadius: "12px 12px 0 0",
+                  padding: "18px 24px",
                 }}
               >
                 <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
-                  <span style={{ fontSize: "18px", color: "#111827" }}>{item.description}</span>
+                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
                 </div>
                 {hasUtilityItems && (
                   <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                    <span style={{ fontSize: "18px", color: "#111827" }}>
-                      {item.usage !== undefined ? item.usage : "-"}
-                    </span>
+                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
                   </div>
                 )}
                 {hasUtilityItems && (
                   <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "18px", color: "#111827" }}>
-                      {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
-                    </span>
+                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
                   </div>
                 )}
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "18px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Totals Section */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "32px" }}>
-            <div style={{ display: "flex", flexDirection: "column", width: "400px", gap: "6px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-                <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.subtotal}</span>
-                <span style={{ fontSize: "20px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
-              </div>
-              {withholdingTax > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-                  <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
-                  <span style={{ fontSize: "20px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
+              {/* Table Rows */}
+              {lineItems.map((item, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    padding: "18px 24px",
+                    borderBottom: index === lineItems.length - 1 ? "none" : "1px solid #E5E7EB",
+                    backgroundColor: index % 2 === 0 ? "#ffffff" : "#F0FDF4",
+                    borderLeft: "1px solid #E5E7EB",
+                    borderRight: "1px solid #E5E7EB",
+                    ...(index === lineItems.length - 1 ? { borderRadius: "0 0 12px 12px", borderBottom: "1px solid #E5E7EB" } : {}),
+                  }}
+                >
+                  <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
+                    <span style={{ fontSize: "20px", color: "#111827" }}>{item.description}</span>
+                  </div>
+                  {hasUtilityItems && (
+                    <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                      <span style={{ fontSize: "20px", color: "#111827" }}>
+                        {item.usage !== undefined ? item.usage : "-"}
+                      </span>
+                    </div>
+                  )}
+                  {hasUtilityItems && (
+                    <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                      <span style={{ fontSize: "20px", color: "#111827" }}>
+                        {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>฿{formatCurrency(item.amount)}</span>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+
+            {/* Totals Section */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "36px" }}>
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  padding: "12px 0",
-                  borderTop: "4px solid #E5E7EB",
-                  marginTop: "6px",
+                  flexDirection: "column",
+                  width: "420px",
+                  backgroundColor: "#F0FDF4",
+                  borderRadius: "16px",
+                  padding: "24px",
                 }}
               >
-                <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
-                <span style={{ fontSize: "24px", fontWeight: "bold", color: GREEN_COLOR }}>
-                  ฿{formatCurrency(totalAmount)}
-                </span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                  <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.subtotal}</span>
+                  <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>฿{formatCurrency(subtotal)}</span>
+                </div>
+                {withholdingTax > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                    <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
+                    <span style={{ fontSize: "20px", color: "#DC2626", fontWeight: "500" }}>-฿{formatCurrency(withholdingTax)}</span>
+                  </div>
+                )}
+                {/* Total highlight box */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: `linear-gradient(135deg, ${GREEN_COLOR} 0%, #22C55E 100%)`,
+                    padding: "20px 24px",
+                    borderRadius: "12px",
+                    marginTop: "12px",
+                  }}
+                >
+                  <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{t.total}</span>
+                  <span style={{ fontSize: "32px", fontWeight: "bold", color: "#ffffff" }}>
+                    ฿{formatCurrency(totalAmount)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer - Bank Info & Signature */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              borderTop: "2px solid #E5E7EB",
-              paddingTop: "24px",
-              marginTop: "auto",
-            }}
-          >
-            {/* Bank Info */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "18px", fontWeight: "bold", color: "#4B5563", marginBottom: "6px" }}>
-                {t.paymentInfo}
-              </span>
-              {bankName && (
-                <span style={{ fontSize: "16px", color: "#6B7280" }}>
-                  {t.bankName}: {BANK_NAMES[bankName] || bankName}
-                </span>
-              )}
-              {bankAccountName && (
-                <span style={{ fontSize: "16px", color: "#6B7280" }}>
-                  {t.accountName}: {bankAccountName}
-                </span>
-              )}
-              {bankAccountNumber && (
-                <span style={{ fontSize: "16px", color: "#6B7280" }}>
-                  {t.accountNumber}: {bankAccountNumber}
-                </span>
-              )}
-            </div>
-
-            {/* Signature */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "280px" }}>
+            {/* Footer - Bank Info & Signature */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                borderTop: "2px solid #E5E7EB",
+                paddingTop: "28px",
+                marginTop: "auto",
+              }}
+            >
+              {/* Bank Info */}
               <div
                 style={{
-                  width: "200px",
-                  height: "60px",
-                  borderBottom: "2px solid #9CA3AF",
                   display: "flex",
+                  flexDirection: "column",
+                  backgroundColor: "#F0FDF4",
+                  padding: "20px 28px",
+                  borderRadius: "12px",
                 }}
-              />
-              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "6px" }}>
-                {t.receiver}
-              </span>
-              {ownerName && (
-                <span style={{ fontSize: "16px", color: "#4B5563", fontWeight: "500" }}>
-                  ({ownerName})
+              >
+                <span style={{ fontSize: "18px", fontWeight: "bold", color: GREEN_COLOR, marginBottom: "12px" }}>
+                  {t.paymentInfo}
                 </span>
-              )}
+                {bankName && (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.bankName}:</span>
+                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "500" }}>{BANK_NAMES[bankName] || bankName}</span>
+                  </div>
+                )}
+                {bankAccountName && (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.accountName}:</span>
+                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "500" }}>{bankAccountName}</span>
+                  </div>
+                )}
+                {bankAccountNumber && (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.accountNumber}:</span>
+                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "600", letterSpacing: "1px" }}>{bankAccountNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Signature */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "280px" }}>
+                <div
+                  style={{
+                    width: "200px",
+                    height: "70px",
+                    borderBottom: `3px solid ${GREEN_COLOR}`,
+                    display: "flex",
+                  }}
+                />
+                <span style={{ fontSize: "17px", color: "#6B7280", marginTop: "10px" }}>
+                  {t.receiver}
+                </span>
+                {ownerName && (
+                  <span style={{ fontSize: "17px", color: "#111827", fontWeight: "600", marginTop: "4px" }}>
+                    {ownerName}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

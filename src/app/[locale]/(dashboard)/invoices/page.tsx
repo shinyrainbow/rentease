@@ -672,7 +672,7 @@ export default function InvoicesPage() {
           companyNameTh: data.project.companyNameTh || "",
           companyAddress: data.project.companyAddress || "",
           taxId: data.project.taxId || "",
-          logoUrl: "", // Logo will be handled by the route
+          logoUrl: data.project.logoPresignedUrl || "",
           ownerName: data.project.owner?.name || "",
           subtotal: String(data.subtotal),
           withholdingTax: String(data.withholdingTax || 0),

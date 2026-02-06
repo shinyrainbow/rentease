@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { getPresignedUrl, isS3Key } from "@/lib/s3";
 
 export async function GET(
   request: NextRequest,
@@ -30,7 +31,21 @@ export async function GET(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    return NextResponse.json(invoice);
+    // Convert logo S3 key to presigned URL if needed
+    let logoPresignedUrl = "";
+    if (invoice.project.logoUrl) {
+      logoPresignedUrl = isS3Key(invoice.project.logoUrl)
+        ? await getPresignedUrl(invoice.project.logoUrl, 3600)
+        : invoice.project.logoUrl;
+    }
+
+    return NextResponse.json({
+      ...invoice,
+      project: {
+        ...invoice.project,
+        logoPresignedUrl,
+      },
+    });
   } catch (error) {
     console.error("Error fetching invoice:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
