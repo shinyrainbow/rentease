@@ -59,3 +59,21 @@ export function getS3Key(type: "invoice" | "receipt", id: string, lang: string):
   const timestamp = Date.now();
   return `${type}s/${id}/${lang}-${timestamp}.pdf`;
 }
+
+// Check if a string is an S3 key (not a full URL)
+export function isS3Key(value: string): boolean {
+  return value && !value.startsWith("http://") && !value.startsWith("https://");
+}
+
+// Resolve a logo URL - if it's an S3 key, generate a presigned URL; otherwise return as-is
+export async function resolveLogoUrl(logoUrlOrKey: string | null | undefined): Promise<string | null> {
+  if (!logoUrlOrKey) return null;
+
+  if (isS3Key(logoUrlOrKey)) {
+    // It's an S3 key, generate a fresh presigned URL (1 hour expiry for display)
+    return getPresignedUrl(logoUrlOrKey, 3600);
+  }
+
+  // It's already a full URL, return as-is
+  return logoUrlOrKey;
+}

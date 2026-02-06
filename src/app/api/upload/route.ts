@@ -48,25 +48,12 @@ export async function POST(request: NextRequest) {
       s3Key = `uploads/${session.user.id}/${timestamp}.${ext}`;
     }
 
-    // Upload to S3
-    let url: string;
+    // Upload to S3 (always private, no ACL)
+    await uploadFile(s3Key, buffer, file.type, false);
 
-    if (isPublic) {
-      // For logos, try with public ACL first, fallback to private if ACL not allowed
-      try {
-        await uploadFile(s3Key, buffer, file.type, true);
-        url = getPublicUrl(s3Key);
-      } catch (aclError) {
-        // If ACL fails (bucket blocks public access), upload without ACL
-        console.warn("Public ACL failed, uploading without ACL:", aclError);
-        await uploadFile(s3Key, buffer, file.type, false);
-        // Use public URL anyway (works if bucket policy allows public access to logo/ prefix)
-        url = getPublicUrl(s3Key);
-      }
-    } else {
-      await uploadFile(s3Key, buffer, file.type, false);
-      url = await getPresignedUrl(s3Key, 60 * 60 * 24 * 7); // Max 7 days for presigned URLs
-    }
+    // Generate presigned URL (7 days for logos, shorter for others)
+    const expiresIn = isPublic ? 60 * 60 * 24 * 7 : 60 * 60 * 24 * 7; // 7 days max
+    const url = await getPresignedUrl(s3Key, expiresIn);
 
     return NextResponse.json({
       success: true,
