@@ -13,87 +13,85 @@ interface LineItem {
   rate?: number;
 }
 
+// Bank name mapping
+const BANK_NAMES: Record<string, string> = {
+  BBL: "Bangkok Bank",
+  KBANK: "Kasikorn Bank",
+  KTB: "Krungthai Bank",
+  SCB: "SCB",
+  BAY: "Bank of Ayudhya",
+  TMB: "TTB",
+  CIMB: "CIMB Thai",
+  UOB: "UOB",
+  TISCO: "TISCO Bank",
+  KKP: "KKP",
+  LH: "LH Bank",
+  ICBC: "ICBC",
+  GSB: "GSB",
+  BAAC: "BAAC",
+  GHB: "GHB",
+};
+
 const translations = {
   en: {
     invoice: "INVOICE",
-    invoiceNo: "Invoice No",
-    date: "Date",
-    billingMonth: "Billing Month",
+    original: "Original",
+    copy: "Copy",
+    invoiceNo: "Invoice No.",
+    dateCreated: "Date",
     dueDate: "Due Date",
+    billingMonth: "Billing Month",
+    taxId: "Tax ID",
+    idCard: "ID Card",
     billTo: "Bill To",
     unit: "Unit",
-    phone: "Phone",
-    taxId: "Tax ID",
     description: "Description",
     qtyUnit: "Units",
     unitPrice: "Unit Price",
-    amount: "Amount (THB)",
+    amount: "Amount",
     subtotal: "Subtotal",
-    discount: "Discount",
     withholdingTax: "Withholding Tax",
     total: "Total",
-    rent: "Monthly Rent",
-    utility: "Utilities",
-    combined: "Rent & Utilities",
-    thankYou: "Thank you for your business",
-    page: "Page",
-    bankInfo: "Bank Account Information",
+    paymentInfo: "Payment Information",
     bankName: "Bank",
-    accountNumber: "Account No",
     accountName: "Account Name",
+    accountNumber: "Account No.",
     biller: "Biller",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
+    original: "ต้นฉบับ",
+    copy: "สำเนา",
     invoiceNo: "เลขที่",
-    date: "วันที่",
-    billingMonth: "รอบบิล",
+    dateCreated: "วันที่",
     dueDate: "กำหนดชำระ",
-    billTo: "เรียกเก็บจาก",
-    unit: "ห้อง",
-    phone: "โทร",
+    billingMonth: "รอบบิล",
     taxId: "เลขประจำตัวผู้เสียภาษี",
+    idCard: "เลขบัตรประชาชน",
+    billTo: "เรียกเก็บจาก",
+    unit: "ห้อง/ยูนิต",
     description: "รายการ",
     qtyUnit: "ยูนิต",
     unitPrice: "ราคา/หน่วย",
-    amount: "จำนวนเงิน (บาท)",
+    amount: "จำนวนเงิน",
     subtotal: "รวม",
-    discount: "ส่วนลด",
     withholdingTax: "หัก ณ ที่จ่าย",
     total: "ยอดรวมทั้งสิ้น",
-    rent: "ค่าเช่ารายเดือน",
-    utility: "ค่าสาธารณูปโภค",
-    combined: "ค่าเช่าและสาธารณูปโภค",
-    thankYou: "ขอบคุณที่ใช้บริการ",
-    page: "หน้า",
-    bankInfo: "ข้อมูลบัญชีธนาคาร",
+    paymentInfo: "ข้อมูลการชำระเงิน",
     bankName: "ธนาคาร",
-    accountNumber: "เลขบัญชี",
     accountName: "ชื่อบัญชี",
+    accountNumber: "เลขที่บัญชี",
     biller: "ผู้วางบิล",
   },
 };
 
-function getTypeLabel(type: string, lang: "en" | "th") {
-  const t = translations[lang];
-  switch (type) {
-    case "RENT": return t.rent;
-    case "UTILITY": return t.utility;
-    case "COMBINED": return t.combined;
-    default: return type;
-  }
-}
+const TEAL_COLOR = { r: 45, g: 139, b: 139 }; // #2D8B8B
 
-function formatCurrency(amount: number, includeCurrency = false, lang: "th" | "en" = "th"): string {
-  const formatted = amount.toLocaleString("th-TH", {
+function formatCurrency(amount: number): string {
+  return amount.toLocaleString("th-TH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  if (includeCurrency) {
-    // Use "บาท" for Thai or "THB" for English instead of ฿ symbol (font compatibility)
-    return lang === "th" ? `${formatted} บาท` : `THB ${formatted}`;
-  }
-  return formatted;
 }
 
 const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
@@ -118,7 +116,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { lang = "th" } = await request.json();
+    const { lang = "th", version = "original" } = await request.json();
     const t = translations[lang as "en" | "th"] || translations.th;
 
     const invoice = await prisma.invoice.findFirst({
@@ -141,213 +139,294 @@ export async function POST(
     // Generate PDF with Thai font support
     const doc = await createPDFWithThaiFont();
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    const margin = 20;
+    let y = 25;
 
     // Fetch logo as base64
     const logoBase64 = await fetchImageAsBase64(invoice.project.logoUrl);
 
-    // Company header with logo
-    const companyName = invoice.project.companyName || invoice.project.name;
+    // ============ HEADER SECTION ============
+    // Left side: Logo + Company Info
+    const leftX = margin;
+    const logoSize = 12;
 
-    // Add logo if available
     if (logoBase64) {
-      const logoSize = 15;
-      doc.addImage(logoBase64, "PNG", 20, y - 5, logoSize, logoSize);
+      doc.addImage(logoBase64, "PNG", leftX, y - 3, logoSize, logoSize);
+    } else {
+      // Draw placeholder box
+      doc.setFillColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+      doc.roundedRect(leftX, y - 3, logoSize, logoSize, 2, 2, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      setThaiFont(doc, "bold");
+      const initial = (invoice.project.companyName || invoice.project.name).charAt(0);
+      doc.text(initial, leftX + logoSize / 2, y + 4, { align: "center" });
+      doc.setTextColor(0, 0, 0);
     }
 
-    doc.setFontSize(18);
-    setThaiFont(doc, "bold");
-    doc.text(companyName, pageWidth / 2, y, { align: "center" });
-    y += 8;
+    // Company name next to logo
+    const companyName = lang === "th" && invoice.project.companyNameTh
+      ? invoice.project.companyNameTh
+      : (invoice.project.companyName || invoice.project.name);
 
+    doc.setFontSize(11);
+    setThaiFont(doc, "bold");
+    doc.text(companyName, leftX + logoSize + 5, y + 2);
+
+    // Company address below
     if (invoice.project.companyAddress) {
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       setThaiFont(doc, "normal");
-      doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-      y += 6;
+      doc.setTextColor(100, 100, 100);
+      doc.text(invoice.project.companyAddress, leftX, y + 15);
     }
 
+    // Company Tax ID
     if (invoice.project.taxId) {
-      doc.text(`${t.taxId}: ${invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
-      y += 6;
+      doc.setFontSize(8);
+      doc.text(`${t.taxId}: ${invoice.project.taxId}`, leftX, y + 20);
     }
-
-    y += 5;
-
-    // Separator line
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
-
-    // Invoice title
-    doc.setFontSize(16);
-    setThaiFont(doc, "bold");
-    doc.text(t.invoice, pageWidth / 2, y, { align: "center" });
-    y += 12;
-
-    // Invoice details
-    doc.setFontSize(10);
-    setThaiFont(doc, "normal");
-    doc.text(`${t.invoiceNo}: ${invoice.invoiceNo}`, 20, y);
-    doc.text(`${t.date}: ${formatDate(invoice.createdAt, lang as "th" | "en")}`, pageWidth - 60, y);
-    y += 6;
-    doc.text(`${t.billingMonth}: ${invoice.billingMonth}`, 20, y);
-    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, pageWidth - 60, y);
-    y += 12;
-
-    // Bill to section
-    setThaiFont(doc, "bold");
-    doc.text(`${t.billTo}:`, 20, y);
-    y += 6;
-    setThaiFont(doc, "normal");
-    const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
-    doc.text(tenantName, 20, y);
-    y += 5;
-    if (invoice.tenant.address) {
-      doc.text(invoice.tenant.address, 20, y);
-      y += 5;
-    }
-    doc.text(`${t.unit}: ${invoice.unit.unitNumber}`, 20, y);
-    y += 5;
-    if (invoice.tenant.phone) {
-      doc.text(`${t.phone}: ${invoice.tenant.phone}`, 20, y);
-      y += 5;
-    }
-    if (invoice.tenant.taxId) {
-      doc.text(`${t.taxId}: ${invoice.tenant.taxId}`, 20, y);
-      y += 5;
-    }
-    y += 10;
-
-    // Line items
-    const lineItems: LineItem[] = (invoice.lineItems as unknown as LineItem[]) || [
-      { description: getTypeLabel(invoice.type, lang as "en" | "th"), amount: invoice.subtotal },
-    ];
-
-    // Check if any line item has usage (utility items)
-    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
-
-    // Line items table header
-    doc.setFillColor(59, 130, 246); // Blue
-    doc.rect(20, y, pageWidth - 40, 8, "F");
-    setThaiFont(doc, "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text(t.description, 25, y + 6);
-    if (hasUtilityItems) {
-      doc.text(t.qtyUnit, 100, y + 6, { align: "center" });
-      doc.text(t.unitPrice, 130, y + 6, { align: "right" });
-    }
-    doc.text(t.amount, pageWidth - 45, y + 6, { align: "right" });
-    y += 12;
-
-    // Reset text color
     doc.setTextColor(0, 0, 0);
 
-    // Line items rows
+    // Right side: Invoice Title + Badge
+    const rightX = pageWidth - margin;
+
+    // Invoice title
+    doc.setFontSize(18);
+    setThaiFont(doc, "bold");
+    doc.setTextColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.text(t.invoice, rightX - 30, y, { align: "right" });
+
+    // Badge (Original/Copy)
+    const badgeText = version === "original" ? t.original : t.copy;
+    const badgeWidth = 20;
+    const badgeHeight = 6;
+    doc.setFillColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.roundedRect(rightX - badgeWidth, y - 5, badgeWidth, badgeHeight, 1, 1, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    setThaiFont(doc, "bold");
+    doc.text(badgeText, rightX - badgeWidth / 2, y - 1, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+
+    // Invoice details on right
+    y += 10;
+    doc.setFontSize(8);
     setThaiFont(doc, "normal");
-    lineItems.forEach((item, index) => {
-      if (index % 2 === 0) {
-        doc.setFillColor(249, 250, 251);
-        doc.rect(20, y - 3, pageWidth - 40, 6, "F");
-      }
-      doc.text(item.description, 25, y);
-      if (hasUtilityItems) {
-        // Only show units/rate for utility items
-        if (item.usage !== undefined) {
-          doc.text(String(item.usage), 100, y, { align: "center" });
-          doc.text(formatCurrency(item.rate || item.unitPrice || 0), 130, y, { align: "right" });
-        } else {
-          doc.text("-", 100, y, { align: "center" });
-          doc.text("-", 130, y, { align: "right" });
-        }
-      }
-      doc.text(formatCurrency(item.amount), pageWidth - 45, y, { align: "right" });
-      y += 6;
-    });
+    doc.text(`${t.invoiceNo}: `, rightX - 40, y, { align: "right" });
+    setThaiFont(doc, "bold");
+    doc.text(invoice.invoiceNo, rightX, y, { align: "right" });
 
     y += 5;
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
+    setThaiFont(doc, "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${t.dateCreated}: ${formatDate(invoice.createdAt, lang as "th" | "en")}`, rightX, y, { align: "right" });
+    y += 4;
+    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, rightX, y, { align: "right" });
+    y += 4;
+    doc.text(`${t.billingMonth}: ${invoice.billingMonth}`, rightX, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
 
-    // Totals section
-    const totalsX = pageWidth - 90;
+    y = 55;
 
-    doc.text(t.subtotal, totalsX, y);
-    doc.text(formatCurrency(invoice.subtotal), pageWidth - 25, y, { align: "right" });
-    y += 7;
+    // ============ BILL TO SECTION ============
+    // Light gray background
+    doc.setFillColor(249, 250, 251);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 25, 2, 2, "F");
 
-    if (invoice.discountAmount > 0) {
-      doc.text(t.discount, totalsX, y);
-      doc.setTextColor(22, 163, 74);
-      doc.text(`-${formatCurrency(invoice.discountAmount)}`, pageWidth - 25, y, { align: "right" });
-      doc.setTextColor(0, 0, 0);
-      y += 7;
+    y += 6;
+    doc.setFontSize(8);
+    setThaiFont(doc, "bold");
+    doc.setTextColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.text(t.billTo, margin + 5, y);
+    doc.setTextColor(0, 0, 0);
+
+    y += 6;
+    doc.setFontSize(10);
+    setThaiFont(doc, "bold");
+    const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+    doc.text(tenantName, margin + 5, y);
+
+    // Tenant address
+    if (invoice.tenant.address) {
+      y += 4;
+      doc.setFontSize(7);
+      setThaiFont(doc, "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(invoice.tenant.address, margin + 5, y);
     }
 
-    if (invoice.withholdingTax > 0) {
-      const withholdingTaxRate = Math.round((invoice.withholdingTax / invoice.subtotal) * 100);
-      doc.text(`${t.withholdingTax} (${withholdingTaxRate}%)`, totalsX, y);
-      doc.text(`-${formatCurrency(invoice.withholdingTax)}`, pageWidth - 25, y, { align: "right" });
+    // Tenant Tax ID or ID Card
+    if (invoice.tenant.taxId) {
+      y += 4;
+      doc.setFontSize(7);
+      doc.text(`${t.taxId}: ${invoice.tenant.taxId}`, margin + 5, y);
+    } else if (invoice.tenant.idCard) {
+      y += 4;
+      doc.setFontSize(7);
+      doc.text(`${t.idCard}: ${invoice.tenant.idCard}`, margin + 5, y);
+    }
+    doc.setTextColor(0, 0, 0);
+
+    // Unit number on right side of bill to section
+    doc.setFontSize(8);
+    setThaiFont(doc, "normal");
+    doc.text(`${t.unit}: `, pageWidth - margin - 25, 67);
+    setThaiFont(doc, "bold");
+    doc.text(invoice.unit.unitNumber, pageWidth - margin - 5, 67, { align: "right" });
+
+    y = 90;
+
+    // ============ LINE ITEMS TABLE ============
+    const lineItems: LineItem[] = (invoice.lineItems as unknown as LineItem[]) || [];
+    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
+
+    // Table header
+    doc.setFillColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 8, 1, 1, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    setThaiFont(doc, "bold");
+
+    const colDesc = margin + 5;
+    const colQty = hasUtilityItems ? 110 : 0;
+    const colPrice = hasUtilityItems ? 140 : 0;
+    const colAmount = pageWidth - margin - 5;
+
+    doc.text(t.description, colDesc, y + 5.5);
+    if (hasUtilityItems) {
+      doc.text(t.qtyUnit, colQty, y + 5.5, { align: "center" });
+      doc.text(t.unitPrice, colPrice, y + 5.5, { align: "right" });
+    }
+    doc.text(t.amount, colAmount, y + 5.5, { align: "right" });
+
+    y += 10;
+    doc.setTextColor(0, 0, 0);
+
+    // Table rows
+    setThaiFont(doc, "normal");
+    doc.setFontSize(8);
+
+    lineItems.forEach((item, index) => {
+      // Alternating row background
+      if (index % 2 === 0) {
+        doc.setFillColor(255, 255, 255);
+      } else {
+        doc.setFillColor(249, 250, 251);
+      }
+      doc.rect(margin, y - 3, pageWidth - margin * 2, 7, "F");
+
+      doc.text(item.description, colDesc, y + 1);
+      if (hasUtilityItems) {
+        if (item.usage !== undefined) {
+          doc.text(String(item.usage), colQty, y + 1, { align: "center" });
+          doc.text(formatCurrency(item.rate || item.unitPrice || 0), colPrice, y + 1, { align: "right" });
+        } else {
+          doc.text("-", colQty, y + 1, { align: "center" });
+          doc.text("-", colPrice, y + 1, { align: "right" });
+        }
+      }
+      doc.text(formatCurrency(item.amount), colAmount, y + 1, { align: "right" });
+
       y += 7;
+    });
+
+    // Bottom border line
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    y += 10;
+
+    // ============ TOTALS SECTION ============
+    const totalsX = pageWidth - margin - 60;
+    const totalsValueX = pageWidth - margin - 5;
+
+    // Subtotal
+    doc.setFontSize(8);
+    setThaiFont(doc, "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(t.subtotal, totalsX, y);
+    doc.setTextColor(0, 0, 0);
+    doc.text(formatCurrency(invoice.subtotal), totalsValueX, y, { align: "right" });
+    y += 6;
+
+    // Withholding Tax
+    if (invoice.withholdingTax > 0) {
+      const withholdingTaxPercent = invoice.tenant.withholdingTax || 0;
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
+      doc.setTextColor(220, 38, 38); // Red
+      doc.text(`-${formatCurrency(invoice.withholdingTax)}`, totalsValueX, y, { align: "right" });
+      y += 6;
     }
 
     // Total line
-    doc.setDrawColor(59, 130, 246);
+    doc.setDrawColor(229, 231, 235);
     doc.setLineWidth(0.5);
-    doc.line(totalsX - 5, y, pageWidth - 20, y);
-    y += 8;
+    doc.line(totalsX - 5, y, pageWidth - margin, y);
+    y += 6;
 
+    // Total
+    doc.setFontSize(10);
     setThaiFont(doc, "bold");
-    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
     doc.text(t.total, totalsX, y);
-    doc.setTextColor(59, 130, 246);
-    doc.text(formatCurrency(invoice.totalAmount, true, lang as "th" | "en"), pageWidth - 25, y, { align: "right" });
+    doc.setTextColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.text(`฿${formatCurrency(invoice.totalAmount)}`, totalsValueX, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
     y += 20;
 
-    // Bank Account Information
-    if (invoice.project.bankName || invoice.project.bankAccountNumber) {
-      doc.setFontSize(10);
-      setThaiFont(doc, "bold");
-      doc.text(t.bankInfo, 20, y);
-      y += 6;
-      setThaiFont(doc, "normal");
-      if (invoice.project.bankName) {
-        doc.text(`${t.bankName}: ${invoice.project.bankName}`, 20, y);
-        y += 5;
-      }
-      if (invoice.project.bankAccountNumber) {
-        doc.text(`${t.accountNumber}: ${invoice.project.bankAccountNumber}`, 20, y);
-        y += 5;
-      }
-      if (invoice.project.bankAccountName) {
-        doc.text(`${t.accountName}: ${invoice.project.bankAccountName}`, 20, y);
-        y += 5;
-      }
-      y += 10;
+    // ============ FOOTER SECTION ============
+    // Separator line
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    // Bank Info on left
+    doc.setFontSize(7);
+    setThaiFont(doc, "bold");
+    doc.setTextColor(75, 85, 99);
+    doc.text(t.paymentInfo, margin, y);
+    y += 4;
+
+    setThaiFont(doc, "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(6);
+
+    if (invoice.project.bankName) {
+      const bankDisplayName = BANK_NAMES[invoice.project.bankName] || invoice.project.bankName;
+      doc.text(`${t.bankName}: ${bankDisplayName}`, margin, y);
+      y += 3;
+    }
+    if (invoice.project.bankAccountName) {
+      doc.text(`${t.accountName}: ${invoice.project.bankAccountName}`, margin, y);
+      y += 3;
+    }
+    if (invoice.project.bankAccountNumber) {
+      doc.text(`${t.accountNumber}: ${invoice.project.bankAccountNumber}`, margin, y);
     }
 
-    // Biller Signature Section
-    setThaiFont(doc, "bold");
-    doc.text(t.biller, 20, y);
-    y += 15;
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(150, 150, 150);
-    doc.line(20, y, 80, y);
-    y += 5;
-    setThaiFont(doc, "normal");
-    doc.setFontSize(9);
-    const ownerName = invoice.project.owner?.name || "";
-    doc.text(ownerName, 50, y, { align: "center" });
+    // Signature section on right
+    const sigX = pageWidth - margin - 40;
+    const sigY = y - 10;
 
-    // Footer
-    y += 15;
-    doc.setFontSize(10);
-    setThaiFont(doc, "normal");
-    doc.setTextColor(107, 114, 128);
-    doc.text(t.thankYou, pageWidth / 2, y, { align: "center" });
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.3);
+    doc.line(sigX, sigY + 10, sigX + 35, sigY + 10);
+
+    doc.setFontSize(6);
+    doc.setTextColor(100, 100, 100);
+    doc.text(t.biller, sigX + 17.5, sigY + 14, { align: "center" });
+
+    if (invoice.project.owner?.name) {
+      doc.setFontSize(6);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`(${invoice.project.owner.name})`, sigX + 17.5, sigY + 17, { align: "center" });
+    }
 
     // Get PDF as buffer
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));

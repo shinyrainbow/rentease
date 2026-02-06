@@ -191,7 +191,8 @@
       "TERMINATED": "ยกเลิก"
     },
     "allProjects": "ทุกโครงการ",
-    "searchPlaceholder": "ค้นหาชื่อ, เบอร์โทร, ห้อง..."
+    "searchPlaceholder": "ค้นหาชื่อ, เบอร์โทร, ห้อง...",
+    "clickToUploadImage": "คลิกเพื่ออัปโหลดรูปภาพ"
   },
   "meters": {
     "title": "จดมิเตอร์",

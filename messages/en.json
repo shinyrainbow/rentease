@@ -191,7 +191,8 @@
       "TERMINATED": "Terminated"
     },
     "allProjects": "All Projects",
-    "searchPlaceholder": "Search name, phone, unit..."
+    "searchPlaceholder": "Search name, phone, unit...",
+    "clickToUploadImage": "Click to upload photo"
   },
   "meters": {
     "title": "Meter Readings",

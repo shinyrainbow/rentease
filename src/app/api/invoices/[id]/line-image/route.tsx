@@ -442,7 +442,7 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
       ),
-      { width: 600, height: 800 }
+      { width: 1200, height: 1600 }
     );
   } catch (error) {
     console.error("Error generating invoice image:", error);
