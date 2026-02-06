@@ -260,6 +260,16 @@ export async function GET(
             </div>
           </div>
 
+          {/* Separator Line */}
+          <div
+            style={{
+              width: "100%",
+              height: "1px",
+              backgroundColor: "#E5E7EB",
+              marginBottom: "20px",
+            }}
+          />
+
           {/* Bill To Section */}
           <div
             style={{

@@ -1,8 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getS3Key, resolveLogoUrl } from "@/lib/s3";
 import { createPDFWithThaiFont, setThaiFont } from "@/lib/pdf-fonts";
+
+// Fetch image and convert to base64 for PDF embedding
+async function fetchImageAsBase64(url: string): Promise<{ data: string; format: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") || "image/png";
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+
+    // Determine format from content type
+    let format = "PNG";
+    if (contentType.includes("jpeg") || contentType.includes("jpg")) {
+      format = "JPEG";
+    } else if (contentType.includes("png")) {
+      format = "PNG";
+    }
+
+    return { data: `data:${contentType};base64,${base64}`, format };
+  } catch {
+    return null;
+  }
+}
 
 interface LineItem {
   description: string;
@@ -135,24 +159,56 @@ export async function POST(
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    // Company header
-    doc.setFontSize(18);
-    setThaiFont(doc, "bold");
-    doc.text(invoice.project.companyName || invoice.project.name, pageWidth / 2, y, { align: "center" });
-    y += 8;
+    // Resolve and fetch logo
+    const logoUrl = await resolveLogoUrl(invoice.project.logoUrl);
+    const logoImage = logoUrl ? await fetchImageAsBase64(logoUrl) : null;
+
+    // Company header with logo
+    const logoSize = 20;
+    const companyName = invoice.project.companyName || invoice.project.name;
+
+    if (logoImage) {
+      // Add logo on the left
+      doc.addImage(logoImage.data, logoImage.format, 20, y - 5, logoSize, logoSize);
+      // Company name next to logo
+      doc.setFontSize(18);
+      setThaiFont(doc, "bold");
+      doc.text(companyName, 20 + logoSize + 5, y + 5);
+      y += 10;
+    } else {
+      // No logo, center company name
+      doc.setFontSize(18);
+      setThaiFont(doc, "bold");
+      doc.text(companyName, pageWidth / 2, y, { align: "center" });
+      y += 8;
+    }
 
     if (invoice.project.companyAddress) {
       doc.setFontSize(10);
       setThaiFont(doc, "normal");
-      doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
+      if (logoImage) {
+        doc.text(invoice.project.companyAddress, 20 + logoSize + 5, y);
+      } else {
+        doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
+      }
       y += 6;
     }
 
     if (invoice.project.taxId) {
-      doc.text(`${t.taxId}: ${invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
+      if (logoImage) {
+        doc.text(`${t.taxId}: ${invoice.project.taxId}`, 20 + logoSize + 5, y);
+      } else {
+        doc.text(`${t.taxId}: ${invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
+      }
       y += 6;
     }
 
+    y += 5;
+
+    // Separator line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
     y += 10;
 
     // Invoice title
