@@ -11,17 +11,30 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
+    const activeOnly = searchParams.get("activeOnly") === "true";
 
     const units = await prisma.unit.findMany({
       where: {
         project: { ownerId: session.user.id },
         ...(projectId && { projectId }),
+        // If activeOnly, only return units that have at least one active tenant
+        ...(activeOnly && {
+          tenants: {
+            some: {
+              contractStart: { lte: new Date() },
+              contractEnd: { gte: new Date() },
+            },
+          },
+        }),
       },
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: { contractEnd: { gte: new Date() } },
-          select: { name: true, contractStart: true, contractEnd: true },
+          where: {
+            contractStart: { lte: new Date() },
+            contractEnd: { gte: new Date() },
+          },
+          select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
           take: 1,
         },
       },
@@ -78,8 +91,11 @@ export async function POST(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: { contractEnd: { gte: new Date() } },
-          select: { name: true, contractStart: true, contractEnd: true },
+          where: {
+            contractStart: { lte: new Date() },
+            contractEnd: { gte: new Date() },
+          },
+          select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
           take: 1,
         },
       },

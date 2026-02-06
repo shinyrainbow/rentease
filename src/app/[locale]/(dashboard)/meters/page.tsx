@@ -112,7 +112,7 @@ export default function MetersPage() {
       const [readingsRes, projectsRes, unitsRes] = await Promise.all([
         fetch(`/api/meters?${params.toString()}`),
         fetch("/api/projects"),
-        fetch("/api/units"),
+        fetch("/api/units?activeOnly=true"),
       ]);
       const [readingsData, projectsData, unitsData] = await Promise.all([
         readingsRes.json(),
@@ -121,7 +121,7 @@ export default function MetersPage() {
       ]);
       setReadings(Array.isArray(readingsData) ? readingsData : []);
       setProjects(Array.isArray(projectsData) ? projectsData : []);
-      setUnits(Array.isArray(unitsData) ? unitsData.filter((u: Unit) => u.tenant !== null) : []);
+      setUnits(Array.isArray(unitsData) ? unitsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {

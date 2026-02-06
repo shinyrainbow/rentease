@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
             unitNumber: true,
             tenants: {
               where: {
+                contractStart: { lte: new Date() },
                 contractEnd: { gte: new Date() },
               },
               select: { name: true, nameTh: true },
@@ -56,11 +57,25 @@ export async function POST(request: NextRequest) {
 
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
-      include: { project: true },
+      include: {
+        project: true,
+        tenants: {
+          where: {
+            contractStart: { lte: new Date() },
+            contractEnd: { gte: new Date() },
+          },
+          take: 1,
+        },
+      },
     });
 
     if (!unit) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+    }
+
+    // Check if unit has an active tenant contract
+    if (unit.tenants.length === 0) {
+      return NextResponse.json({ error: "No active tenant contract for this unit" }, { status: 400 });
     }
 
     // Get previous reading (from earlier billing month)
