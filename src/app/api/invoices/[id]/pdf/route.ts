@@ -269,7 +269,8 @@ export async function POST(
     }
 
     if (invoice.withholdingTax > 0) {
-      doc.text(t.withholdingTax, totalsX, y);
+      const withholdingTaxRate = Math.round((invoice.withholdingTax / invoice.subtotal) * 100);
+      doc.text(`${t.withholdingTax} (${withholdingTaxRate}%)`, totalsX, y);
       doc.text(`-${formatCurrency(invoice.withholdingTax)}`, pageWidth - 25, y, { align: "right" });
       y += 7;
     }
@@ -349,6 +350,7 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error generating PDF:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: "Internal server error", details: errorMessage }, { status: 500 });
   }
 }

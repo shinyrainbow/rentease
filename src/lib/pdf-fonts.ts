@@ -6,10 +6,24 @@ import { jsPDF } from "jspdf";
 let fontCache: { regular: string; bold: string } | null = null;
 
 async function fetchFontAsBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-  const arrayBuffer = await response.arrayBuffer();
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-  return base64;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Font fetch failed: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    return base64;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 async function loadFonts(): Promise<{ regular: string; bold: string }> {

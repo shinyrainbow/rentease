@@ -386,7 +386,7 @@ export async function GET(
               </div>
               {withholdingTaxAmount > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span style={{ fontSize: "12px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                  <span style={{ fontSize: "12px", color: "#6B7280" }}>{t.withholdingTax} ({Math.round((withholdingTaxAmount / invoice.subtotal) * 100)}%)</span>
                   <span style={{ fontSize: "12px", color: "#DC2626" }}>-{formatCurrency(withholdingTaxAmount)}</span>
                 </div>
               )}
