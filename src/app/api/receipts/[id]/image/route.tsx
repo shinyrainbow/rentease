@@ -1,7 +1,7 @@
 import { ImageResponse } from "@vercel/og";
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { resolveLogoUrl } from "@/lib/s3";
+import { fetchImageAsBase64 } from "@/lib/s3";
 
 export const runtime = "nodejs";
 
@@ -144,8 +144,8 @@ export async function GET(
     // Withholding tax
     const withholdingTaxAmount = receipt.invoice.withholdingTax || 0;
 
-    // Resolve logo URL (generate fresh presigned URL if it's an S3 key)
-    const logoUrl = await resolveLogoUrl(receipt.invoice.project.logoUrl);
+    // Fetch logo as base64 data URL for proper rendering in ImageResponse
+    const logoUrl = await fetchImageAsBase64(receipt.invoice.project.logoUrl);
 
     return new ImageResponse(
       (
@@ -395,7 +395,7 @@ export async function GET(
               >
                 <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
                 <span style={{ fontSize: "14px", fontWeight: "bold", color: GREEN_COLOR }}>
-                  ฿{formatCurrency(receipt.amount)}
+                  {formatCurrency(receipt.amount)}
                 </span>
               </div>
             </div>
@@ -456,7 +456,7 @@ export async function GET(
       ),
       {
         width: 800,
-        height: 1000,
+        height: 500,
       }
     );
   } catch (error) {

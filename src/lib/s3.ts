@@ -77,3 +77,29 @@ export async function resolveLogoUrl(logoUrlOrKey: string | null | undefined): P
   // It's already a full URL, return as-is
   return logoUrlOrKey;
 }
+
+// Fetch image and convert to base64 data URL (for use in @vercel/og ImageResponse and PDFs)
+export async function fetchImageAsBase64(urlOrKey: string | null | undefined): Promise<string | null> {
+  if (!urlOrKey) return null;
+
+  try {
+    let url = urlOrKey;
+
+    // If it's an S3 key, get presigned URL first
+    if (isS3Key(urlOrKey)) {
+      url = await getPresignedUrl(urlOrKey, 3600);
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const contentType = response.headers.get("content-type") || "image/png";
+
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("Error fetching image as base64:", error);
+    return null;
+  }
+}

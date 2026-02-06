@@ -29,12 +29,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, Camera, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { CalendarView } from "@/components/ui/calendar-view";
 import { LayoutList, Calendar } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import Image from "next/image";
 
 interface Project {
   id: string;
@@ -73,6 +74,7 @@ interface Tenant {
   waterMeterNo: string | null;
   contractStart: string | null;
   contractEnd: string | null;
+  imageUrl: string | null;
   unit: {
     unitNumber: string;
     project: { name: string };
@@ -103,6 +105,7 @@ export default function TenantsPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dateError, setDateError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -377,6 +380,45 @@ export default function TenantsPage() {
       });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleImageUpload = async (tenantId: string, file: File) => {
+    setUploadingImageFor(tenantId);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "tenant");
+      formData.append("tenantId", tenantId);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        toast({
+          title: tCommon("success"),
+          description: "Image uploaded",
+        });
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to upload image",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImageFor(null);
     }
   };
 
@@ -809,6 +851,7 @@ export default function TenantsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16"></TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("name")}>
                   {t("name")} <SortIcon column="name" />
                 </TableHead>
@@ -836,13 +879,51 @@ export default function TenantsPage() {
             <TableBody>
               {sortedTenants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedTenants.map((tenant) => (
                   <TableRow key={tenant.id}>
+                    <TableCell className="w-16">
+                      <label className="cursor-pointer relative group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(tenant.id, file);
+                          }}
+                        />
+                        {tenant.imageUrl ? (
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                            <Image
+                              src={tenant.imageUrl}
+                              alt={tenant.name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              {uploadingImageFor === tenant.id ? (
+                                <Loader2 className="h-4 w-4 text-white animate-spin" />
+                              ) : (
+                                <Camera className="h-4 w-4 text-white" />
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                            {uploadingImageFor === tenant.id ? (
+                              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                            ) : (
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                      </label>
+                    </TableCell>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
                     <TableCell>{tenant.unit.unitNumber}</TableCell>
                     <TableCell>{tenant.unit.project.name}</TableCell>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { getPresignedUrl, isS3Key } from "@/lib/s3";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +47,18 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(tenants);
+    // Generate presigned URLs for tenant images
+    const tenantsWithImageUrls = await Promise.all(
+      tenants.map(async (tenant) => {
+        if (tenant.imageUrl && isS3Key(tenant.imageUrl)) {
+          const presignedUrl = await getPresignedUrl(tenant.imageUrl, 3600);
+          return { ...tenant, imageUrl: presignedUrl };
+        }
+        return tenant;
+      })
+    );
+
+    return NextResponse.json(tenantsWithImageUrls);
   } catch (error) {
     console.error("Error fetching tenants:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

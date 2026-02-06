@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getS3Key, fetchImageAsBase64 } from "@/lib/s3";
 import { createPDFWithThaiFont, setThaiFont } from "@/lib/pdf-fonts";
 
 interface LineItem {
@@ -126,8 +126,17 @@ export async function POST(
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    // Company header
+    // Fetch logo as base64
+    const logoBase64 = await fetchImageAsBase64(receipt.invoice.project.logoUrl);
+
+    // Company header with logo
     const companyName = receipt.invoice.project.companyName || receipt.invoice.project.name;
+
+    // Add logo if available
+    if (logoBase64) {
+      const logoSize = 15;
+      doc.addImage(logoBase64, "PNG", 20, y - 5, logoSize, logoSize);
+    }
 
     doc.setFontSize(18);
     setThaiFont(doc, "bold");
@@ -309,7 +318,7 @@ export async function POST(
     doc.text(ownerName, 50, y, { align: "center" });
 
     // Footer
-    y = doc.internal.pageSize.getHeight() - 20;
+    y += 15;
     doc.setFontSize(10);
     setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);

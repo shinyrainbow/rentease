@@ -193,6 +193,9 @@ model Tenant {
 
   lineUserId    String?
 
+  // Tenant profile image (S3 key)
+  imageUrl      String?
+
   contractStart DateTime?
   contractEnd   DateTime?
 

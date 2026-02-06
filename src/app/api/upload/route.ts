@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { uploadFile, getPresignedUrl, getPublicUrl } from "@/lib/s3";
+import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const type = formData.get("type") as string;
     const projectId = formData.get("projectId") as string;
+    const tenantId = formData.get("tenantId") as string;
 
     if (!file) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
@@ -41,9 +43,12 @@ export async function POST(request: NextRequest) {
     let isPublic = false;
 
     if (type === "logo" && projectId) {
-      // Logos are stored in "logo" folder and made public
+      // Logos are stored in "logo" folder
       s3Key = `logo/${projectId}/${timestamp}.${ext}`;
       isPublic = true;
+    } else if (type === "tenant" && tenantId) {
+      // Tenant images are stored in "tenants" folder
+      s3Key = `tenants/${tenantId}/${timestamp}.${ext}`;
     } else {
       s3Key = `uploads/${session.user.id}/${timestamp}.${ext}`;
     }
@@ -51,9 +56,29 @@ export async function POST(request: NextRequest) {
     // Upload to S3 (always private, no ACL)
     await uploadFile(s3Key, buffer, file.type, false);
 
-    // Generate presigned URL (7 days for logos, shorter for others)
-    const expiresIn = isPublic ? 60 * 60 * 24 * 7 : 60 * 60 * 24 * 7; // 7 days max
-    const url = await getPresignedUrl(s3Key, expiresIn);
+    // If uploading a tenant image, update the tenant record
+    if (type === "tenant" && tenantId) {
+      // Verify tenant belongs to user
+      const tenant = await prisma.tenant.findFirst({
+        where: {
+          id: tenantId,
+          unit: { project: { ownerId: session.user.id } },
+        },
+      });
+
+      if (!tenant) {
+        return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      }
+
+      // Update tenant with new image URL
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { imageUrl: s3Key },
+      });
+    }
+
+    // Generate presigned URL (7 days)
+    const url = await getPresignedUrl(s3Key, 60 * 60 * 24 * 7);
 
     return NextResponse.json({
       success: true,

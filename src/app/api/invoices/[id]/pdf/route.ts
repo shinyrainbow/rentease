@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getS3Key, fetchImageAsBase64 } from "@/lib/s3";
 import { createPDFWithThaiFont, setThaiFont } from "@/lib/pdf-fonts";
 
 interface LineItem {
@@ -84,11 +84,16 @@ function getTypeLabel(type: string, lang: "en" | "th") {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString("th-TH", {
+function formatCurrency(amount: number, includeCurrency = false, lang: "th" | "en" = "th"): string {
+  const formatted = amount.toLocaleString("th-TH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  if (includeCurrency) {
+    // Use "บาท" for Thai or "THB" for English instead of ฿ symbol (font compatibility)
+    return lang === "th" ? `${formatted} บาท` : `THB ${formatted}`;
+  }
+  return formatted;
 }
 
 const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
@@ -138,8 +143,17 @@ export async function POST(
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    // Company header
+    // Fetch logo as base64
+    const logoBase64 = await fetchImageAsBase64(invoice.project.logoUrl);
+
+    // Company header with logo
     const companyName = invoice.project.companyName || invoice.project.name;
+
+    // Add logo if available
+    if (logoBase64) {
+      const logoSize = 15;
+      doc.addImage(logoBase64, "PNG", 20, y - 5, logoSize, logoSize);
+    }
 
     doc.setFontSize(18);
     setThaiFont(doc, "bold");
@@ -288,7 +302,7 @@ export async function POST(
     doc.setFontSize(12);
     doc.text(t.total, totalsX, y);
     doc.setTextColor(59, 130, 246);
-    doc.text(formatCurrency(invoice.totalAmount), pageWidth - 25, y, { align: "right" });
+    doc.text(formatCurrency(invoice.totalAmount, true, lang as "th" | "en"), pageWidth - 25, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
     y += 20;
@@ -329,7 +343,7 @@ export async function POST(
     doc.text(ownerName, 50, y, { align: "center" });
 
     // Footer
-    y = doc.internal.pageSize.getHeight() - 20;
+    y += 15;
     doc.setFontSize(10);
     setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);
