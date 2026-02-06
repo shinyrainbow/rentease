@@ -91,12 +91,15 @@ function formatCurrency(amount: number): string {
   });
 }
 
-function formatDate(date: Date): string {
+const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDate(date: Date, lang: "th" | "en" = "th"): string {
   const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = d.getDate();
+  const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
   const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${day} ${month} ${year}`;
 }
 
 export async function POST(
@@ -173,10 +176,10 @@ export async function POST(
     doc.setFontSize(10);
     setThaiFont(doc, "normal");
     doc.text(`${t.invoiceNo}: ${invoice.invoiceNo}`, 20, y);
-    doc.text(`${t.date}: ${formatDate(invoice.createdAt)}`, pageWidth - 60, y);
+    doc.text(`${t.date}: ${formatDate(invoice.createdAt, lang as "th" | "en")}`, pageWidth - 60, y);
     y += 6;
     doc.text(`${t.billingMonth}: ${invoice.billingMonth}`, 20, y);
-    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate)}`, pageWidth - 60, y);
+    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, pageWidth - 60, y);
     y += 12;
 
     // Bill to section

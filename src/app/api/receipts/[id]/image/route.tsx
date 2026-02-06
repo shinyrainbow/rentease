@@ -111,12 +111,14 @@ export async function GET(
       return new Response("Receipt not found", { status: 404 });
     }
 
+    const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+    const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const formatDate = (date: Date) => {
       const d = new Date(date);
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = d.getDate();
+      const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
       const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return `${day} ${month} ${year}`;
     };
 
     const formatCurrency = (amount: number) => {

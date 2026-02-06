@@ -115,7 +115,7 @@ ${textLabels.invoiceNo}: ${invoice.invoiceNo}
 ${textLabels.unit}: ${invoice.unit.unitNumber}
 ${textLabels.billingMonth}: ${invoice.billingMonth}
 ${textLabels.total}: ฿${invoice.totalAmount.toLocaleString()}
-${textLabels.dueDate}: ${(() => { const d = new Date(invoice.dueDate); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; })()}
+${textLabels.dueDate}: ${(() => { const d = new Date(invoice.dueDate); const thMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"]; const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return `${d.getDate()} ${lang === "th" ? thMonths[d.getMonth()] : enMonths[d.getMonth()]} ${d.getFullYear()}`; })()}
 
 ${textLabels.footer}
       `.trim();
@@ -219,7 +219,7 @@ ${textLabels.title}
 ${textLabels.receiptNo}: ${receipt.receiptNo}
 ${textLabels.unit}: ${receipt.invoice.unit.unitNumber}
 ${textLabels.amount}: ฿${receipt.amount.toLocaleString()}
-${textLabels.date}: ${(() => { const d = new Date(receipt.issuedAt); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; })()}
+${textLabels.date}: ${(() => { const d = new Date(receipt.issuedAt); const thMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"]; const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return `${d.getDate()} ${lang === "th" ? thMonths[d.getMonth()] : enMonths[d.getMonth()]} ${d.getFullYear()}`; })()}
 
 ${textLabels.footer}
       `.trim();
@@ -378,12 +378,14 @@ async function generateAndUploadInvoicePdf(
     maximumFractionDigits: 2,
   });
 
+  const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+  const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const formatDate = (date: Date) => {
     const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = d.getDate();
+    const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
     const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${day} ${month} ${year}`;
   };
 
   // Generate PDF
@@ -587,12 +589,14 @@ async function generateAndUploadReceiptPdf(
     maximumFractionDigits: 2,
   });
 
+  const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+  const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const formatDate = (date: Date) => {
     const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = d.getDate();
+    const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
     const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${day} ${month} ${year}`;
   };
 
   // Generate PDF

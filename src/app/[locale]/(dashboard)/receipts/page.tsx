@@ -770,7 +770,7 @@ export default function ReceiptsPage() {
 
             {/* Issued Date */}
             <div className="space-y-2">
-              <Label>{t("issuedAt") || "วันที่ออกใบเสร็จ"} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
+              <Label>{t("issuedAt") || "วันที่ออกใบเสร็จ"} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
               <Input
                 type="date"
                 value={createFormData.issuedAt}

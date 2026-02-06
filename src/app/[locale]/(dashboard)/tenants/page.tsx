@@ -665,11 +665,11 @@ export default function TenantsPage() {
                   <Input className="h-9" value={formData.waterMeterNo} onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(dd/mm/yyyy)</span></Label>
+                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(1 มค 2025)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(dd/mm/yyyy)</span></Label>
+                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(1 มค 2025)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
                 </div>
               </div>

@@ -133,13 +133,15 @@ export async function GET(request: NextRequest) {
       });
     };
 
+    const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+    const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const formatDate = (dateStr: string) => {
       if (!dateStr) return "";
       const d = new Date(dateStr);
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = d.getDate();
+      const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
       const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return `${day} ${month} ${year}`;
     };
 
     return new ImageResponse(

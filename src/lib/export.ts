@@ -38,7 +38,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
   URL.revokeObjectURL(url);
 }
 
-// Format date for export (dd/mm/yyyy)
+// Format date for export (dd/mm/yyyy for CSV compatibility)
 export function formatDateForExport(date: string | Date | null): string {
   if (!date) return "";
   const d = new Date(date);

@@ -787,7 +787,7 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
+                  <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
                   <Input
                     type="date"
                     value={bulkFormData.dueDate}
@@ -894,7 +894,7 @@ export default function InvoicesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
+                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
                     <Input
                       type="date"
                       value={formData.dueDate}
@@ -1208,7 +1208,7 @@ export default function InvoicesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
+                <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
                 <Input
                   type="date"
                   value={editFormData.dueDate}

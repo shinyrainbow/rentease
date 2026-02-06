@@ -13,28 +13,33 @@ export function formatCurrency(amount: number, locale: string = "th-TH"): string
   }).format(amount);
 }
 
-// Format date as dd/mm/yyyy
-export function formatDate(date: Date | string | null | undefined): string {
+// Thai short month names
+const thaiMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"];
+// English short month names
+const engMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Format date as "7 มค 2025" (Thai) or "7 Jan 2025" (English)
+export function formatDate(date: Date | string | null | undefined, lang: "th" | "en" = "th"): string {
   if (!date) return "-";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "-";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = d.getDate();
+  const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
   const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${day} ${month} ${year}`;
 }
 
-// Format date and time as dd/mm/yyyy HH:mm
-export function formatDateTime(date: Date | string | null | undefined): string {
+// Format date and time as "7 มค 2025 14:30" (Thai) or "7 Jan 2025 14:30" (English)
+export function formatDateTime(date: Date | string | null | undefined, lang: "th" | "en" = "th"): string {
   if (!date) return "-";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "-";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = d.getDate();
+  const month = lang === "th" ? thaiMonths[d.getMonth()] : engMonths[d.getMonth()];
   const year = d.getFullYear();
   const hours = String(d.getHours()).padStart(2, "0");
   const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
 export function generateInvoiceNo(projectCode: string, date: Date): string {
