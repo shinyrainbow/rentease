@@ -159,7 +159,7 @@ export async function GET(
           }}
         >
           {/* Header - Company Info & Receipt Title */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
             {/* Left - Company Info */}
             <div style={{ display: "flex", flexDirection: "column", maxWidth: "50%" }}>
               {/* Logo and Company Name */}
