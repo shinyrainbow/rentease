@@ -109,6 +109,7 @@ interface InvoiceDetail extends Invoice {
     phone: string | null;
     email: string | null;
     taxId: string | null;
+    withholdingTax: number;
   };
 }
 
@@ -675,6 +676,7 @@ export default function InvoicesPage() {
           ownerName: data.project.owner?.name || "",
           subtotal: String(data.subtotal),
           withholdingTax: String(data.withholdingTax || 0),
+          withholdingTaxPercent: String(data.tenant.withholdingTax || 0),
           lineItems: JSON.stringify(data.lineItems || []),
           bankName: data.project.bankName || "",
           bankAccountName: data.project.bankAccountName || "",
@@ -1286,34 +1288,39 @@ export default function InvoicesPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : selectedInvoice ? (
-            <Tabs defaultValue="preview" className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="preview">{t("pdfPreview") || "PDF Preview"}</TabsTrigger>
+            <Tabs defaultValue="image" className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="image">{t("imagePreview") || "Image"}</TabsTrigger>
+                <TabsTrigger value="pdf">{t("pdfPreview") || "PDF"}</TabsTrigger>
                 <TabsTrigger value="details">{t("details") || "Details"}</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="preview" className="flex-1 overflow-hidden mt-4">
+              <TabsContent value="image" className="flex-1 overflow-hidden mt-4">
                 {imagePreviewUrl ? (
-                  <div className="flex flex-col items-center gap-4">
+                  <div className="flex flex-col items-center">
                     <img
                       src={imagePreviewUrl}
                       alt="Invoice Preview"
                       className="max-w-full h-auto border rounded-lg shadow-lg"
-                      style={{ maxHeight: "60vh" }}
+                      style={{ maxHeight: "55vh" }}
                     />
-                    {pdfPreviewUrl && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(pdfPreviewUrl, "_blank")}
-                      >
-                        <FileDown className="h-4 w-4 mr-2" />
-                        {t("downloadPdf") || "Download PDF"}
-                      </Button>
-                    )}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-[60vh]">
+                  <div className="flex items-center justify-center h-[55vh]">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="pdf" className="flex-1 overflow-hidden mt-4">
+                {pdfPreviewUrl ? (
+                  <iframe
+                    src={`${pdfPreviewUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                    className="w-full h-[55vh] border rounded-lg"
+                    title="Invoice PDF Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-[55vh]">
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 )}
@@ -1404,7 +1411,7 @@ export default function InvoicesPage() {
                     )}
                     {selectedInvoice.withholdingTax > 0 && (
                       <div className="flex justify-between text-muted-foreground">
-                        <span>{t("withholdingTax") || "Withholding Tax"}</span>
+                        <span>{t("withholdingTax") || "Withholding Tax"} ({selectedInvoice.tenant.withholdingTax}%)</span>
                         <span>-฿{selectedInvoice.withholdingTax.toLocaleString()}</span>
                       </div>
                     )}

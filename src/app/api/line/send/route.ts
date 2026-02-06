@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
         // Additional details
         subtotal: String(invoice.subtotal),
         withholdingTax: String(invoice.withholdingTax || 0),
+        withholdingTaxPercent: String(invoice.tenant.withholdingTax || 0),
         lineItems: JSON.stringify(invoice.lineItems || []),
         // Bank info for payment
         bankName: invoice.project.bankName || "",
@@ -206,6 +207,7 @@ ${textLabels.footer}
         billingMonth: receipt.invoice.billingMonth,
         subtotal: String(receipt.invoice.subtotal),
         withholdingTax: String(receipt.invoice.withholdingTax || 0),
+        withholdingTaxPercent: String(receipt.invoice.tenant.withholdingTax || 0),
         lineItems: JSON.stringify(receipt.invoice.lineItems || []),
         // Bank info
         bankName: receipt.invoice.project.bankName || "",

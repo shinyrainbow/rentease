@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
     // Additional details
     const subtotal = Number(searchParams.get("subtotal") || 0);
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
+    const withholdingTaxPercent = Number(searchParams.get("withholdingTaxPercent") || 0);
     const lineItemsStr = searchParams.get("lineItems") || "[]";
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);
 
@@ -367,7 +368,7 @@ export async function GET(request: NextRequest) {
               </div>
               {withholdingTax > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
                   <span style={{ fontSize: "10px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
                 </div>
               )}
