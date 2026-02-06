@@ -32,6 +32,7 @@ import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, Arr
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { formatDate } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -565,7 +566,7 @@ export default function ReceiptsPage() {
                       </div>
                     </TableCell>
                     <TableCell>฿{receipt.amount.toLocaleString()}</TableCell>
-                    <TableCell>{new Date(receipt.issuedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDate(receipt.issuedAt)}</TableCell>
                     <TableCell>
                       <Badge variant={receipt.sentViaLine ? "default" : "secondary"}>
                         {receipt.sentViaLine ? "Sent" : "Not Sent"}
@@ -829,7 +830,7 @@ export default function ReceiptsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t("issuedAt")}</p>
-                  <p className="font-medium">{new Date(selectedReceipt.issuedAt).toLocaleDateString()}</p>
+                  <p className="font-medium">{formatDate(selectedReceipt.issuedAt)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t("invoiceRef") || "Invoice Ref"}</p>

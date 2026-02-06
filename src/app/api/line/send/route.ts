@@ -115,7 +115,7 @@ ${textLabels.invoiceNo}: ${invoice.invoiceNo}
 ${textLabels.unit}: ${invoice.unit.unitNumber}
 ${textLabels.billingMonth}: ${invoice.billingMonth}
 ${textLabels.total}: ฿${invoice.totalAmount.toLocaleString()}
-${textLabels.dueDate}: ${new Date(invoice.dueDate).toLocaleDateString(lang === "th" ? "th-TH" : "en-US")}
+${textLabels.dueDate}: ${(() => { const d = new Date(invoice.dueDate); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; })()}
 
 ${textLabels.footer}
       `.trim();
@@ -219,7 +219,7 @@ ${textLabels.title}
 ${textLabels.receiptNo}: ${receipt.receiptNo}
 ${textLabels.unit}: ${receipt.invoice.unit.unitNumber}
 ${textLabels.amount}: ฿${receipt.amount.toLocaleString()}
-${textLabels.date}: ${new Date(receipt.issuedAt).toLocaleDateString(lang === "th" ? "th-TH" : "en-US")}
+${textLabels.date}: ${(() => { const d = new Date(receipt.issuedAt); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`; })()}
 
 ${textLabels.footer}
       `.trim();
@@ -378,10 +378,13 @@ async function generateAndUploadInvoicePdf(
     maximumFractionDigits: 2,
   });
 
-  const formatDate = (date: Date) => new Date(date).toLocaleDateString(
-    lang === "th" ? "th-TH" : "en-US",
-    { year: "numeric", month: "long", day: "numeric" }
-  );
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   // Generate PDF
   const doc = new jsPDF();
@@ -584,10 +587,13 @@ async function generateAndUploadReceiptPdf(
     maximumFractionDigits: 2,
   });
 
-  const formatDate = (date: Date) => new Date(date).toLocaleDateString(
-    lang === "th" ? "th-TH" : "en-US",
-    { year: "numeric", month: "long", day: "numeric" }
-  );
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   // Generate PDF
   const doc = new jsPDF();

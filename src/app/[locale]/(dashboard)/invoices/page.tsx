@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { exportToCSV, formatDateForExport, formatCurrencyForExport } from "@/lib/export";
+import { formatDate } from "@/lib/utils";
 import { Download } from "lucide-react";
 
 interface Project {
@@ -786,7 +787,7 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("dueDate")}</Label>
+                  <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                   <Input
                     type="date"
                     value={bulkFormData.dueDate}
@@ -893,7 +894,7 @@ export default function InvoicesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("dueDate")}</Label>
+                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                     <Input
                       type="date"
                       value={formData.dueDate}
@@ -1207,7 +1208,7 @@ export default function InvoicesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t("dueDate")}</Label>
+                <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                 <Input
                   type="date"
                   value={editFormData.dueDate}
@@ -1312,7 +1313,7 @@ export default function InvoicesPage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">{t("dueDate")}</p>
-                      <p className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                      <p className="font-medium">{formatDate(selectedInvoice.dueDate)}</p>
                     </div>
                   </div>
 

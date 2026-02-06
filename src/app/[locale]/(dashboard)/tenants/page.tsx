@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { CalendarView } from "@/components/ui/calendar-view";
 import { LayoutList, Calendar } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -201,7 +202,7 @@ export default function TenantsPage() {
         }
 
         if (newContractStart <= currentContractEnd) {
-          const errorMsg = `Contract start date must be after ${currentContractEnd.toLocaleDateString()} (current tenant's contract end)`;
+          const errorMsg = `Contract start date must be after ${formatDate(currentContractEnd)} (current tenant's contract end)`;
           setDateError(errorMsg);
           toast({
             title: tCommon("error"),
@@ -529,7 +530,7 @@ export default function TenantsPage() {
                           <div>
                             <p className="font-medium text-yellow-800">Unit has active tenant: {selectedUnit.tenant.name}</p>
                             {selectedUnit.tenant.contractEnd && (
-                              <p className="text-yellow-600">Ends {new Date(selectedUnit.tenant.contractEnd).toLocaleDateString()}</p>
+                              <p className="text-yellow-600">Ends {formatDate(selectedUnit.tenant.contractEnd)}</p>
                             )}
                           </div>
                         </div>
@@ -664,11 +665,11 @@ export default function TenantsPage() {
                   <Input className="h-9" value={formData.waterMeterNo} onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractStart")}</Label>
+                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(dd/mm/yyyy)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractEnd")}</Label>
+                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(dd/mm/yyyy)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
                 </div>
               </div>
@@ -855,12 +856,8 @@ export default function TenantsPage() {
                         {t(`statuses.${getDisplayStatus(tenant)}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {tenant.contractStart ? new Date(tenant.contractStart).toLocaleDateString() : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {tenant.contractEnd ? new Date(tenant.contractEnd).toLocaleDateString() : "-"}
-                    </TableCell>
+                    <TableCell>{formatDate(tenant.contractStart)}</TableCell>
+                    <TableCell>{formatDate(tenant.contractEnd)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
