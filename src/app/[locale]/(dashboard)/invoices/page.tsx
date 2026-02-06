@@ -149,9 +149,6 @@ export default function InvoicesPage() {
     type: "RENT",
     billingMonth: "",
     dueDate: "",
-    subtotal: "",
-    discountAmount: "",
-    withholdingTax: "",
     notes: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
@@ -295,9 +292,6 @@ export default function InvoicesPage() {
           type: data.type,
           billingMonth: data.billingMonth,
           dueDate: data.dueDate.split("T")[0],
-          subtotal: data.subtotal.toString(),
-          discountAmount: data.discountAmount.toString(),
-          withholdingTax: data.withholdingTax.toString(),
           notes: data.notes || "",
         });
         setIsEditDialogOpen(true);
@@ -313,11 +307,6 @@ export default function InvoicesPage() {
 
     setSavingEdit(true);
     try {
-      const subtotal = parseFloat(editFormData.subtotal) || 0;
-      const discountAmount = parseFloat(editFormData.discountAmount) || 0;
-      const withholdingTax = parseFloat(editFormData.withholdingTax) || 0;
-      const totalAmount = subtotal - discountAmount - withholdingTax;
-
       const res = await fetch(`/api/invoices/${editingInvoice.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -325,10 +314,6 @@ export default function InvoicesPage() {
           type: editFormData.type,
           billingMonth: editFormData.billingMonth,
           dueDate: new Date(editFormData.dueDate).toISOString(),
-          subtotal,
-          discountAmount,
-          withholdingTax,
-          totalAmount,
           notes: editFormData.notes || null,
         }),
       });
@@ -1349,50 +1334,6 @@ export default function InvoicesPage() {
                   onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
                   required
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>{t("subtotal") || "Subtotal"}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editFormData.subtotal}
-                  onChange={(e) => setEditFormData({ ...editFormData, subtotal: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("discount") || "Discount"}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editFormData.discountAmount}
-                  onChange={(e) => setEditFormData({ ...editFormData, discountAmount: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("withholdingTax") || "WHT"}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editFormData.withholdingTax}
-                  onChange={(e) => setEditFormData({ ...editFormData, withholdingTax: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="p-3 bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{t("totalAmount")}</span>
-                <span className="text-lg font-bold">
-                  ฿{(
-                    (parseFloat(editFormData.subtotal) || 0) -
-                    (parseFloat(editFormData.discountAmount) || 0) -
-                    (parseFloat(editFormData.withholdingTax) || 0)
-                  ).toLocaleString()}
-                </span>
               </div>
             </div>
 
