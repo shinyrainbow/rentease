@@ -62,7 +62,7 @@ export function getS3Key(type: "invoice" | "receipt", id: string, lang: string):
 
 // Check if a string is an S3 key (not a full URL)
 export function isS3Key(value: string): boolean {
-  return value && !value.startsWith("http://") && !value.startsWith("https://");
+  return Boolean(value) && !value.startsWith("http://") && !value.startsWith("https://");
 }
 
 // Resolve a logo URL - if it's an S3 key, generate a presigned URL; otherwise return as-is
