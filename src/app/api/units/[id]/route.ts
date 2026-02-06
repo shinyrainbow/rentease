@@ -18,7 +18,22 @@ export async function GET(
       where: { id, project: { ownerId: session.user.id } },
       include: {
         project: true,
-        tenants: { where: { contractStart: { lte: new Date() }, contractEnd: { gte: new Date() } }, take: 1 },
+        tenants: {
+          where: {
+            OR: [
+              { contractStart: null },
+              { contractStart: { lte: new Date() } },
+            ],
+            AND: {
+              OR: [
+                { contractEnd: null },
+                { contractEnd: { gte: new Date() } },
+              ],
+            },
+          },
+          orderBy: { contractEnd: "desc" },
+          take: 1,
+        },
         meterReadings: { orderBy: { createdAt: "desc" }, take: 10 },
         invoices: { orderBy: { createdAt: "desc" }, take: 10 },
         maintenanceRequests: { orderBy: { createdAt: "desc" }, take: 5 },
@@ -79,7 +94,22 @@ export async function PUT(
       data: updateData,
       include: {
         project: { select: { name: true, nameTh: true } },
-        tenants: { where: { contractStart: { lte: new Date() }, contractEnd: { gte: new Date() } }, take: 1 },
+        tenants: {
+          where: {
+            OR: [
+              { contractStart: null },
+              { contractStart: { lte: new Date() } },
+            ],
+            AND: {
+              OR: [
+                { contractEnd: null },
+                { contractEnd: { gte: new Date() } },
+              ],
+            },
+          },
+          orderBy: { contractEnd: "desc" },
+          take: 1,
+        },
       },
     });
 

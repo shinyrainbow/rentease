@@ -31,10 +31,19 @@ export async function GET(request: NextRequest) {
         project: { select: { name: true, nameTh: true } },
         tenants: {
           where: {
-            contractStart: { lte: new Date() },
-            contractEnd: { gte: new Date() },
+            OR: [
+              { contractStart: null },
+              { contractStart: { lte: new Date() } },
+            ],
+            AND: {
+              OR: [
+                { contractEnd: null },
+                { contractEnd: { gte: new Date() } },
+              ],
+            },
           },
           select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
+          orderBy: { contractEnd: "desc" },
           take: 1,
         },
       },
@@ -92,10 +101,19 @@ export async function POST(request: NextRequest) {
         project: { select: { name: true, nameTh: true } },
         tenants: {
           where: {
-            contractStart: { lte: new Date() },
-            contractEnd: { gte: new Date() },
+            OR: [
+              { contractStart: null },
+              { contractStart: { lte: new Date() } },
+            ],
+            AND: {
+              OR: [
+                { contractEnd: null },
+                { contractEnd: { gte: new Date() } },
+              ],
+            },
           },
           select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
+          orderBy: { contractEnd: "desc" },
           take: 1,
         },
       },
