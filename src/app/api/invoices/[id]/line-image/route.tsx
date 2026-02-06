@@ -88,6 +88,15 @@ const translations = {
 
 export async function GET(request: NextRequest) {
   try {
+    // Load Noto Sans Thai font for proper Thai character rendering
+    const fontData = await fetch(
+      new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
+    ).then((res) => res.arrayBuffer());
+
+    const fontDataBold = await fetch(
+      new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
+    ).then((res) => res.arrayBuffer());
+
     const { searchParams } = new URL(request.url);
 
     // Get data from query params (passed by send route)
@@ -154,15 +163,15 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "sans-serif",
+            fontFamily: "'Noto Sans Thai', sans-serif",
           }}
         >
           {/* Top accent bar */}
           <div
             style={{
               display: "flex",
-              height: "12px",
-              background: `linear-gradient(90deg, ${TEAL_COLOR} 0%, #4ECDC4 100%)`,
+              height: "10px",
+              backgroundColor: TEAL_COLOR,
             }}
           />
 
@@ -186,7 +195,7 @@ export async function GET(request: NextRequest) {
                       style={{
                         width: "100px",
                         height: "100px",
-                        background: `linear-gradient(135deg, ${TEAL_COLOR} 0%, #4ECDC4 100%)`,
+                        backgroundColor: TEAL_COLOR,
                         borderRadius: "16px",
                         display: "flex",
                         alignItems: "center",
@@ -232,9 +241,7 @@ export async function GET(request: NextRequest) {
                   </span>
                   <div
                     style={{
-                      background: version === "original"
-                        ? `linear-gradient(135deg, ${TEAL_COLOR} 0%, #4ECDC4 100%)`
-                        : "linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)",
+                      backgroundColor: version === "original" ? TEAL_COLOR : "#6B7280",
                       color: "#ffffff",
                       padding: "8px 24px",
                       borderRadius: "24px",
@@ -245,15 +252,12 @@ export async function GET(request: NextRequest) {
                     {version === "original" ? t.original : t.copy}
                   </div>
                 </div>
-                {/* Invoice Details Card */}
+                {/* Invoice Details */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-end",
-                    backgroundColor: "#F9FAFB",
-                    padding: "16px 24px",
-                    borderRadius: "12px",
                     gap: "6px",
                   }}
                 >
@@ -278,11 +282,10 @@ export async function GET(request: NextRequest) {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                backgroundColor: "#F0FDFA",
-                padding: "28px",
-                borderRadius: "16px",
+                padding: "24px 0",
                 marginBottom: "32px",
-                borderLeft: `6px solid ${TEAL_COLOR}`,
+                borderTop: "2px solid #E5E7EB",
+                borderBottom: "2px solid #E5E7EB",
               }}
             >
               <span style={{ fontSize: "16px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
@@ -309,20 +312,11 @@ export async function GET(request: NextRequest) {
                     </span>
                   )}
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    backgroundColor: TEAL_COLOR,
-                    padding: "16px 28px",
-                    borderRadius: "12px",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.8)", marginBottom: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                  <span style={{ fontSize: "16px", color: "#6B7280", marginBottom: "4px" }}>
                     {t.unit}
                   </span>
-                  <span style={{ fontSize: "28px", fontWeight: "bold", color: "#ffffff" }}>
+                  <span style={{ fontSize: "32px", fontWeight: "bold", color: TEAL_COLOR }}>
                     {unitNumber}
                   </span>
                 </div>
@@ -330,13 +324,13 @@ export async function GET(request: NextRequest) {
             </div>
 
             {/* Items Table */}
-            <div style={{ display: "flex", flexDirection: "column", marginBottom: "28px" }}>
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "48px" }}>
               {/* Table Header */}
               <div
                 style={{
                   display: "flex",
-                  background: `linear-gradient(90deg, ${TEAL_COLOR} 0%, #3D9D9D 100%)`,
-                  borderRadius: "12px 12px 0 0",
+                  backgroundColor: TEAL_COLOR,
+                  borderRadius: "8px 8px 0 0",
                   padding: "18px 24px",
                 }}
               >
@@ -365,11 +359,10 @@ export async function GET(request: NextRequest) {
                   style={{
                     display: "flex",
                     padding: "18px 24px",
-                    borderBottom: index === lineItems.length - 1 ? "none" : "1px solid #E5E7EB",
-                    backgroundColor: index % 2 === 0 ? "#ffffff" : "#F9FAFB",
+                    borderBottom: "1px solid #E5E7EB",
                     borderLeft: "1px solid #E5E7EB",
                     borderRight: "1px solid #E5E7EB",
-                    ...(index === lineItems.length - 1 ? { borderRadius: "0 0 12px 12px", borderBottom: "1px solid #E5E7EB" } : {}),
+                    ...(index === lineItems.length - 1 ? { borderRadius: "0 0 8px 8px" } : {}),
                   }}
                 >
                   <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
@@ -390,7 +383,7 @@ export async function GET(request: NextRequest) {
                     </div>
                   )}
                   <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>฿{formatCurrency(item.amount)}</span>
+                    <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>{formatCurrency(item.amount)}</span>
                   </div>
                 </div>
               ))}
@@ -403,36 +396,31 @@ export async function GET(request: NextRequest) {
                   display: "flex",
                   flexDirection: "column",
                   width: "420px",
-                  backgroundColor: "#F9FAFB",
-                  borderRadius: "16px",
-                  padding: "24px",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #E5E7EB" }}>
                   <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.subtotal}</span>
-                  <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>฿{formatCurrency(subtotal)}</span>
+                  <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>{formatCurrency(subtotal)}</span>
                 </div>
                 {withholdingTax > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #E5E7EB" }}>
                     <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
-                    <span style={{ fontSize: "20px", color: "#DC2626", fontWeight: "500" }}>-฿{formatCurrency(withholdingTax)}</span>
+                    <span style={{ fontSize: "20px", color: "#DC2626", fontWeight: "500" }}>-{formatCurrency(withholdingTax)}</span>
                   </div>
                 )}
-                {/* Total highlight box */}
+                {/* Total */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    background: `linear-gradient(135deg, ${TEAL_COLOR} 0%, #4ECDC4 100%)`,
-                    padding: "20px 24px",
-                    borderRadius: "12px",
-                    marginTop: "12px",
+                    padding: "16px 0",
+                    borderBottom: `3px solid ${TEAL_COLOR}`,
                   }}
                 >
-                  <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{t.total}</span>
-                  <span style={{ fontSize: "32px", fontWeight: "bold", color: "#ffffff" }}>
-                    ฿{formatCurrency(totalAmount)}
+                  <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
+                  <span style={{ fontSize: "32px", fontWeight: "bold", color: TEAL_COLOR }}>
+                    {formatCurrency(totalAmount)}
                   </span>
                 </div>
               </div>
@@ -449,15 +437,7 @@ export async function GET(request: NextRequest) {
               }}
             >
               {/* Bank Info */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  backgroundColor: "#F9FAFB",
-                  padding: "20px 28px",
-                  borderRadius: "12px",
-                }}
-              >
+              <div style={{ display: "flex", flexDirection: "column" }}>
                 <span style={{ fontSize: "18px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "12px" }}>
                   {t.paymentInfo}
                 </span>
@@ -487,7 +467,7 @@ export async function GET(request: NextRequest) {
                   style={{
                     width: "200px",
                     height: "70px",
-                    borderBottom: `3px solid ${TEAL_COLOR}`,
+                    borderBottom: "2px solid #9CA3AF",
                     display: "flex",
                   }}
                 />
@@ -504,7 +484,24 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1200, height: 1600 }
+      {
+        width: 1200,
+        height: 1600,
+        fonts: [
+          {
+            name: "Noto Sans Thai",
+            data: fontData,
+            weight: 400,
+            style: "normal",
+          },
+          {
+            name: "Noto Sans Thai",
+            data: fontDataBold,
+            weight: 700,
+            style: "normal",
+          },
+        ],
+      }
     );
   } catch (error) {
     console.error("Error generating invoice image:", error);
