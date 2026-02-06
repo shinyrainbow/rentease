@@ -18,7 +18,7 @@ const translations = {
     receivedFrom: "Received From",
     unit: "Unit",
     description: "Description",
-    qty: "Qty",
+    qtyUnit: "Units",
     unitPrice: "Unit Price",
     amount: "Amount",
     subtotal: "Subtotal",
@@ -43,7 +43,7 @@ const translations = {
     receivedFrom: "รับเงินจาก",
     unit: "ห้อง/ยูนิต",
     description: "รายการ",
-    qty: "จำนวน",
+    qtyUnit: "ยูนิต",
     unitPrice: "ราคา/หน่วย",
     amount: "จำนวนเงิน",
     subtotal: "รวม",
@@ -134,6 +134,9 @@ export async function GET(
       usage?: number;
       rate?: number;
     }>) || [];
+
+    // Check if any line item has usage (utility items)
+    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
 
     // Withholding tax
     const withholdingTaxAmount = receipt.invoice.withholdingTax || 0;
@@ -299,15 +302,19 @@ export async function GET(
                 padding: "10px 12px",
               }}
             >
-              <div style={{ flex: 4, display: "flex" }}>
+              <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
                 <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
               </div>
-              <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.qty}</span>
-              </div>
-              <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
-              </div>
+              {hasUtilityItems && (
+                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
+                </div>
+              )}
+              {hasUtilityItems && (
+                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                </div>
+              )}
               <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
                 <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
               </div>
@@ -324,19 +331,23 @@ export async function GET(
                   backgroundColor: index % 2 === 0 ? "#ffffff" : "#F0FDF4",
                 }}
               >
-                <div style={{ flex: 4, display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "11px", color: "#111827" }}>{item.description}</span>
                 </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                  <span style={{ fontSize: "11px", color: "#111827" }}>
-                    {item.quantity || item.usage || 1}
-                  </span>
-                </div>
-                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "11px", color: "#111827" }}>
-                    {formatCurrency(item.unitPrice || item.rate || item.amount)}
-                  </span>
-                </div>
+                {hasUtilityItems && (
+                  <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                    <span style={{ fontSize: "11px", color: "#111827" }}>
+                      {item.usage !== undefined ? item.usage : "-"}
+                    </span>
+                  </div>
+                )}
+                {hasUtilityItems && (
+                  <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: "11px", color: "#111827" }}>
+                      {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
+                    </span>
+                  </div>
+                )}
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
                   <span style={{ fontSize: "11px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
                 </div>

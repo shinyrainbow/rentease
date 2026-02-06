@@ -302,15 +302,19 @@ export async function GET(request: NextRequest) {
                 padding: "8px 10px",
               }}
             >
-              <div style={{ flex: 4, display: "flex" }}>
+              <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
                 <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
               </div>
-              <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.qty}</span>
-              </div>
-              <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
-              </div>
+              {hasUtilityItems && (
+                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
+                </div>
+              )}
+              {hasUtilityItems && (
+                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                </div>
+              )}
               <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
                 <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
               </div>
@@ -327,19 +331,23 @@ export async function GET(request: NextRequest) {
                   backgroundColor: index % 2 === 0 ? "#ffffff" : "#F9FAFB",
                 }}
               >
-                <div style={{ flex: 4, display: "flex" }}>
+                <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
                   <span style={{ fontSize: "9px", color: "#111827" }}>{item.description}</span>
                 </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                  <span style={{ fontSize: "9px", color: "#111827" }}>
-                    {item.quantity || item.usage || 1}
-                  </span>
-                </div>
-                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "9px", color: "#111827" }}>
-                    {formatCurrency(item.unitPrice || item.rate || item.amount)}
-                  </span>
-                </div>
+                {hasUtilityItems && (
+                  <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                    <span style={{ fontSize: "9px", color: "#111827" }}>
+                      {item.usage !== undefined ? item.usage : "-"}
+                    </span>
+                  </div>
+                )}
+                {hasUtilityItems && (
+                  <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: "9px", color: "#111827" }}>
+                      {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
+                    </span>
+                  </div>
+                )}
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
                   <span style={{ fontSize: "9px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
                 </div>
