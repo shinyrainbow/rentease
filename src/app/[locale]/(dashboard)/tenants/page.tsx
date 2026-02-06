@@ -58,6 +58,7 @@ interface Tenant {
   nameTh: string | null;
   email: string | null;
   phone: string | null;
+  address: string | null;
   tenantType: string;
   withholdingTax: number;
   // Contract pricing
@@ -110,6 +111,7 @@ export default function TenantsPage() {
     companyNameTh: "",
     email: "",
     phone: "",
+    address: "",
     idCard: "",
     taxId: "",
     tenantType: "INDIVIDUAL",
@@ -279,6 +281,7 @@ export default function TenantsPage() {
       companyNameTh: tenant.tenantType === "COMPANY" ? (tenant.nameTh || "") : "",
       email: tenant.email || "",
       phone: tenant.phone || "",
+      address: tenant.address || "",
       idCard: "",
       taxId: "",
       tenantType: tenant.tenantType,
@@ -393,6 +396,7 @@ export default function TenantsPage() {
       companyNameTh: "",
       email: "",
       phone: "",
+      address: "",
       idCard: "",
       taxId: "",
       tenantType: "INDIVIDUAL",
@@ -612,6 +616,12 @@ export default function TenantsPage() {
                   <Label className="text-xs">{t("phone")}</Label>
                   <Input className="h-9" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                 </div>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-1">
+                <Label className="text-xs">Address / ที่อยู่</Label>
+                <Input className="h-9" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Address for invoice" />
               </div>
 
               {/* Contract Pricing */}

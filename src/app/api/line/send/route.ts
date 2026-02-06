@@ -30,19 +30,10 @@ export async function POST(request: NextRequest) {
           unit: true,
           tenant: true,
           project: {
-            select: {
-              name: true,
-              nameTh: true,
-              companyName: true,
-              companyNameTh: true,
-              taxId: true,
-              bankName: true,
-              bankAccountName: true,
-              bankAccountNumber: true,
-              lineAccessToken: true,
-              ownerId: true,
-            }
-          }
+            include: {
+              owner: { select: { name: true } },
+            },
+          },
         },
       });
 
@@ -75,14 +66,22 @@ export async function POST(request: NextRequest) {
         invoiceNo: invoice.invoiceNo,
         billingMonth: invoice.billingMonth,
         dueDate: invoice.dueDate.toISOString(),
+        dateCreated: invoice.createdAt.toISOString(),
         totalAmount: String(invoice.totalAmount),
         unitNumber: invoice.unit.unitNumber,
         tenantName,
+        tenantAddress: invoice.tenant.address || "",
+        tenantTaxId: invoice.tenant.taxId || "",
+        tenantIdCard: invoice.tenant.idCard || "",
         companyName,
+        companyNameTh: invoice.project.companyNameTh || "",
+        companyAddress: invoice.project.companyAddress || "",
+        taxId: invoice.project.taxId || "",
+        logoUrl: invoice.project.logoUrl || "",
+        ownerName: invoice.project.owner?.name || "",
         // Additional details
         subtotal: String(invoice.subtotal),
         withholdingTax: String(invoice.withholdingTax || 0),
-        discountAmount: String(invoice.discountAmount || 0),
         lineItems: JSON.stringify(invoice.lineItems || []),
         // Bank info for payment
         bankName: invoice.project.bankName || "",
@@ -135,19 +134,12 @@ ${textLabels.footer}
               unit: true,
               tenant: true,
               project: {
-                select: {
-                  name: true,
-                  nameTh: true,
-                  companyName: true,
-                  companyNameTh: true,
-                  companyAddress: true,
-                  taxId: true,
-                  lineAccessToken: true,
-                  ownerId: true,
-                }
-              }
-            }
-          }
+                include: {
+                  owner: { select: { name: true } },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -176,12 +168,6 @@ ${textLabels.footer}
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
       const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
 
-      // Get payment info if available
-      const payment = await prisma.payment.findFirst({
-        where: { invoiceId: receipt.invoiceId, status: "VERIFIED" },
-        orderBy: { createdAt: "desc" },
-      });
-
       const params = new URLSearchParams({
         lang,
         receiptNo: receipt.receiptNo,
@@ -190,15 +176,24 @@ ${textLabels.footer}
         issuedAt: receipt.issuedAt.toISOString(),
         unitNumber: receipt.invoice.unit.unitNumber,
         tenantName,
+        tenantAddress: receipt.invoice.tenant.address || "",
+        tenantTaxId: receipt.invoice.tenant.taxId || "",
+        tenantIdCard: receipt.invoice.tenant.idCard || "",
         companyName,
-        // Additional details for new receipt format
-        billingMonth: receipt.invoice.billingMonth,
+        companyNameTh: receipt.invoice.project.companyNameTh || "",
         companyAddress: receipt.invoice.project.companyAddress || "",
         companyTaxId: receipt.invoice.project.taxId || "",
-        tenantTaxId: receipt.invoice.tenant.taxId || "",
+        logoUrl: receipt.invoice.project.logoUrl || "",
+        ownerName: receipt.invoice.project.owner?.name || "",
+        // Additional details
+        billingMonth: receipt.invoice.billingMonth,
+        subtotal: String(receipt.invoice.subtotal),
         withholdingTax: String(receipt.invoice.withholdingTax || 0),
-        paymentMethod: payment?.method || "",
-        paymentDate: payment?.createdAt?.toISOString() || "",
+        lineItems: JSON.stringify(receipt.invoice.lineItems || []),
+        // Bank info
+        bankName: receipt.invoice.project.bankName || "",
+        bankAccountName: receipt.invoice.project.bankAccountName || "",
+        bankAccountNumber: receipt.invoice.project.bankAccountNumber || "",
       });
       imageUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
 

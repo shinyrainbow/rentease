@@ -47,7 +47,10 @@ import {
   Plus,
   Edit,
   Loader2,
+  Upload,
+  X,
 } from "lucide-react";
+import Image from "next/image";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -67,6 +70,7 @@ interface Project {
   bankName: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
+  logoUrl: string | null;
 }
 
 // Thai banks list
@@ -142,7 +146,12 @@ export default function ProjectDetailPage() {
     bankName: "",
     bankAccountName: "",
     bankAccountNumber: "",
+    logoUrl: "",
   });
+
+  // Logo upload state
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Drag state
   const [dragging, setDragging] = useState<string | null>(null);
@@ -203,6 +212,7 @@ export default function ProjectDetailPage() {
         bankName: projectData.bankName || "",
         bankAccountName: projectData.bankAccountName || "",
         bankAccountNumber: projectData.bankAccountNumber || "",
+        logoUrl: projectData.logoUrl || "",
       });
 
       // Initialize positions for units without positions
@@ -258,6 +268,75 @@ export default function ProjectDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: tCommon("error"),
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: tCommon("error"),
+        description: "Image size must be less than 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      formDataUpload.append("type", "logo");
+      formDataUpload.append("projectId", projectId);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      if (res.ok) {
+        const { url } = await res.json();
+        setFormData(prev => ({ ...prev, logoUrl: url }));
+        toast({
+          title: tCommon("success"),
+          description: "Logo uploaded successfully",
+        });
+      } else {
+        toast({
+          title: tCommon("error"),
+          description: "Failed to upload logo",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      toast({
+        title: tCommon("error"),
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData(prev => ({ ...prev, logoUrl: "" }));
   };
 
   const handleDeleteProject = async () => {
@@ -1052,6 +1131,53 @@ export default function ProjectDetailPage() {
                       value={formData.taxId}
                       onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label>Logo</Label>
+                    <div className="flex items-start gap-4">
+                      {formData.logoUrl ? (
+                        <div className="relative">
+                          <Image
+                            src={formData.logoUrl}
+                            alt="Company logo"
+                            width={120}
+                            height={120}
+                            className="rounded-lg border object-contain bg-white"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6"
+                            onClick={handleRemoveLogo}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="w-[120px] h-[120px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
+                          onClick={() => logoInputRef.current?.click()}
+                        >
+                          {uploadingLogo ? (
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          ) : (
+                            <>
+                              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                              <span className="text-xs text-muted-foreground">Upload Logo</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Recommended: 200x200px, max 2MB</p>
                   </div>
                 </div>
 

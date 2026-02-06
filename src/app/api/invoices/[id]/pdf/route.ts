@@ -31,6 +31,11 @@ const translations = {
     combined: "Rent & Utilities",
     thankYou: "Thank you for your business",
     page: "Page",
+    bankInfo: "Bank Account Information",
+    bankName: "Bank",
+    accountNumber: "Account No",
+    accountName: "Account Name",
+    biller: "Biller",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -53,6 +58,11 @@ const translations = {
     combined: "ค่าเช่าและสาธารณูปโภค",
     thankYou: "ขอบคุณที่ใช้บริการ",
     page: "หน้า",
+    bankInfo: "ข้อมูลบัญชีธนาคาร",
+    bankName: "ธนาคาร",
+    accountNumber: "เลขบัญชี",
+    accountName: "ชื่อบัญชี",
+    biller: "ผู้วางบิล",
   },
 };
 
@@ -98,7 +108,11 @@ export async function POST(
     const invoice = await prisma.invoice.findFirst({
       where: { id, project: { ownerId: session.user.id } },
       include: {
-        project: true,
+        project: {
+          include: {
+            owner: { select: { name: true } },
+          },
+        },
         unit: true,
         tenant: true,
       },
@@ -157,6 +171,10 @@ export async function POST(
     const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
     doc.text(tenantName, 20, y);
     y += 5;
+    if (invoice.tenant.address) {
+      doc.text(invoice.tenant.address, 20, y);
+      y += 5;
+    }
     doc.text(`${t.unit}: ${invoice.unit.unitNumber}`, 20, y);
     y += 5;
     if (invoice.tenant.phone) {
@@ -234,6 +252,43 @@ export async function POST(
     doc.setTextColor(59, 130, 246);
     doc.text(formatCurrency(invoice.totalAmount), pageWidth - 25, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
+
+    y += 20;
+
+    // Bank Account Information
+    if (invoice.project.bankName || invoice.project.bankAccountNumber) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(t.bankInfo, 20, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      if (invoice.project.bankName) {
+        doc.text(`${t.bankName}: ${invoice.project.bankName}`, 20, y);
+        y += 5;
+      }
+      if (invoice.project.bankAccountNumber) {
+        doc.text(`${t.accountNumber}: ${invoice.project.bankAccountNumber}`, 20, y);
+        y += 5;
+      }
+      if (invoice.project.bankAccountName) {
+        doc.text(`${t.accountName}: ${invoice.project.bankAccountName}`, 20, y);
+        y += 5;
+      }
+      y += 10;
+    }
+
+    // Biller Signature Section
+    doc.setFont("helvetica", "bold");
+    doc.text(t.biller, 20, y);
+    y += 15;
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(150, 150, 150);
+    doc.line(20, y, 80, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const ownerName = invoice.project.owner?.name || "";
+    doc.text(ownerName, 50, y, { align: "center" });
 
     // Footer
     y = doc.internal.pageSize.getHeight() - 20;

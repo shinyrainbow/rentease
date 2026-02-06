@@ -3,71 +3,88 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-// Convert number to Thai baht text
-function numberToThaiText(num: number): string {
-  const thaiNumbers = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
-  const thaiPositions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
-
-  if (num === 0) return "ศูนย์บาทถ้วน";
-
-  const intPart = Math.floor(num);
-  const decimalPart = Math.round((num - intPart) * 100);
-
-  let result = "";
-
-  const numStr = intPart.toString();
-  const len = numStr.length;
-
-  for (let i = 0; i < len; i++) {
-    const digit = parseInt(numStr[i]);
-    const position = len - i - 1;
-    const posInGroup = position % 6;
-
-    if (position >= 6 && posInGroup === 0 && digit !== 0) {
-      result += "ล้าน";
-    }
-
-    if (digit === 0) continue;
-
-    if (posInGroup === 1 && digit === 1) {
-      result += "สิบ";
-    } else if (posInGroup === 1 && digit === 2) {
-      result += "ยี่สิบ";
-    } else if (posInGroup === 0 && digit === 1 && len > 1) {
-      result += "เอ็ด";
-    } else {
-      result += thaiNumbers[digit] + thaiPositions[posInGroup];
-    }
-  }
-
-  result += "บาท";
-
-  if (decimalPart > 0) {
-    const decStr = decimalPart.toString().padStart(2, "0");
-    const d1 = parseInt(decStr[0]);
-    const d2 = parseInt(decStr[1]);
-
-    if (d1 === 1) {
-      result += "สิบ";
-    } else if (d1 === 2) {
-      result += "ยี่สิบ";
-    } else if (d1 > 0) {
-      result += thaiNumbers[d1] + "สิบ";
-    }
-
-    if (d2 === 1 && d1 > 0) {
-      result += "เอ็ด";
-    } else if (d2 > 0) {
-      result += thaiNumbers[d2];
-    }
-
-    result += "สตางค์";
-  } else {
-    result += "ถ้วน";
-  }
-
-  return result;
+interface LineItem {
+  description: string;
+  amount: number;
+  quantity?: number;
+  unitPrice?: number;
+  usage?: number;
+  rate?: number;
 }
+
+const GREEN_COLOR = "#16a34a";
+
+// Bank name mapping
+const BANK_NAMES: Record<string, string> = {
+  BBL: "Bangkok Bank",
+  KBANK: "Kasikorn Bank",
+  KTB: "Krungthai Bank",
+  SCB: "SCB",
+  BAY: "Bank of Ayudhya",
+  TMB: "TTB",
+  CIMB: "CIMB Thai",
+  UOB: "UOB",
+  TISCO: "TISCO Bank",
+  KKP: "KKP",
+  LH: "LH Bank",
+  ICBC: "ICBC",
+  GSB: "GSB",
+  BAAC: "BAAC",
+  GHB: "GHB",
+};
+
+const translations = {
+  en: {
+    receipt: "RECEIPT",
+    original: "Original",
+    copy: "Copy",
+    receiptNo: "Receipt No.",
+    dateCreated: "Date",
+    referenceInvoice: "Ref. Invoice",
+    billingMonth: "Billing Month",
+    taxId: "Tax ID",
+    idCard: "ID Card",
+    receivedFrom: "Received From",
+    unit: "Unit",
+    description: "Description",
+    qty: "Qty",
+    unitPrice: "Unit Price",
+    amount: "Amount",
+    subtotal: "Subtotal",
+    withholdingTax: "Withholding Tax",
+    total: "Total",
+    paymentInfo: "Payment Information",
+    bankName: "Bank",
+    accountName: "Account Name",
+    accountNumber: "Account No.",
+    receiver: "Receiver",
+  },
+  th: {
+    receipt: "ใบเสร็จรับเงิน",
+    original: "ต้นฉบับ",
+    copy: "สำเนา",
+    receiptNo: "เลขที่",
+    dateCreated: "วันที่",
+    referenceInvoice: "อ้างอิงใบแจ้งหนี้",
+    billingMonth: "รอบบิล",
+    taxId: "เลขประจำตัวผู้เสียภาษี",
+    idCard: "เลขบัตรประชาชน",
+    receivedFrom: "รับเงินจาก",
+    unit: "ห้อง/ยูนิต",
+    description: "รายการ",
+    qty: "จำนวน",
+    unitPrice: "ราคา/หน่วย",
+    amount: "จำนวนเงิน",
+    subtotal: "รวม",
+    withholdingTax: "หัก ณ ที่จ่าย",
+    total: "ยอดรวมทั้งสิ้น",
+    paymentInfo: "ข้อมูลการชำระเงิน",
+    bankName: "ธนาคาร",
+    accountName: "ชื่อบัญชี",
+    accountNumber: "เลขที่บัญชี",
+    receiver: "ผู้รับเงิน",
+  },
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,81 +93,50 @@ export async function GET(request: NextRequest) {
     // Get data from query params (passed by send route)
     const receiptNo = searchParams.get("receiptNo") || "";
     const invoiceNo = searchParams.get("invoiceNo") || "";
-    const amount = Number(searchParams.get("amount") || 0);
+    const billingMonth = searchParams.get("billingMonth") || "";
     const issuedAt = searchParams.get("issuedAt") || "";
+    const totalAmount = Number(searchParams.get("amount") || 0);
     const unitNumber = searchParams.get("unitNumber") || "";
     const tenantName = searchParams.get("tenantName") || "";
+    const tenantAddress = searchParams.get("tenantAddress") || "";
+    const tenantTaxId = searchParams.get("tenantTaxId") || "";
+    const tenantIdCard = searchParams.get("tenantIdCard") || "";
     const companyName = searchParams.get("companyName") || "";
+    const companyNameTh = searchParams.get("companyNameTh") || "";
     const companyAddress = searchParams.get("companyAddress") || "";
     const companyTaxId = searchParams.get("companyTaxId") || "";
-    const tenantTaxId = searchParams.get("tenantTaxId") || "";
-    const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
-    const lang = searchParams.get("lang") || "th";
+    const logoUrl = searchParams.get("logoUrl") || "";
+    const ownerName = searchParams.get("ownerName") || "";
+    const lang = (searchParams.get("lang") as "en" | "th") || "th";
+    const version = (searchParams.get("version") as "original" | "copy") || "original";
 
     // Additional details
-    const billingMonth = searchParams.get("billingMonth") || "";
+    const subtotal = Number(searchParams.get("subtotal") || 0);
+    const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
+    const lineItemsStr = searchParams.get("lineItems") || "[]";
+    const lineItems: LineItem[] = JSON.parse(lineItemsStr);
 
-    const t = lang === "th" ? {
-      receipt: "ใบเสร็จรับเงิน",
-      original: "(ต้นฉบับ)",
-      receiptNo: "เลขที่",
-      date: "วันที่",
-      reference: "อ้างอิง",
-      room: "ห้อง",
-      name: "ชื่อ",
-      taxId: "TAX ID",
-      no: "#",
-      description: "Description",
-      descriptionTh: "รายละเอียด",
-      price: "Price",
-      priceTh: "ราคา",
-      whTax: "WH 5%",
-      whTaxTh: "ณ ที่จ่าย WH 5%",
-      total: "Total",
-      totalTh: "จำนวนเงิน",
-      grandTotal: "จำนวนเงินทั้งสิ้น",
-      receiver: "ผู้รับเงิน",
-    } : {
-      receipt: "RECEIPT",
-      original: "(Original)",
-      receiptNo: "No.",
-      date: "Date",
-      reference: "Reference",
-      room: "Room",
-      name: "Name",
-      taxId: "TAX ID",
-      no: "#",
-      description: "Description",
-      descriptionTh: "",
-      price: "Price",
-      priceTh: "",
-      whTax: "WH 5%",
-      whTaxTh: "",
-      total: "Total",
-      totalTh: "",
-      grandTotal: "Grand Total",
-      receiver: "Receiver",
+    // Bank info
+    const bankName = searchParams.get("bankName") || "";
+    const bankAccountName = searchParams.get("bankAccountName") || "";
+    const bankAccountNumber = searchParams.get("bankAccountNumber") || "";
+
+    const t = translations[lang] || translations.th;
+
+    const formatCurrency = (amount: number) => {
+      return amount.toLocaleString(lang === "th" ? "th-TH" : "en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     };
-
-    const formatCurrency = (amt: number) => amt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const formatDate = (dateStr: string) => {
       if (!dateStr) return "";
-      const d = new Date(dateStr);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return new Date(dateStr).toLocaleDateString(
+        lang === "th" ? "th-TH" : "en-US",
+        { year: "numeric", month: "short", day: "numeric" }
+      );
     };
-
-    // Calculate values
-    const subtotal = amount + withholdingTax;
-    const totalAmount = amount;
-
-    // Get billing month for description
-    const billingDate = billingMonth ? new Date(billingMonth + "-01") : new Date();
-    const monthName = billingDate.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
-    const monthNameEn = billingDate.toLocaleDateString("en-US", { month: "long" });
 
     return new ImageResponse(
       (
@@ -160,213 +146,288 @@ export async function GET(request: NextRequest) {
             flexDirection: "column",
             width: "100%",
             height: "100%",
-            backgroundColor: "white",
-            padding: 32,
+            backgroundColor: "#ffffff",
+            fontFamily: "sans-serif",
+            padding: "32px",
           }}
         >
-          {/* Header Row */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-            {/* Company Info - Left */}
+          {/* Header - Company Info & Receipt Title */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+            {/* Left - Company Info */}
             <div style={{ display: "flex", flexDirection: "column", maxWidth: "50%" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#1f2937", marginBottom: 4 }}>
-                {companyName}
-              </span>
+              {/* Logo and Company Name */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    width={48}
+                    height={48}
+                    style={{ objectFit: "contain", borderRadius: "4px" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      backgroundColor: GREEN_COLOR,
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {companyName.charAt(0)}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>
+                    {companyName}
+                  </span>
+                  {companyNameTh && (
+                    <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                      {companyNameTh}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {/* Company Address */}
               {companyAddress && (
-                <span style={{ fontSize: 10, color: "#4b5563", lineHeight: 1.4 }}>
+                <span style={{ fontSize: "9px", color: "#6B7280", marginBottom: "2px" }}>
                   {companyAddress}
                 </span>
               )}
+              {/* Company Tax ID */}
               {companyTaxId && (
-                <span style={{ fontSize: 10, color: "#4b5563", marginTop: 2 }}>
-                  เลขผู้เสียภาษี {companyTaxId}
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                  {t.taxId}: {companyTaxId}
                 </span>
               )}
             </div>
 
-            {/* Receipt Info - Right */}
+            {/* Right - Receipt Title & Badge */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#1f2937", marginBottom: 6 }}>
-                {t.receipt} {t.original}
-              </span>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 4,
-                  padding: "6px 10px",
-                  fontSize: 10,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ color: "#6b7280", marginRight: 12 }}>{t.receiptNo}</span>
-                  <span style={{ color: "#111827" }}>{receiptNo}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                <span style={{ fontSize: "24px", fontWeight: "bold", color: GREEN_COLOR }}>
+                  {t.receipt}
+                </span>
+                <div
+                  style={{
+                    backgroundColor: version === "original" ? GREEN_COLOR : "#6B7280",
+                    color: "#ffffff",
+                    padding: "3px 10px",
+                    borderRadius: "4px",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {version === "original" ? t.original : t.copy}
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ color: "#6b7280", marginRight: 12 }}>{t.date}</span>
-                  <span style={{ color: "#111827" }}>{formatDate(issuedAt)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#6b7280", marginRight: 12 }}>{t.reference}</span>
-                  <span style={{ color: "#111827" }}>{invoiceNo}</span>
-                </div>
+              </div>
+              {/* Receipt Details */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
+                <span style={{ fontSize: "10px", color: "#4B5563" }}>
+                  {t.receiptNo}: <span style={{ fontWeight: "bold" }}>{receiptNo}</span>
+                </span>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                  {t.dateCreated}: {formatDate(issuedAt)}
+                </span>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                  {t.referenceInvoice}: {invoiceNo}
+                </span>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
+                  {t.billingMonth}: {billingMonth}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Tenant Info */}
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: 16, fontSize: 11 }}>
-            <div style={{ display: "flex", marginBottom: 2 }}>
-              <span style={{ color: "#6b7280", width: 40 }}>{t.room}:</span>
-              <span style={{ color: "#111827" }}>{unitNumber}</span>
-            </div>
-            <div style={{ display: "flex", marginBottom: 2 }}>
-              <span style={{ color: "#6b7280", width: 40 }}>{t.name}:</span>
-              <span style={{ color: "#111827" }}>{tenantName}</span>
-            </div>
-            {tenantTaxId && (
-              <div style={{ display: "flex" }}>
-                <span style={{ color: "#6b7280", width: 40 }}>{t.taxId}</span>
-                <span style={{ color: "#111827" }}>{tenantTaxId}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Items Table */}
+          {/* Received From Section */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              border: "1px solid #e5e7eb",
-              marginBottom: 12,
+              backgroundColor: "#F0FDF4",
+              padding: "12px",
+              borderRadius: "6px",
+              marginBottom: "16px",
             }}
           >
+            <span style={{ fontSize: "10px", fontWeight: "bold", color: GREEN_COLOR, marginBottom: "6px" }}>
+              {t.receivedFrom}
+            </span>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>
+                  {tenantName}
+                </span>
+                {tenantAddress && (
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
+                    {tenantAddress}
+                  </span>
+                )}
+                {tenantTaxId && (
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
+                    {t.taxId}: {tenantTaxId}
+                  </span>
+                )}
+                {tenantIdCard && !tenantTaxId && (
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
+                    {t.idCard}: {tenantIdCard}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                  {t.unit}: <span style={{ fontWeight: "bold", color: "#111827" }}>{unitNumber}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: "12px", flex: 1 }}>
             {/* Table Header */}
             <div
               style={{
                 display: "flex",
-                borderBottom: "1px solid #e5e7eb",
-                backgroundColor: "#f9fafb",
-                padding: "6px 10px",
-                fontSize: 10,
-                fontWeight: 700,
+                backgroundColor: GREEN_COLOR,
+                borderRadius: "4px 4px 0 0",
+                padding: "8px 10px",
               }}
             >
-              <span style={{ width: 24, color: "#374151" }}>{t.no}</span>
-              <span style={{ flex: 1, color: "#374151" }}>
-                {t.description}
-                {lang === "th" && <span style={{ display: "block", fontWeight: 400, color: "#6b7280" }}>{t.descriptionTh}</span>}
-              </span>
-              <span style={{ width: 70, textAlign: "right", color: "#374151" }}>
-                {t.price}
-                {lang === "th" && <span style={{ display: "block", fontWeight: 400, color: "#6b7280" }}>{t.priceTh}</span>}
-              </span>
-              <span style={{ width: 70, textAlign: "right", color: "#374151" }}>
-                {t.whTax}
-                {lang === "th" && <span style={{ display: "block", fontWeight: 400, color: "#6b7280" }}>{t.whTaxTh}</span>}
-              </span>
-              <span style={{ width: 80, textAlign: "right", color: "#374151" }}>
-                {t.total}
-                {lang === "th" && <span style={{ display: "block", fontWeight: 400, color: "#6b7280" }}>{t.totalTh}</span>}
-              </span>
+              <div style={{ flex: 4, display: "flex" }}>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
+              </div>
+              <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.qty}</span>
+              </div>
+              <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+              </div>
+              <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
+              </div>
             </div>
 
-            {/* Table Row */}
-            <div
-              style={{
-                display: "flex",
-                padding: "8px 10px",
-                fontSize: 10,
-                alignItems: "center",
-              }}
-            >
-              <span style={{ width: 24, color: "#374151" }}>1</span>
-              <span style={{ flex: 1, color: "#374151" }}>
-                ค่าเช่า เดือน{monthName} / Rental fee {monthNameEn}
-              </span>
-              <span style={{ width: 70, textAlign: "right", color: "#374151" }}>
-                {formatCurrency(subtotal)}
-              </span>
-              <span style={{ width: 70, textAlign: "right", color: "#374151" }}>
-                {formatCurrency(withholdingTax)}
-              </span>
-              <span style={{ width: 80, textAlign: "right", color: "#374151" }}>
-                {formatCurrency(totalAmount)}
-              </span>
-            </div>
+            {/* Table Rows */}
+            {lineItems.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  padding: "8px 10px",
+                  borderBottom: "1px solid #E5E7EB",
+                  backgroundColor: index % 2 === 0 ? "#ffffff" : "#F0FDF4",
+                }}
+              >
+                <div style={{ flex: 4, display: "flex" }}>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>{item.description}</span>
+                </div>
+                <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>
+                    {item.quantity || item.usage || 1}
+                  </span>
+                </div>
+                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>
+                    {formatCurrency(item.unitPrice || item.rate || item.amount)}
+                  </span>
+                </div>
+                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Total Section */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            {/* Thai Text Total */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: "#dcfce7",
-                padding: "6px 12px",
-                borderRadius: 4,
-              }}
-            >
-              <span style={{ fontSize: 10, color: "#166534", fontWeight: 500 }}>
-                {numberToThaiText(totalAmount)}
-              </span>
-            </div>
-
-            {/* Grand Total Box */}
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ fontSize: 10, color: "#6b7280", marginRight: 10 }}>{t.grandTotal}</span>
+          {/* Totals Section */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", width: "200px", gap: "3px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
+                <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.subtotal}</span>
+                <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
+              </div>
+              {withholdingTax > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
+                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                  <span style={{ fontSize: "10px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#dcfce7",
-                  border: "1px solid #86efac",
-                  padding: "6px 12px",
-                  borderRadius: 4,
-                  minWidth: 100,
+                  justifyContent: "space-between",
+                  padding: "6px 0",
+                  borderTop: "2px solid #E5E7EB",
+                  marginTop: "3px",
                 }}
               >
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#166534" }}>
-                  {formatCurrency(totalAmount)}
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: GREEN_COLOR }}>
+                  ฿{formatCurrency(totalAmount)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Signature Section */}
+          {/* Footer - Bank Info & Signature */}
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              marginTop: "auto",
-              paddingTop: 16,
+              justifyContent: "space-between",
+              borderTop: "1px solid #E5E7EB",
+              paddingTop: "12px",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                width: 120,
-              }}
-            >
+            {/* Bank Info */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "9px", fontWeight: "bold", color: "#4B5563", marginBottom: "3px" }}>
+                {t.paymentInfo}
+              </span>
+              {bankName && (
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
+                  {t.bankName}: {BANK_NAMES[bankName] || bankName}
+                </span>
+              )}
+              {bankAccountName && (
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
+                  {t.accountName}: {bankAccountName}
+                </span>
+              )}
+              {bankAccountNumber && (
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
+                  {t.accountNumber}: {bankAccountNumber}
+                </span>
+              )}
+            </div>
+
+            {/* Signature */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "140px" }}>
               <div
                 style={{
-                  width: 100,
-                  borderBottom: "1px solid #9ca3af",
-                  marginBottom: 6,
-                  height: 30,
+                  width: "100px",
+                  height: "30px",
+                  borderBottom: "1px solid #9CA3AF",
+                  display: "flex",
                 }}
               />
-              <span style={{ fontSize: 10, color: "#6b7280" }}>{t.receiver}</span>
+              <span style={{ fontSize: "8px", color: "#6B7280", marginTop: "3px" }}>
+                {t.receiver}
+              </span>
+              {ownerName && (
+                <span style={{ fontSize: "8px", color: "#4B5563", fontWeight: "500" }}>
+                  ({ownerName})
+                </span>
+              )}
             </div>
           </div>
         </div>
       ),
-      { width: 600, height: 600 }
+      { width: 600, height: 800 }
     );
   } catch (error) {
     console.error("Error generating receipt image:", error);

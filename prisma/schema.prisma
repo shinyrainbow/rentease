@@ -93,6 +93,9 @@ model Project {
   bankAccountName   String?
   bankAccountNumber String?
 
+  // Company logo
+  logoUrl           String?
+
   // LINE OA Integration
   lineChannelId     String?
   lineChannelSecret String?
@@ -170,6 +173,7 @@ model Tenant {
   nameTh        String?
   email         String?
   phone         String?
+  address       String?
   idCard        String?
   taxId         String?
 
