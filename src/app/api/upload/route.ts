@@ -48,14 +48,23 @@ export async function POST(request: NextRequest) {
       s3Key = `uploads/${session.user.id}/${timestamp}.${ext}`;
     }
 
-    // Upload to S3 (public for logos)
-    await uploadFile(s3Key, buffer, file.type, isPublic);
-
-    // Get the URL (public URL for logos, presigned for others)
+    // Upload to S3
     let url: string;
+
     if (isPublic) {
-      url = getPublicUrl(s3Key);
+      // For logos, try with public ACL first, fallback to private if ACL not allowed
+      try {
+        await uploadFile(s3Key, buffer, file.type, true);
+        url = getPublicUrl(s3Key);
+      } catch (aclError) {
+        // If ACL fails (bucket blocks public access), upload without ACL
+        console.warn("Public ACL failed, uploading without ACL:", aclError);
+        await uploadFile(s3Key, buffer, file.type, false);
+        // Use public URL anyway (works if bucket policy allows public access to logo/ prefix)
+        url = getPublicUrl(s3Key);
+      }
     } else {
+      await uploadFile(s3Key, buffer, file.type, false);
       url = await getPresignedUrl(s3Key, 60 * 60 * 24 * 7); // Max 7 days for presigned URLs
     }
 
@@ -66,6 +75,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error uploading file:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
