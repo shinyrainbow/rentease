@@ -256,6 +256,7 @@
     "deleteInvoice": "Delete Invoice",
     "editInvoice": "Edit Invoice",
     "invoiceUpdated": "Invoice Updated",
+    "updated": "has been updated",
     "searchPlaceholder": "Search invoice, tenant, unit...",
     "allProjects": "All Projects",
     "taxId": "Tax ID",
