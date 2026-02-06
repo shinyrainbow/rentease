@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { uploadFile, getPresignedUrl, getS3Key } from "@/lib/s3";
-import { jsPDF } from "jspdf";
+import { createPDFWithThaiFont, setThaiFont } from "@/lib/pdf-fonts";
 
 interface LineItem {
   description: string;
   amount: number;
   quantity?: number;
   unitPrice?: number;
+  usage?: number;
+  rate?: number;
 }
 
 const translations = {
@@ -25,7 +27,7 @@ const translations = {
     phone: "Phone",
     taxId: "Tax ID",
     description: "Description",
-    qty: "Qty",
+    qtyUnit: "Units",
     unitPrice: "Unit Price",
     amount: "Amount (THB)",
     subtotal: "Subtotal",
@@ -51,7 +53,7 @@ const translations = {
     phone: "โทร",
     taxId: "เลขประจำตัวผู้เสียภาษี",
     description: "รายการ",
-    qty: "จำนวน",
+    qtyUnit: "ยูนิต",
     unitPrice: "ราคา/หน่วย",
     amount: "จำนวนเงิน (บาท)",
     subtotal: "รวม",
@@ -116,20 +118,20 @@ export async function POST(
       return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
     }
 
-    // Generate PDF
-    const doc = new jsPDF();
+    // Generate PDF with Thai font support
+    const doc = await createPDFWithThaiFont();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
 
     // Company header
     doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.text(receipt.invoice.project.companyName || receipt.invoice.project.name, pageWidth / 2, y, { align: "center" });
     y += 8;
 
     if (receipt.invoice.project.companyAddress) {
       doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
+      setThaiFont(doc, "normal");
       doc.text(receipt.invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
       y += 6;
     }
@@ -143,7 +145,7 @@ export async function POST(
 
     // Receipt title (green)
     doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.setTextColor(22, 163, 74);
     doc.text(t.receipt, pageWidth / 2, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
@@ -151,7 +153,7 @@ export async function POST(
 
     // Receipt details
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+    setThaiFont(doc, "normal");
     doc.text(`${t.receiptNo}: ${receipt.receiptNo}`, 20, y);
     doc.text(`${t.date}: ${formatDate(receipt.issuedAt, lang as "en" | "th")}`, pageWidth - 60, y);
     y += 6;
@@ -160,10 +162,10 @@ export async function POST(
     y += 12;
 
     // Received from section
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.text(`${t.receivedFrom}:`, 20, y);
     y += 6;
-    doc.setFont("helvetica", "normal");
+    setThaiFont(doc, "normal");
     const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
     doc.text(tenantName, 20, y);
     y += 5;
@@ -183,28 +185,46 @@ export async function POST(
     }
     y += 10;
 
+    // Line items
+    const lineItems: LineItem[] = (receipt.invoice.lineItems as unknown as LineItem[]) || [];
+
+    // Check if any line item has usage (utility items)
+    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
+
     // Line items table header (green)
     doc.setFillColor(22, 163, 74);
     doc.rect(20, y, pageWidth - 40, 8, "F");
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.setTextColor(255, 255, 255);
     doc.text(t.description, 25, y + 6);
+    if (hasUtilityItems) {
+      doc.text(t.qtyUnit, 100, y + 6, { align: "center" });
+      doc.text(t.unitPrice, 130, y + 6, { align: "right" });
+    }
     doc.text(t.amount, pageWidth - 45, y + 6, { align: "right" });
     y += 12;
 
     // Reset text color
     doc.setTextColor(0, 0, 0);
 
-    // Line items
-    doc.setFont("helvetica", "normal");
-    const lineItems: LineItem[] = (receipt.invoice.lineItems as unknown as LineItem[]) || [];
-
+    // Line items rows
+    setThaiFont(doc, "normal");
     lineItems.forEach((item, index) => {
       if (index % 2 === 0) {
         doc.setFillColor(240, 253, 244);
         doc.rect(20, y - 4, pageWidth - 40, 8, "F");
       }
       doc.text(item.description, 25, y);
+      if (hasUtilityItems) {
+        // Only show units/rate for utility items
+        if (item.usage !== undefined) {
+          doc.text(String(item.usage), 100, y, { align: "center" });
+          doc.text(formatCurrency(item.rate || item.unitPrice || 0), 130, y, { align: "right" });
+        } else {
+          doc.text("-", 100, y, { align: "center" });
+          doc.text("-", 130, y, { align: "right" });
+        }
+      }
       doc.text(formatCurrency(item.amount), pageWidth - 45, y, { align: "right" });
       y += 8;
     });
@@ -232,7 +252,7 @@ export async function POST(
     doc.line(totalsX - 5, y, pageWidth - 20, y);
     y += 8;
 
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.setFontSize(12);
     doc.text(t.total, totalsX, y);
     doc.setTextColor(22, 163, 74);
@@ -244,10 +264,10 @@ export async function POST(
     // Bank Account Information
     if (receipt.invoice.project.bankName || receipt.invoice.project.bankAccountNumber) {
       doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
+      setThaiFont(doc, "bold");
       doc.text(t.bankInfo, 20, y);
       y += 6;
-      doc.setFont("helvetica", "normal");
+      setThaiFont(doc, "normal");
       if (receipt.invoice.project.bankName) {
         doc.text(`${t.bankName}: ${receipt.invoice.project.bankName}`, 20, y);
         y += 5;
@@ -264,14 +284,14 @@ export async function POST(
     }
 
     // Receiver Signature Section
-    doc.setFont("helvetica", "bold");
+    setThaiFont(doc, "bold");
     doc.text(t.receiver, 20, y);
     y += 15;
     doc.setLineWidth(0.3);
     doc.setDrawColor(150, 150, 150);
     doc.line(20, y, 80, y);
     y += 5;
-    doc.setFont("helvetica", "normal");
+    setThaiFont(doc, "normal");
     doc.setFontSize(9);
     const ownerName = receipt.invoice.project.owner?.name || "";
     doc.text(ownerName, 50, y, { align: "center" });
@@ -279,7 +299,7 @@ export async function POST(
     // Footer
     y = doc.internal.pageSize.getHeight() - 20;
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+    setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);
     doc.text(t.thankYou, pageWidth / 2, y, { align: "center" });
 

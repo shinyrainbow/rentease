@@ -45,7 +45,6 @@ import { Plus, Send, FileDown, Eye, Loader2, Check, Search, Edit, Trash2, ArrowU
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { jsPDF } from "jspdf";
 import { exportToCSV, formatDateForExport, formatCurrencyForExport } from "@/lib/export";
 import { Download } from "lucide-react";
 
@@ -645,14 +644,29 @@ export default function InvoicesPage() {
     setViewDialogOpen(true);
     setPdfPreviewUrl(null);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`);
-      if (res.ok) {
-        const data = await res.json();
+      // Fetch invoice details and generate PDF in parallel
+      const [detailRes, pdfRes] = await Promise.all([
+        fetch(`/api/invoices/${invoice.id}`),
+        fetch(`/api/invoices/${invoice.id}/pdf`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lang: "th" }),
+        }),
+      ]);
+
+      if (detailRes.ok) {
+        const data = await detailRes.json();
         setSelectedInvoice(data);
-        // Generate PDF preview
-        const previewUrl = generatePdfPreview(data);
-        setPdfPreviewUrl(previewUrl);
-      } else {
+      }
+
+      if (pdfRes.ok) {
+        const pdfData = await pdfRes.json();
+        if (pdfData.url) {
+          setPdfPreviewUrl(pdfData.url);
+        }
+      }
+
+      if (!detailRes.ok) {
         toast({
           title: "Error",
           description: "Failed to load invoice details",
@@ -675,17 +689,27 @@ export default function InvoicesPage() {
 
   const handleDownloadPdf = async (invoice: Invoice) => {
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`);
+      // Use server-side PDF generation with Thai font support
+      const res = await fetch(`/api/invoices/${invoice.id}/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang: "th" }),
+      });
+
       if (!res.ok) {
         toast({
           title: "Error",
-          description: "Failed to load invoice for PDF",
+          description: "Failed to generate PDF",
           variant: "destructive",
         });
         return;
       }
-      const data: InvoiceDetail = await res.json();
-      generatePdf(data);
+
+      const data = await res.json();
+      if (data.url) {
+        // Open PDF in new tab or trigger download
+        window.open(data.url, "_blank");
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
@@ -694,150 +718,6 @@ export default function InvoicesPage() {
         variant: "destructive",
       });
     }
-  };
-
-  const buildPdfDocument = (invoice: InvoiceDetail): jsPDF => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
-
-    // Company header
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text(invoice.project.companyName || invoice.project.name, pageWidth / 2, y, { align: "center" });
-    y += 8;
-
-    if (invoice.project.companyAddress) {
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-      y += 6;
-    }
-
-    if (invoice.project.taxId) {
-      doc.text(`Tax ID: ${invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
-      y += 6;
-    }
-
-    y += 10;
-
-    // Invoice title
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
-    y += 12;
-
-    // Invoice details
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Invoice No: ${invoice.invoiceNo}`, 20, y);
-    doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, pageWidth - 60, y);
-    y += 6;
-    doc.text(`Billing Month: ${invoice.billingMonth}`, 20, y);
-    doc.text(`Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}`, pageWidth - 60, y);
-    y += 12;
-
-    // Bill to section
-    doc.setFont("helvetica", "bold");
-    doc.text("Bill To:", 20, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.tenant.name, 20, y);
-    y += 5;
-    doc.text(`Unit: ${invoice.unit.unitNumber}`, 20, y);
-    y += 5;
-    if (invoice.tenant.phone) {
-      doc.text(`Phone: ${invoice.tenant.phone}`, 20, y);
-      y += 5;
-    }
-    if (invoice.tenant.taxId) {
-      doc.text(`Tax ID: ${invoice.tenant.taxId}`, 20, y);
-      y += 5;
-    }
-    y += 10;
-
-    // Line items table header
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, y, pageWidth - 40, 8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.text("Description", 25, y + 6);
-    doc.text("Amount", pageWidth - 45, y + 6, { align: "right" });
-    y += 12;
-
-    // Line items
-    doc.setFont("helvetica", "normal");
-    const lineItems = invoice.lineItems || [{ description: t(`types.${invoice.type}`), amount: invoice.subtotal }];
-    lineItems.forEach((item: LineItem) => {
-      doc.text(item.description, 25, y);
-      doc.text(`${item.amount.toLocaleString()} THB`, pageWidth - 45, y, { align: "right" });
-      y += 7;
-    });
-
-    y += 5;
-    doc.line(20, y, pageWidth - 20, y);
-    y += 8;
-
-    // Totals
-    doc.text("Subtotal:", pageWidth - 80, y);
-    doc.text(`${invoice.subtotal.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-    y += 7;
-
-    if (invoice.discountAmount > 0) {
-      doc.text("Discount:", pageWidth - 80, y);
-      doc.text(`-${invoice.discountAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-      y += 7;
-    }
-
-    if (invoice.withholdingTax > 0) {
-      doc.text("Withholding Tax:", pageWidth - 80, y);
-      doc.text(`-${invoice.withholdingTax.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-      y += 7;
-    }
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Total:", pageWidth - 80, y);
-    doc.text(`${invoice.totalAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-    y += 10;
-
-    if (invoice.paidAmount > 0) {
-      doc.setFont("helvetica", "normal");
-      doc.text("Paid Amount:", pageWidth - 80, y);
-      doc.text(`${invoice.paidAmount.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-      y += 7;
-
-      const balance = invoice.totalAmount - invoice.paidAmount;
-      doc.setFont("helvetica", "bold");
-      doc.text("Balance Due:", pageWidth - 80, y);
-      doc.text(`${balance.toLocaleString()} THB`, pageWidth - 25, y, { align: "right" });
-    }
-
-    // Status badge
-    y += 15;
-    doc.setFont("helvetica", "bold");
-    doc.text(`Status: ${invoice.status}`, 20, y);
-
-    // Notes
-    if (invoice.notes) {
-      y += 12;
-      doc.setFont("helvetica", "bold");
-      doc.text("Notes:", 20, y);
-      y += 6;
-      doc.setFont("helvetica", "normal");
-      doc.text(invoice.notes, 20, y);
-    }
-
-    return doc;
-  };
-
-  const generatePdfPreview = (invoice: InvoiceDetail): string => {
-    const doc = buildPdfDocument(invoice);
-    const blob = doc.output("blob");
-    return URL.createObjectURL(blob);
-  };
-
-  const generatePdf = (invoice: InvoiceDetail) => {
-    const doc = buildPdfDocument(invoice);
-    doc.save(`Invoice-${invoice.invoiceNo}.pdf`);
   };
 
   if (loading) {
@@ -1522,7 +1402,7 @@ export default function InvoicesPage() {
                 <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
                   {tCommon("close") || "Close"}
                 </Button>
-                <Button onClick={() => generatePdf(selectedInvoice)}>
+                <Button onClick={() => selectedInvoice && handleDownloadPdf(selectedInvoice)}>
                   <FileDown className="h-4 w-4 mr-2" />
                   {t("downloadPdf")}
                 </Button>

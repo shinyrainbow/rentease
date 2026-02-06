@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadFile, getPresignedUrl } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getPublicUrl } from "@/lib/s3";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,17 +38,26 @@ export async function POST(request: NextRequest) {
 
     // Create S3 key based on type
     let s3Key: string;
+    let isPublic = false;
+
     if (type === "logo" && projectId) {
-      s3Key = `logos/${projectId}/${timestamp}.${ext}`;
+      // Logos are stored in "logo" folder and made public
+      s3Key = `logo/${projectId}/${timestamp}.${ext}`;
+      isPublic = true;
     } else {
       s3Key = `uploads/${session.user.id}/${timestamp}.${ext}`;
     }
 
-    // Upload to S3
-    await uploadFile(s3Key, buffer, file.type);
+    // Upload to S3 (public for logos)
+    await uploadFile(s3Key, buffer, file.type, isPublic);
 
-    // Get the presigned URL
-    const url = await getPresignedUrl(s3Key, 60 * 60 * 24 * 365); // 1 year expiry
+    // Get the URL (public URL for logos, presigned for others)
+    let url: string;
+    if (isPublic) {
+      url = getPublicUrl(s3Key);
+    } else {
+      url = await getPresignedUrl(s3Key, 60 * 60 * 24 * 7); // Max 7 days for presigned URLs
+    }
 
     return NextResponse.json({
       success: true,

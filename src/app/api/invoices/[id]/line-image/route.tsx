@@ -47,7 +47,7 @@ const translations = {
     billTo: "Bill To",
     unit: "Unit",
     description: "Description",
-    qty: "Qty",
+    qtyUnit: "Units",
     unitPrice: "Unit Price",
     amount: "Amount",
     subtotal: "Subtotal",
@@ -72,7 +72,7 @@ const translations = {
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง/ยูนิต",
     description: "รายการ",
-    qty: "จำนวน",
+    qtyUnit: "ยูนิต",
     unitPrice: "ราคา/หน่วย",
     amount: "จำนวนเงิน",
     subtotal: "รวม",
@@ -115,6 +115,9 @@ export async function GET(request: NextRequest) {
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
     const lineItemsStr = searchParams.get("lineItems") || "[]";
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);
+
+    // Check if any line item has usage (utility items)
+    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
 
     // Bank info
     const bankName = searchParams.get("bankName") || "";

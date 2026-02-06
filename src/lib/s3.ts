@@ -14,17 +14,24 @@ const BUCKET_NAME = process.env.AWS_S3_BUCKET!;
 export async function uploadFile(
   key: string,
   body: Buffer,
-  contentType: string
+  contentType: string,
+  isPublic: boolean = false
 ): Promise<string> {
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
     Body: body,
     ContentType: contentType,
+    ...(isPublic && { ACL: "public-read" }),
   });
 
   await s3Client.send(command);
   return key;
+}
+
+// Get public URL for objects with public-read ACL
+export function getPublicUrl(key: string): string {
+  return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }
 
 export async function getPresignedUrl(
