@@ -397,10 +397,15 @@ export default function TenantsPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         toast({
           title: tCommon("success"),
           description: "Image uploaded",
         });
+        // Update editingTenant if we're editing this tenant
+        if (editingTenant && editingTenant.id === tenantId && data.url) {
+          setEditingTenant({ ...editingTenant, imageUrl: data.url });
+        }
         fetchData();
       } else {
         const data = await res.json();
@@ -540,6 +545,52 @@ export default function TenantsPage() {
             <DialogHeader>
               <DialogTitle>{editingTenant ? t("editTenant") : t("addTenant")}</DialogTitle>
             </DialogHeader>
+
+            {/* Image upload section - only when editing */}
+            {editingTenant && (
+              <div className="flex items-center gap-4 pb-2 border-b">
+                <label className="cursor-pointer relative group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && editingTenant) handleImageUpload(editingTenant.id, file);
+                    }}
+                  />
+                  {editingTenant.imageUrl ? (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                      <Image
+                        src={editingTenant.imageUrl}
+                        alt={editingTenant.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        {uploadingImageFor === editingTenant.id ? (
+                          <Loader2 className="h-5 w-5 text-white animate-spin" />
+                        ) : (
+                          <Camera className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                      {uploadingImageFor === editingTenant.id ? (
+                        <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                      ) : (
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
+                  )}
+                </label>
+                <div className="text-sm text-muted-foreground">
+                  {t("clickToUploadImage") || "Click to upload photo"}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-2">
               {!editingTenant && (
                 <div className="space-y-1">
@@ -898,7 +949,7 @@ export default function TenantsPage() {
                           }}
                         />
                         {tenant.imageUrl ? (
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                          <div className="relative w-10 h-10 rounded-lg overflow-hidden">
                             <Image
                               src={tenant.imageUrl}
                               alt={tenant.name}
@@ -914,7 +965,7 @@ export default function TenantsPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
                             {uploadingImageFor === tenant.id ? (
                               <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
                             ) : (
