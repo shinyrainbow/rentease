@@ -25,12 +25,6 @@ const translations = {
     subtotal: "Subtotal",
     withholdingTax: "Withholding Tax",
     total: "Total",
-    rent: "Monthly Rent",
-    commonFee: "Common Fee",
-    utility: "Utilities",
-    combined: "Rent & Utilities",
-    waterUsage: "Water",
-    electricityUsage: "Electricity",
     paymentInfo: "Payment Information",
     bankName: "Bank",
     accountName: "Account Name",
@@ -56,12 +50,6 @@ const translations = {
     subtotal: "รวม",
     withholdingTax: "หัก ณ ที่จ่าย",
     total: "ยอดรวมทั้งสิ้น",
-    rent: "ค่าเช่า",
-    commonFee: "ค่าส่วนกลาง",
-    utility: "ค่าสาธารณูปโภค",
-    combined: "ค่าเช่าและสาธารณูปโภค",
-    waterUsage: "ค่าน้ำ",
-    electricityUsage: "ค่าไฟ",
     paymentInfo: "ข้อมูลการชำระเงิน",
     bankName: "ธนาคาร",
     accountName: "ชื่อบัญชี",
@@ -155,6 +143,9 @@ export async function GET(
     // Fetch logo as base64 data URL for proper rendering in ImageResponse
     const logoUrl = await fetchImageAsBase64(invoice.project.logoUrl);
 
+    const companyName = invoice.project.companyName || invoice.project.name;
+    const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+
     return new ImageResponse(
       (
         <div
@@ -165,47 +156,47 @@ export async function GET(
             height: "100%",
             backgroundColor: "#ffffff",
             fontFamily: "sans-serif",
-            padding: "40px",
+            padding: "32px",
           }}
         >
           {/* Header - Company Info & Invoice Title */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
             {/* Left - Company Info */}
             <div style={{ display: "flex", flexDirection: "column", maxWidth: "50%" }}>
               {/* Logo and Company Name */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                 {logoUrl ? (
                   <img
                     src={logoUrl}
                     alt="Logo"
-                    width={60}
-                    height={60}
+                    width={48}
+                    height={48}
                     style={{ objectFit: "contain", borderRadius: "4px" }}
                   />
                 ) : (
                   <div
                     style={{
-                      width: "60px",
-                      height: "60px",
+                      width: "48px",
+                      height: "48px",
                       backgroundColor: TEAL_COLOR,
-                      borderRadius: "8px",
+                      borderRadius: "6px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       color: "#ffffff",
-                      fontSize: "24px",
+                      fontSize: "20px",
                       fontWeight: "bold",
                     }}
                   >
-                    {(invoice.project.companyName || invoice.project.name).charAt(0)}
+                    {companyName.charAt(0)}
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "18px", fontWeight: "bold", color: "#111827" }}>
-                    {invoice.project.companyName || invoice.project.name}
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>
+                    {companyName}
                   </span>
                   {invoice.project.companyNameTh && (
-                    <span style={{ fontSize: "12px", color: "#6B7280" }}>
+                    <span style={{ fontSize: "10px", color: "#6B7280" }}>
                       {invoice.project.companyNameTh}
                     </span>
                   )}
@@ -213,13 +204,13 @@ export async function GET(
               </div>
               {/* Company Address */}
               {invoice.project.companyAddress && (
-                <span style={{ fontSize: "11px", color: "#6B7280", marginBottom: "4px" }}>
+                <span style={{ fontSize: "9px", color: "#6B7280", marginBottom: "2px" }}>
                   {invoice.project.companyAddress}
                 </span>
               )}
               {/* Company Tax ID */}
               {invoice.project.taxId && (
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
                   {t.taxId}: {invoice.project.taxId}
                 </span>
               )}
@@ -227,17 +218,17 @@ export async function GET(
 
             {/* Right - Invoice Title & Badge */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "32px", fontWeight: "bold", color: TEAL_COLOR }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                <span style={{ fontSize: "24px", fontWeight: "bold", color: TEAL_COLOR }}>
                   {t.invoice}
                 </span>
                 <div
                   style={{
                     backgroundColor: version === "original" ? TEAL_COLOR : "#6B7280",
                     color: "#ffffff",
-                    padding: "4px 12px",
+                    padding: "3px 10px",
                     borderRadius: "4px",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: "bold",
                   }}
                 >
@@ -245,32 +236,22 @@ export async function GET(
                 </div>
               </div>
               {/* Invoice Details */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-                <span style={{ fontSize: "12px", color: "#4B5563" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
+                <span style={{ fontSize: "10px", color: "#4B5563" }}>
                   {t.invoiceNo}: <span style={{ fontWeight: "bold" }}>{invoice.invoiceNo}</span>
                 </span>
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
                   {t.dateCreated}: {formatDate(invoice.createdAt)}
                 </span>
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
                   {t.dueDate}: {formatDate(invoice.dueDate)}
                 </span>
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                <span style={{ fontSize: "9px", color: "#6B7280" }}>
                   {t.billingMonth}: {invoice.billingMonth}
                 </span>
               </div>
             </div>
           </div>
-
-          {/* Separator Line */}
-          <div
-            style={{
-              width: "100%",
-              height: "1px",
-              backgroundColor: "#E5E7EB",
-              marginBottom: "20px",
-            }}
-          />
 
           {/* Bill To Section */}
           <div
@@ -278,37 +259,37 @@ export async function GET(
               display: "flex",
               flexDirection: "column",
               backgroundColor: "#F9FAFB",
-              padding: "16px",
-              borderRadius: "8px",
-              marginBottom: "20px",
+              padding: "12px",
+              borderRadius: "6px",
+              marginBottom: "16px",
             }}
           >
-            <span style={{ fontSize: "12px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "8px" }}>
+            <span style={{ fontSize: "10px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "6px" }}>
               {t.billTo}
             </span>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>
-                  {lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name}
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>
+                  {tenantName}
                 </span>
                 {invoice.tenant.address && (
-                  <span style={{ fontSize: "11px", color: "#6B7280", marginTop: "2px" }}>
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
                     {invoice.tenant.address}
                   </span>
                 )}
                 {invoice.tenant.taxId && (
-                  <span style={{ fontSize: "11px", color: "#6B7280", marginTop: "2px" }}>
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
                     {t.taxId}: {invoice.tenant.taxId}
                   </span>
                 )}
                 {invoice.tenant.idCard && !invoice.tenant.taxId && (
-                  <span style={{ fontSize: "11px", color: "#6B7280", marginTop: "2px" }}>
+                  <span style={{ fontSize: "9px", color: "#6B7280", marginTop: "2px" }}>
                     {t.idCard}: {invoice.tenant.idCard}
                   </span>
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <span style={{ fontSize: "12px", color: "#6B7280" }}>
+                <span style={{ fontSize: "10px", color: "#6B7280" }}>
                   {t.unit}: <span style={{ fontWeight: "bold", color: "#111827" }}>{invoice.unit.unitNumber}</span>
                 </span>
               </div>
@@ -316,31 +297,31 @@ export async function GET(
           </div>
 
           {/* Items Table */}
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: "12px", flex: 1 }}>
             {/* Table Header */}
             <div
               style={{
                 display: "flex",
                 backgroundColor: TEAL_COLOR,
                 borderRadius: "4px 4px 0 0",
-                padding: "8px 12px",
+                padding: "8px 10px",
               }}
             >
               <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
               </div>
               {hasUtilityItems && (
                 <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
                 </div>
               )}
               {hasUtilityItems && (
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
                 </div>
               )}
               <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
+                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
               </div>
             </div>
 
@@ -350,59 +331,59 @@ export async function GET(
                 key={index}
                 style={{
                   display: "flex",
-                  padding: "6px 12px",
+                  padding: "8px 10px",
                   borderBottom: "1px solid #E5E7EB",
                   backgroundColor: index % 2 === 0 ? "#ffffff" : "#F9FAFB",
                 }}
               >
-                <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "11px", color: "#111827" }}>{item.description}</span>
+                <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>{item.description}</span>
                 </div>
                 {hasUtilityItems && (
                   <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                    <span style={{ fontSize: "11px", color: "#111827" }}>
+                    <span style={{ fontSize: "9px", color: "#111827" }}>
                       {item.usage !== undefined ? item.usage : "-"}
                     </span>
                   </div>
                 )}
                 {hasUtilityItems && (
                   <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "11px", color: "#111827" }}>
+                    <span style={{ fontSize: "9px", color: "#111827" }}>
                       {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
                     </span>
                   </div>
                 )}
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "11px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                  <span style={{ fontSize: "9px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Totals Section */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-            <div style={{ display: "flex", flexDirection: "column", width: "250px", gap: "4px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: "12px", color: "#6B7280" }}>{t.subtotal}</span>
-                <span style={{ fontSize: "12px", color: "#111827" }}>{formatCurrency(invoice.subtotal)}</span>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", width: "200px", gap: "3px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
+                <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.subtotal}</span>
+                <span style={{ fontSize: "10px", color: "#111827" }}>{formatCurrency(invoice.subtotal)}</span>
               </div>
               {withholdingTaxAmount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                  <span style={{ fontSize: "12px", color: "#6B7280" }}>{t.withholdingTax} ({Math.round((withholdingTaxAmount / invoice.subtotal) * 100)}%)</span>
-                  <span style={{ fontSize: "12px", color: "#DC2626" }}>-{formatCurrency(withholdingTaxAmount)}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
+                  <span style={{ fontSize: "10px", color: "#6B7280" }}>{t.withholdingTax}</span>
+                  <span style={{ fontSize: "10px", color: "#DC2626" }}>-{formatCurrency(withholdingTaxAmount)}</span>
                 </div>
               )}
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  padding: "8px 0",
+                  padding: "6px 0",
                   borderTop: "2px solid #E5E7EB",
-                  marginTop: "4px",
+                  marginTop: "3px",
                 }}
               >
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: TEAL_COLOR }}>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: TEAL_COLOR }}>
                   {formatCurrency(invoice.totalAmount)}
                 </span>
               </div>
@@ -415,46 +396,46 @@ export async function GET(
               display: "flex",
               justifyContent: "space-between",
               borderTop: "1px solid #E5E7EB",
-              paddingTop: "16px",
+              paddingTop: "12px",
             }}
           >
             {/* Bank Info */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4B5563", marginBottom: "4px" }}>
+              <span style={{ fontSize: "9px", fontWeight: "bold", color: "#4B5563", marginBottom: "3px" }}>
                 {t.paymentInfo}
               </span>
               {invoice.project.bankName && (
-                <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
                   {t.bankName}: {BANK_NAMES[invoice.project.bankName] || invoice.project.bankName}
                 </span>
               )}
               {invoice.project.bankAccountName && (
-                <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
                   {t.accountName}: {invoice.project.bankAccountName}
                 </span>
               )}
               {invoice.project.bankAccountNumber && (
-                <span style={{ fontSize: "10px", color: "#6B7280" }}>
+                <span style={{ fontSize: "8px", color: "#6B7280" }}>
                   {t.accountNumber}: {invoice.project.bankAccountNumber}
                 </span>
               )}
             </div>
 
             {/* Signature */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "180px" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "140px" }}>
               <div
                 style={{
-                  width: "140px",
-                  height: "40px",
+                  width: "100px",
+                  height: "30px",
                   borderBottom: "1px solid #9CA3AF",
                   display: "flex",
                 }}
               />
-              <span style={{ fontSize: "10px", color: "#6B7280", marginTop: "4px" }}>
+              <span style={{ fontSize: "8px", color: "#6B7280", marginTop: "3px" }}>
                 {t.biller}
               </span>
               {invoice.project.owner?.name && (
-                <span style={{ fontSize: "10px", color: "#4B5563", fontWeight: "500" }}>
+                <span style={{ fontSize: "8px", color: "#4B5563", fontWeight: "500" }}>
                   ({invoice.project.owner.name})
                 </span>
               )}
@@ -462,10 +443,7 @@ export async function GET(
           </div>
         </div>
       ),
-      {
-        width: 800,
-        height: 500,
-      }
+      { width: 600, height: 800 }
     );
   } catch (error) {
     console.error("Error generating invoice image:", error);
