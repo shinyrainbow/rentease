@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Edit } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { formatDate } from "@/lib/utils";
 
 interface Unit {
   id: string;
@@ -366,7 +367,7 @@ export default function MaintenancePage() {
                         {t(`statuses.${request.status}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDate(request.createdAt)}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(request)}>
                         <Edit className="h-4 w-4" />

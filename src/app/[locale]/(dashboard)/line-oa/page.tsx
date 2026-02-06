@@ -36,6 +36,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { formatDateTime } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -549,7 +550,7 @@ export default function LineOAPage() {
                                 </p>
                               )}
                               <p className="text-xs opacity-70 mt-1">
-                                {new Date(msg.createdAt).toLocaleString("th-TH")}
+                                {formatDateTime(msg.createdAt)}
                               </p>
                             </div>
                           </div>

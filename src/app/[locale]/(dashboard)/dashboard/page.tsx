@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, DoorOpen, Users, FileText, CreditCard, Wrench, TrendingUp, CalendarClock, AlertTriangle } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 async function getDashboardData(userId: string) {
   const today = new Date();
@@ -270,7 +271,7 @@ export default async function DashboardPage() {
                     <div className="text-right">
                       <p className="font-medium text-red-600">฿{invoice.totalAmount.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">
-                        Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                        Due: {formatDate(invoice.dueDate)}
                       </p>
                     </div>
                   </div>
@@ -307,7 +308,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-orange-600">
-                        {tenant.contractEnd && new Date(tenant.contractEnd).toLocaleDateString()}
+                        {tenant.contractEnd && formatDate(tenant.contractEnd)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {tenant.contractEnd && Math.ceil((new Date(tenant.contractEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left

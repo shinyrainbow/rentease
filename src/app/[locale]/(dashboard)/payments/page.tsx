@@ -949,7 +949,7 @@ export default function PaymentsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("checkDate") || "วันที่เช็ค"}</Label>
+                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                   <Input
                     type="date"
                     value={createFormData.checkDate}
@@ -1098,7 +1098,7 @@ export default function PaymentsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("checkDate") || "วันที่เช็ค"}</Label>
+                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                   <Input
                     type="date"
                     value={editFormData.checkDate}

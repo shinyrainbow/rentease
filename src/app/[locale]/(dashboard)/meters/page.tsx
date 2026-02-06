@@ -458,7 +458,7 @@ export default function MetersPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t("readingDate")}</Label>
+                    <Label>{t("readingDate")} <span className="text-muted-foreground text-xs">(dd/mm/yyyy)</span></Label>
                     <Input
                       type="date"
                       value={formData.readingDate}
