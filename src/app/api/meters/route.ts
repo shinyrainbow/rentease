@@ -63,23 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
-    // Check if reading already exists for this unit/type/billingMonth
-    const existingReading = await prisma.meterReading.findFirst({
-      where: {
-        unitId: data.unitId,
-        type: data.type,
-        billingMonth: data.billingMonth,
-      },
-    });
-
-    if (existingReading) {
-      return NextResponse.json(
-        { error: "Meter reading already exists for this unit, type, and billing month" },
-        { status: 409 }
-      );
-    }
-
-    // Get previous reading
+    // Get previous reading (from earlier billing month)
     const previousReading = await prisma.meterReading.findFirst({
       where: {
         unitId: data.unitId,
@@ -97,8 +81,24 @@ export async function POST(request: NextRequest) {
     const rate = data.type === "ELECTRICITY" ? unit.project.electricityRate : unit.project.waterRate;
     const amount = usage * rate;
 
-    const reading = await prisma.meterReading.create({
-      data: {
+    // Upsert: create if not exists, update if exists
+    const reading = await prisma.meterReading.upsert({
+      where: {
+        unitId_type_billingMonth: {
+          unitId: data.unitId,
+          type: data.type,
+          billingMonth: data.billingMonth,
+        },
+      },
+      update: {
+        previousReading: prevValue,
+        currentReading: data.currentReading,
+        usage,
+        rate,
+        amount,
+        readingDate: new Date(data.readingDate),
+      },
+      create: {
         projectId: unit.projectId,
         unitId: data.unitId,
         type: data.type,
