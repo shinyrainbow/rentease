@@ -35,6 +35,8 @@ const BANK_NAMES: Record<string, string> = {
 const translations = {
   en: {
     invoice: "INVOICE",
+    original: "(Original)",
+    copy: "(Copy)",
     invoiceNo: "Invoice No",
     date: "Date",
     dueDate: "Due Date",
@@ -58,6 +60,8 @@ const translations = {
   },
   th: {
     invoice: "ใบแจ้งหนี้",
+    original: "(ต้นฉบับ)",
+    copy: "(สำเนา)",
     invoiceNo: "เลขที่",
     date: "วันที่",
     dueDate: "กำหนดชำระ",
@@ -81,7 +85,7 @@ const translations = {
   },
 };
 
-const TEAL_COLOR = { r: 45, g: 139, b: 139 }; // #2D8B8B
+const PRIMARY_COLOR = { r: 22, g: 163, b: 74 }; // #16a34a (green-600)
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("th-TH", {
@@ -112,7 +116,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { lang = "th" } = await request.json();
+    const { lang = "th", copy = false } = await request.json();
     const t = translations[lang as "en" | "th"] || translations.th;
 
     const invoice = await prisma.invoice.findFirst({
@@ -143,48 +147,59 @@ export async function POST(
     // Fetch logo as base64
     const logoBase64 = await fetchImageAsBase64(invoice.project.logoUrl);
 
-    // ============ COMPANY HEADER - CENTERED ============
+    // ============ COMPANY HEADER - LEFT ALIGNED WITH LOGO ============
     const logoSize = 20;
+    const textStartX = logoBase64 ? margin + logoSize + 8 : margin;
 
-    if (logoBase64) {
-      doc.addImage(logoBase64, "PNG", centerX - logoSize / 2, y, logoSize, logoSize);
-    }
-    y += logoSize + 5;
-
-    // Company name - centered
+    // Company name
     const companyName = lang === "th" && invoice.project.companyNameTh
       ? invoice.project.companyNameTh
       : (invoice.project.companyName || invoice.project.name);
 
+    // Draw logo on left
+    if (logoBase64) {
+      doc.addImage(logoBase64, "PNG", margin, y, logoSize, logoSize);
+    }
+
+    // Company details on right of logo
+    let textY = y + 4;
     doc.setFontSize(14);
     setThaiFont(doc, "bold");
-    doc.text(companyName, centerX, y, { align: "center" });
-    y += 6;
+    doc.text(companyName, textStartX, textY);
+    textY += 6;
 
-    // Company address - centered
+    // Company address
     if (invoice.project.companyAddress) {
       doc.setFontSize(8);
       setThaiFont(doc, "normal");
       doc.setTextColor(107, 114, 128);
-      doc.text(invoice.project.companyAddress, centerX, y, { align: "center" });
-      y += 4;
+      doc.text(invoice.project.companyAddress, textStartX, textY);
+      textY += 4;
     }
 
-    // Tax ID - centered
+    // Tax ID
     if (invoice.project.taxId) {
       doc.setFontSize(8);
-      doc.text(`${t.taxId}: ${invoice.project.taxId}`, centerX, y, { align: "center" });
-      y += 4;
+      doc.text(`${t.taxId}: ${invoice.project.taxId}`, textStartX, textY);
+      textY += 4;
     }
     doc.setTextColor(0, 0, 0);
 
+    // Move y to after logo or text, whichever is larger
+    y = Math.max(y + logoSize, textY) + 8;
+
+    // Separator line above title
+    doc.setDrawColor(229, 231, 235); // gray-200
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
     // ============ INVOICE TITLE - CENTERED ============
     doc.setFontSize(20);
     setThaiFont(doc, "bold");
-    doc.setTextColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
-    doc.text(t.invoice, centerX, y, { align: "center" });
+    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    const invoiceTitle = `${t.invoice} ${copy ? t.copy : t.original}`;
+    doc.text(invoiceTitle, centerX, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
 
     y += 12;
@@ -207,11 +222,6 @@ export async function POST(
     y += 12;
 
     // ============ BILL TO SECTION ============
-    doc.setFontSize(10);
-    setThaiFont(doc, "bold");
-    doc.text(`${t.billTo}:`, margin, y);
-    y += 6;
-
     const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
     const labelWidth = 35;
 
@@ -258,7 +268,7 @@ export async function POST(
     const colAmountX = pageWidth - margin - 5;
 
     // Table header
-    doc.setFillColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
+    doc.setFillColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
     doc.roundedRect(margin, y, tableWidth, 10, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -304,7 +314,7 @@ export async function POST(
     y += 8;
 
     // ============ TOTALS SECTION ============
-    const totalsBoxWidth = 120;
+    const totalsBoxWidth = 85;
     const totalsX = pageWidth - margin - totalsBoxWidth;
 
     // Subtotal
@@ -328,18 +338,22 @@ export async function POST(
 
     y += 4;
 
-    // Total box
-    doc.setFillColor(TEAL_COLOR.r, TEAL_COLOR.g, TEAL_COLOR.b);
-    doc.roundedRect(totalsX - 5, y - 4, totalsBoxWidth + 5, 12, 2, 2, "F");
+    // Separator line above total
+    doc.setDrawColor(229, 231, 235); // gray-200
+    doc.setLineWidth(0.5);
+    doc.line(totalsX - 5, y, colAmountX + 5, y);
+    y += 6;
 
+    // Total (no background)
     doc.setFontSize(12);
     setThaiFont(doc, "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text(t.total, totalsX, y + 4);
-    doc.text(formatCurrency(invoice.totalAmount), colAmountX, y + 4, { align: "right" });
+    doc.setTextColor(0, 0, 0); // Black for label
+    doc.text(t.total, totalsX, y);
+    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b); // Teal for amount
+    doc.text(formatCurrency(invoice.totalAmount), colAmountX, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    y += 20;
+    y += 35;
 
     // ============ PAYMENT INFO + SIGNATURE SECTION ============
     const hasBankInfo = invoice.project.bankName || invoice.project.bankAccountName || invoice.project.bankAccountNumber;

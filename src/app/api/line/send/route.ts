@@ -574,10 +574,6 @@ async function generateAndUploadInvoicePdf(
   y += 12;
 
   // Bill to section
-  doc.setFont("helvetica", "bold");
-  doc.text(`${t.billTo}:`, 20, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
   const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
   doc.text(tenantName, 20, y);
   y += 5;

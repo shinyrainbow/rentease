@@ -99,6 +99,7 @@
     "taxId": "เลขประจำตัวผู้เสียภาษี",
     "companyName": "ชื่อบริษัท",
     "companyNameTh": "ชื่อบริษัท (ไทย)",
+    "companyAddress": "ที่อยู่บริษัท",
     "bankAccount": "บัญชีธนาคาร",
     "bankName": "ธนาคาร",
     "selectBank": "เลือกธนาคาร",

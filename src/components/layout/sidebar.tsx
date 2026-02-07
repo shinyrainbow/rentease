@@ -28,13 +28,13 @@ const navItems = [
   { href: "/projects", icon: Building2, label: "projects" },
   { href: "/units", icon: DoorOpen, label: "units" },
   { href: "/tenants", icon: Users, label: "tenants" },
-  { href: "/contracts", icon: FileSignature, label: "contracts" },
+  // { href: "/contracts", icon: FileSignature, label: "contracts" },
   { href: "/meters", icon: Gauge, label: "meters" },
   { href: "/invoices", icon: FileText, label: "invoices" },
   { href: "/payments", icon: CreditCard, label: "payments" },
   { href: "/receipts", icon: Receipt, label: "receipts" },
-  { href: "/maintenance", icon: Wrench, label: "maintenance" },
   { href: "/line-oa", icon: MessageCircle, label: "lineOA" },
+  { href: "/maintenance", icon: Wrench, label: "maintenance" },
   { href: "/settings", icon: Settings, label: "settings" },
 ];
 

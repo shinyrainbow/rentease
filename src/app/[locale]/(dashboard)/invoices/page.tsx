@@ -108,6 +108,7 @@ interface InvoiceDetail extends Invoice {
     tenantType: string;
     phone: string | null;
     email: string | null;
+    address: string | null;
     taxId: string | null;
     withholdingTax: number;
   };
@@ -136,6 +137,8 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [previewLang, setPreviewLang] = useState<"th" | "en">("th");
+  const [isCopy, setIsCopy] = useState(false);
 
   const [formData, setFormData] = useState({
     projectId: "",
@@ -168,7 +171,6 @@ export default function InvoicesPage() {
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
   const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
   const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -642,11 +644,32 @@ export default function InvoicesPage() {
       : (bVal as number) - (aVal as number);
   });
 
+  const fetchPdfPreview = async (invoiceId: string, lang: "th" | "en", copy: boolean) => {
+    setPdfPreviewUrl(null);
+    try {
+      const pdfRes = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang, copy }),
+      });
+
+      if (pdfRes.ok) {
+        const pdfData = await pdfRes.json();
+        if (pdfData.url) {
+          setPdfPreviewUrl(pdfData.url);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching PDF:", error);
+    }
+  };
+
   const handleViewInvoice = async (invoice: Invoice) => {
     setLoadingInvoice(true);
     setViewDialogOpen(true);
     setPdfPreviewUrl(null);
-    setImagePreviewUrl(null);
+    setPreviewLang("th");
+    setIsCopy(false);
     try {
       // Fetch invoice details first
       const detailRes = await fetch(`/api/invoices/${invoice.id}`);
@@ -655,48 +678,8 @@ export default function InvoicesPage() {
         const data = await detailRes.json();
         setSelectedInvoice(data);
 
-        // Generate LINE image URL with invoice details
-        const params = new URLSearchParams({
-          lang: "th",
-          invoiceNo: data.invoiceNo,
-          billingMonth: data.billingMonth,
-          dueDate: new Date(data.dueDate).toISOString(),
-          dateCreated: new Date(data.createdAt).toISOString(),
-          totalAmount: String(data.totalAmount),
-          unitNumber: data.unit.unitNumber,
-          tenantName: data.tenant.nameTh || data.tenant.name,
-          tenantAddress: data.tenant.address || "",
-          tenantTaxId: data.tenant.taxId || "",
-          tenantIdCard: data.tenant.idCard || "",
-          companyName: data.project.companyNameTh || data.project.companyName || data.project.name,
-          companyNameTh: data.project.companyNameTh || "",
-          companyAddress: data.project.companyAddress || "",
-          taxId: data.project.taxId || "",
-          logoUrl: data.project.logoUrl || "",
-          ownerName: data.project.owner?.name || "",
-          subtotal: String(data.subtotal),
-          withholdingTax: String(data.withholdingTax || 0),
-          withholdingTaxPercent: String(data.tenant.withholdingTax || 0),
-          lineItems: JSON.stringify(data.lineItems || []),
-          bankName: data.project.bankName || "",
-          bankAccountName: data.project.bankAccountName || "",
-          bankAccountNumber: data.project.bankAccountNumber || "",
-        });
-        setImagePreviewUrl(`/api/invoices/${invoice.id}/line-image?${params.toString()}`);
-
-        // Also generate PDF in background
-        const pdfRes = await fetch(`/api/invoices/${invoice.id}/pdf`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lang: "th" }),
-        });
-
-        if (pdfRes.ok) {
-          const pdfData = await pdfRes.json();
-          if (pdfData.url) {
-            setPdfPreviewUrl(pdfData.url);
-          }
-        }
+        // Generate PDF preview
+        await fetchPdfPreview(invoice.id, "th", false);
       } else {
         toast({
           title: "Error",
@@ -718,13 +701,13 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDownloadPdf = async (invoice: Invoice) => {
+  const handleDownloadPdf = async (invoice: Invoice, lang: "th" | "en" = previewLang, copy: boolean = isCopy) => {
     try {
       // Use server-side PDF generation with Thai font support
       const res = await fetch(`/api/invoices/${invoice.id}/pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: "th" }),
+        body: JSON.stringify({ lang, copy }),
       });
 
       if (!res.ok) {
@@ -1163,15 +1146,6 @@ export default function InvoicesPage() {
                             <Send className="h-4 w-4" />
                           )}
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title={t("downloadPdf")}
-                          onClick={() => handleDownloadPdf(invoice)}
-                        >
-                          <FileDown className="h-4 w-4" />
-                        </Button>
                         {invoice.status !== "PAID" && (
                           <>
                             <Button
@@ -1288,29 +1262,66 @@ export default function InvoicesPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : selectedInvoice ? (
-            <Tabs defaultValue="image" className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="image">{t("imagePreview") || "Image"}</TabsTrigger>
-                <TabsTrigger value="pdf">{t("pdfPreview") || "PDF"}</TabsTrigger>
-                <TabsTrigger value="details">{t("details") || "Details"}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="image" className="flex-1 overflow-hidden mt-4">
-                {imagePreviewUrl ? (
-                  <div className="flex flex-col items-center">
-                    <img
-                      src={imagePreviewUrl}
-                      alt="Invoice Preview"
-                      className="max-w-full h-auto border rounded-lg shadow-lg"
-                      style={{ maxHeight: "55vh" }}
-                    />
+            <Tabs defaultValue="pdf" className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <TabsList className="grid grid-cols-2 w-auto">
+                  <TabsTrigger value="pdf">{t("pdfPreview") || "PDF"}</TabsTrigger>
+                  <TabsTrigger value="details">{t("details") || "Details"}</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-4">
+                  {/* Language Toggle - commented out until English address support is ready
+                  <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                    <Button
+                      variant={previewLang === "th" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setPreviewLang("th");
+                        fetchPdfPreview(selectedInvoice.id, "th", isCopy);
+                      }}
+                    >
+                      TH
+                    </Button>
+                    <Button
+                      variant={previewLang === "en" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setPreviewLang("en");
+                        fetchPdfPreview(selectedInvoice.id, "en", isCopy);
+                      }}
+                    >
+                      EN
+                    </Button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-[55vh]">
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                  */}
+                  {/* Copy Toggle */}
+                  <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                    <Button
+                      variant={!isCopy ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setIsCopy(false);
+                        fetchPdfPreview(selectedInvoice.id, previewLang, false);
+                      }}
+                    >
+                      ต้นฉบับ
+                    </Button>
+                    <Button
+                      variant={isCopy ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setIsCopy(true);
+                        fetchPdfPreview(selectedInvoice.id, previewLang, true);
+                      }}
+                    >
+                      สำเนา
+                    </Button>
                   </div>
-                )}
-              </TabsContent>
+                </div>
+              </div>
 
               <TabsContent value="pdf" className="flex-1 overflow-hidden mt-4">
                 {pdfPreviewUrl ? (

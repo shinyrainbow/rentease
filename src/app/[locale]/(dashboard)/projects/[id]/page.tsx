@@ -1032,6 +1032,7 @@ export default function ProjectDetailPage() {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">ชื่อภาษาอังกฤษ (ใช้ในระบบ)</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nameTh">{t("projectNameTh")}</Label>
@@ -1040,6 +1041,7 @@ export default function ProjectDetailPage() {
                       value={formData.nameTh}
                       onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
                     />
+                    <p className="text-xs text-muted-foreground">ชื่อภาษาไทย (แสดงในใบแจ้งหนี้)</p>
                   </div>
                 </div>
 
@@ -1068,6 +1070,7 @@ export default function ProjectDetailPage() {
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">ที่ตั้งโครงการ/อาคาร (สำหรับแสดงในระบบ)</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -1114,6 +1117,7 @@ export default function ProjectDetailPage() {
                         value={formData.companyName}
                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                       />
+                      <p className="text-xs text-muted-foreground">ชื่อบริษัทภาษาอังกฤษ</p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="companyNameTh">{t("companyNameTh")}</Label>
@@ -1122,7 +1126,18 @@ export default function ProjectDetailPage() {
                         value={formData.companyNameTh}
                         onChange={(e) => setFormData({ ...formData, companyNameTh: e.target.value })}
                       />
+                      <p className="text-xs text-muted-foreground">ชื่อบริษัทภาษาไทย (แสดงในใบแจ้งหนี้)</p>
                     </div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="companyAddress">{t("companyAddress") || "ที่อยู่บริษัท"}</Label>
+                    <Input
+                      id="companyAddress"
+                      value={formData.companyAddress}
+                      onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
+                      placeholder="ที่อยู่บริษัทสำหรับใบแจ้งหนี้"
+                    />
+                    <p className="text-xs text-muted-foreground">ที่อยู่จดทะเบียนบริษัท (แสดงในใบแจ้งหนี้/ใบเสร็จ)</p>
                   </div>
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="taxId">{t("taxId")}</Label>

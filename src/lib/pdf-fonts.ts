@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 
 // Thai font support for jsPDF
-// We use Sarabun font from Google Fonts which supports Thai characters
+// We use Kanit font from Google Fonts which handles Thai diacritical marks well
 
 let fontCache: { regular: string; bold: string } | null = null;
 
@@ -31,13 +31,13 @@ async function loadFonts(): Promise<{ regular: string; bold: string }> {
     return fontCache;
   }
 
-  // Sarabun font from Google Fonts CDN (v17)
+  // Kanit font from Google Fonts CDN (v15)
   const [regular, bold] = await Promise.all([
     fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/sarabun/v17/DtVjJx26TKEr37c9WBI.ttf"
+      "https://fonts.gstatic.com/s/kanit/v15/nKKZ-Go6G5tXcraBGwA.ttf"
     ),
     fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/sarabun/v17/DtVmJx26TKEr37c9YK5sulw.ttf"
+      "https://fonts.gstatic.com/s/kanit/v15/nKKU-Go6G5tXcr5aPhyzVA.ttf"
     ),
   ]);
 
@@ -50,20 +50,20 @@ export async function createPDFWithThaiFont(): Promise<jsPDF> {
   const fonts = await loadFonts();
 
   // Add font to virtual file system
-  doc.addFileToVFS("Sarabun-Regular.ttf", fonts.regular);
-  doc.addFileToVFS("Sarabun-Bold.ttf", fonts.bold);
+  doc.addFileToVFS("Kanit-Regular.ttf", fonts.regular);
+  doc.addFileToVFS("Kanit-Bold.ttf", fonts.bold);
 
   // Register fonts
-  doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
-  doc.addFont("Sarabun-Bold.ttf", "Sarabun", "bold");
+  doc.addFont("Kanit-Regular.ttf", "Kanit", "normal");
+  doc.addFont("Kanit-Bold.ttf", "Kanit", "bold");
 
-  // Set default font to Sarabun
-  doc.setFont("Sarabun", "normal");
+  // Set default font to Kanit
+  doc.setFont("Kanit", "normal");
 
   return doc;
 }
 
 // Helper to set font style
 export function setThaiFont(doc: jsPDF, style: "normal" | "bold" = "normal") {
-  doc.setFont("Sarabun", style);
+  doc.setFont("Kanit", style);
 }

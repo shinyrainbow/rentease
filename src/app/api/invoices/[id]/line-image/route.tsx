@@ -12,7 +12,7 @@ interface LineItem {
   rate?: number;
 }
 
-const TEAL_COLOR = "#2D8B8B";
+const PRIMARY_COLOR = "#16a34a"; // green-600
 
 const BANK_NAMES: Record<string, string> = {
   kbank: "ธนาคารกสิกรไทย",
@@ -179,35 +179,40 @@ export async function GET(request: NextRequest) {
             padding: "60px 80px",
           }}
         >
-          {/* Company Header - Centered with Logo */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
+          {/* Company Header - Logo on Left, Details on Right */}
+          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "40px" }}>
             {logoUrl && (
               <img
                 src={logoUrl}
                 alt="Logo"
                 width={100}
                 height={100}
-                style={{ objectFit: "contain", marginBottom: "16px", borderRadius: "8px" }}
+                style={{ objectFit: "contain", borderRadius: "8px", marginRight: "24px" }}
               />
             )}
-            <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
-              {companyName}
-            </span>
-            {companyAddress && (
-              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
-                {companyAddress}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+                {companyName}
               </span>
-            )}
-            {taxId && (
-              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
-                {t.taxId}: {taxId}
-              </span>
-            )}
+              {companyAddress && (
+                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px" }}>
+                  {companyAddress}
+                </span>
+              )}
+              {taxId && (
+                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
+                  {t.taxId}: {taxId}
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Separator line */}
+          <div style={{ width: "100%", height: "1px", backgroundColor: "#E5E7EB", marginBottom: "24px" }} />
 
           {/* Invoice Title - Centered */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
-            <span style={{ fontSize: "40px", fontWeight: "bold", color: TEAL_COLOR }}>
+            <span style={{ fontSize: "40px", fontWeight: "bold", color: PRIMARY_COLOR }}>
               {t.invoice}
             </span>
           </div>
@@ -224,9 +229,6 @@ export async function GET(request: NextRequest) {
 
           {/* Bill To Section */}
           <div style={{ display: "flex", flexDirection: "column", marginBottom: "32px" }}>
-            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
-              {t.billTo}:
-            </span>
             <div style={{ display: "flex", marginBottom: "4px" }}>
               <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.unit}:</span>
               <span style={{ fontSize: "20px", color: "#111827" }}>{unitNumber}</span>
@@ -253,7 +255,7 @@ export async function GET(request: NextRequest) {
           <div
             style={{
               display: "flex",
-              backgroundColor: TEAL_COLOR,
+              backgroundColor: PRIMARY_COLOR,
               padding: "16px 24px",
               borderRadius: "8px 8px 0 0",
             }}
@@ -291,30 +293,28 @@ export async function GET(request: NextRequest) {
 
           {/* Totals Section */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "24px" }}>
-            <div style={{ display: "flex", width: "400px", justifyContent: "space-between", marginBottom: "8px" }}>
+            <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
               <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.subtotal}</span>
               <span style={{ fontSize: "22px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
             </div>
             {withholdingTax > 0 && (
-              <div style={{ display: "flex", width: "400px", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
                 <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
                 <span style={{ fontSize: "22px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
               </div>
             )}
-            {/* Total Box */}
+            {/* Separator line */}
+            <div style={{ width: "300px", height: "1px", backgroundColor: "#E5E7EB", marginTop: "8px", marginBottom: "12px" }} />
+            {/* Total */}
             <div
               style={{
                 display: "flex",
-                width: "400px",
+                width: "300px",
                 justifyContent: "space-between",
-                backgroundColor: TEAL_COLOR,
-                padding: "16px 24px",
-                borderRadius: "8px",
-                marginTop: "8px",
               }}
             >
-              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{t.total}</span>
-              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{formatCurrency(totalAmount)}</span>
+              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
+              <span style={{ fontSize: "24px", fontWeight: "bold", color: PRIMARY_COLOR }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
 

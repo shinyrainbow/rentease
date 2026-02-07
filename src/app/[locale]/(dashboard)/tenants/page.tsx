@@ -61,6 +61,8 @@ interface Tenant {
   email: string | null;
   phone: string | null;
   address: string | null;
+  idCard: string | null;
+  taxId: string | null;
   tenantType: string;
   withholdingTax: number;
   // Contract pricing
@@ -286,8 +288,8 @@ export default function TenantsPage() {
       email: tenant.email || "",
       phone: tenant.phone || "",
       address: tenant.address || "",
-      idCard: "",
-      taxId: "",
+      idCard: tenant.idCard || "",
+      taxId: tenant.taxId || "",
       tenantType: tenant.tenantType,
       withholdingTax: tenant.withholdingTax.toString(),
       baseRent: tenant.baseRent?.toString() || "",
@@ -675,10 +677,12 @@ export default function TenantsPage() {
                   <div className="space-y-1">
                     <Label className="text-xs">{t("name")} *</Label>
                     <Input className="h-9" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    <p className="text-xs text-muted-foreground">ชื่อภาษาอังกฤษ (ใช้ในระบบ)</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("nameTh")}</Label>
                     <Input className="h-9" value={formData.nameTh} onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })} />
+                    <p className="text-xs text-muted-foreground">ชื่อภาษาไทย (แสดงในใบแจ้งหนี้)</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("idCard")}</Label>
@@ -690,10 +694,12 @@ export default function TenantsPage() {
                   <div className="space-y-1">
                     <Label className="text-xs">{t("companyName")} *</Label>
                     <Input className="h-9" value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} required />
+                    <p className="text-xs text-muted-foreground">ชื่อบริษัทภาษาอังกฤษ</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("companyNameTh")}</Label>
                     <Input className="h-9" value={formData.companyNameTh} onChange={(e) => setFormData({ ...formData, companyNameTh: e.target.value })} />
+                    <p className="text-xs text-muted-foreground">ชื่อบริษัทภาษาไทย (แสดงในใบแจ้งหนี้)</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("taxId")}</Label>
@@ -718,6 +724,7 @@ export default function TenantsPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Address / ที่อยู่</Label>
                 <Input className="h-9" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Address for invoice" />
+                <p className="text-xs text-muted-foreground">ที่อยู่สำหรับออกใบแจ้งหนี้/ใบเสร็จ</p>
               </div>
 
               {/* Contract Pricing */}

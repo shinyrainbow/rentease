@@ -99,6 +99,7 @@
     "taxId": "Tax ID",
     "companyName": "Company Name",
     "companyNameTh": "Company Name (Thai)",
+    "companyAddress": "Company Address",
     "bankAccount": "Bank Account",
     "bankName": "Bank",
     "selectBank": "Select Bank",
