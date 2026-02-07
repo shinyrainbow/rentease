@@ -47,20 +47,20 @@ const translations = {
 
 export async function GET(request: NextRequest) {
   try {
-    // Load Noto Sans Thai font for proper Thai character rendering
+    // Load Sarabun font - better handling of Thai tone marks
     let fontData: ArrayBuffer | null = null;
     let fontDataBold: ArrayBuffer | null = null;
 
     try {
       const fontPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
+        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YL5rilsz7g.ttf")
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
+        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YOZuilsz7g.ttf")
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "'Noto Sans Thai', sans-serif",
+            fontFamily: "'Sarabun', sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -269,13 +269,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Noto Sans Thai",
+              name: "Sarabun",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Noto Sans Thai",
+              name: "Sarabun",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,

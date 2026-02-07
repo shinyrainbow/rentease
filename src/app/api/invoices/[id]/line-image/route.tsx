@@ -14,6 +14,24 @@ interface LineItem {
 
 const TEAL_COLOR = "#2D8B8B";
 
+const BANK_NAMES: Record<string, string> = {
+  kbank: "ธนาคารกสิกรไทย",
+  scb: "ธนาคารไทยพาณิชย์",
+  bbl: "ธนาคารกรุงเทพ",
+  ktb: "ธนาคารกรุงไทย",
+  bay: "ธนาคารกรุงศรีอยุธยา",
+  ttb: "ธนาคารทหารไทยธนชาต",
+  gsb: "ธนาคารออมสิน",
+  uob: "ธนาคารยูโอบี",
+  cimb: "ธนาคารซีไอเอ็มบี ไทย",
+  lhbank: "ธนาคารแลนด์ แอนด์ เฮ้าส์",
+  tisco: "ธนาคารทิสโก้",
+  kkp: "ธนาคารเกียรตินาคินภัทร",
+  icbc: "ธนาคารไอซีบีซี (ไทย)",
+  baac: "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร",
+  ghb: "ธนาคารอาคารสงเคราะห์",
+};
+
 const translations = {
   en: {
     invoice: "INVOICE",
@@ -30,6 +48,11 @@ const translations = {
     withholdingTax: "Withholding Tax",
     total: "Total",
     pleasePayBy: "Please pay by the due date",
+    paymentInfo: "Payment Information",
+    bankNameLabel: "Bank",
+    accountName: "Account Name",
+    accountNumber: "Account Number",
+    biller: "Biller",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -46,6 +69,11 @@ const translations = {
     withholdingTax: "หัก ณ ที่จ่าย",
     total: "ยอดรวมทั้งสิ้น",
     pleasePayBy: "กรุณาชำระภายในกำหนด",
+    paymentInfo: "ข้อมูลการชำระเงิน",
+    bankNameLabel: "ธนาคาร",
+    accountName: "ชื่อบัญชี",
+    accountNumber: "เลขที่บัญชี",
+    biller: "ผู้วางบิล",
   },
 };
 
@@ -56,15 +84,16 @@ export async function GET(request: NextRequest) {
     let fontDataBold: ArrayBuffer | null = null;
 
     try {
+      // Using Sarabun font - better handling of Thai tone marks (ี, ้, etc.)
       const fontPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
+        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YL5rilsz7g.ttf")
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
+        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YOZuilsz7g.ttf")
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -103,6 +132,14 @@ export async function GET(request: NextRequest) {
     const lineItemsStr = searchParams.get("lineItems") || "[]";
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);
 
+    // Payment info
+    const bankName = searchParams.get("bankName") || "";
+    const bankAccountName = searchParams.get("bankAccountName") || "";
+    const bankAccountNumber = searchParams.get("bankAccountNumber") || "";
+    const ownerName = searchParams.get("ownerName") || "";
+
+    const displayBankName = bankName ? (BANK_NAMES[bankName] || bankName) : "";
+
     const t = translations[lang] || translations.th;
 
     const formatCurrency = (amount: number) => {
@@ -132,7 +169,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "'Noto Sans Thai', sans-serif",
+            fontFamily: "'Sarabun', sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -257,8 +294,47 @@ export async function GET(request: NextRequest) {
             </div>
           </div>
 
+          {/* Payment Info and Signature Section */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
+            {/* Payment Information */}
+            {(displayBankName || bankAccountName || bankAccountNumber) && (
+              <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
+                  {t.paymentInfo}
+                </span>
+                {displayBankName && (
+                  <div style={{ display: "flex", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.bankNameLabel}:</span>
+                    <span style={{ fontSize: "20px", color: "#111827" }}>{displayBankName}</span>
+                  </div>
+                )}
+                {bankAccountName && (
+                  <div style={{ display: "flex", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.accountName}:</span>
+                    <span style={{ fontSize: "20px", color: "#111827" }}>{bankAccountName}</span>
+                  </div>
+                )}
+                {bankAccountNumber && (
+                  <div style={{ display: "flex", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.accountNumber}:</span>
+                    <span style={{ fontSize: "20px", color: "#111827" }}>{bankAccountNumber}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Signature Section */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "300px" }}>
+              <div style={{ width: "200px", borderBottom: "2px solid #111827", marginBottom: "12px", marginTop: "60px" }} />
+              <span style={{ fontSize: "20px", color: "#111827" }}>{t.biller}</span>
+              {ownerName && (
+                <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "4px" }}>({ownerName})</span>
+              )}
+            </div>
+          </div>
+
           {/* Footer */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "80px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "40px" }}>
             <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.pleasePayBy}</span>
           </div>
         </div>
@@ -269,13 +345,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Noto Sans Thai",
+              name: "Sarabun",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Noto Sans Thai",
+              name: "Sarabun",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,
