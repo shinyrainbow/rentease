@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
     const companyName = searchParams.get("companyName") || "";
     const companyAddress = searchParams.get("companyAddress") || "";
     const taxId = searchParams.get("taxId") || "";
+    const logoUrl = searchParams.get("logoUrl") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
 
     const subtotal = Number(searchParams.get("subtotal") || 0);
@@ -129,8 +130,17 @@ export async function GET(request: NextRequest) {
             padding: "60px 80px",
           }}
         >
-          {/* Company Header - Centered */}
+          {/* Company Header - Centered with Logo */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                width={100}
+                height={100}
+                style={{ objectFit: "contain", marginBottom: "16px", borderRadius: "8px" }}
+              />
+            )}
             <span style={{ fontSize: "36px", fontWeight: "bold", color: "#111827" }}>
               {companyName}
             </span>

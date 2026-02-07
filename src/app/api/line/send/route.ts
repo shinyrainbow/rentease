@@ -9,6 +9,24 @@ interface LineItem {
   amount: number;
 }
 
+// Helper function to fetch logo and convert to data URL for PDF
+async function fetchLogoAsDataUrl(logoUrl: string): Promise<string | undefined> {
+  if (!logoUrl) return undefined;
+
+  try {
+    const response = await fetch(logoUrl);
+    if (!response.ok) return undefined;
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const contentType = response.headers.get("content-type") || "image/png";
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("Error fetching logo for PDF:", error);
+    return undefined;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -391,6 +409,7 @@ async function generateAndUploadInvoicePdf(
       companyName: string | null;
       companyAddress: string | null;
       taxId: string | null;
+      logoUrl: string | null;
     };
     unit: { unitNumber: string };
     tenant: {
@@ -400,7 +419,8 @@ async function generateAndUploadInvoicePdf(
       taxId: string | null;
     };
   },
-  lang: string
+  lang: string,
+  logoDataUrl?: string
 ): Promise<string> {
   const t = lang === "th" ? {
     invoice: "ใบแจ้งหนี้",
@@ -473,6 +493,16 @@ async function generateAndUploadInvoicePdf(
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
 
+  // Company logo (if available)
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", pageWidth / 2 - 15, y, 30, 30);
+      y += 35;
+    } catch (logoError) {
+      console.error("Error adding logo to invoice PDF:", logoError);
+    }
+  }
+
   // Company header
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
@@ -493,10 +523,12 @@ async function generateAndUploadInvoicePdf(
 
   y += 10;
 
-  // Invoice title
+  // Invoice title (teal)
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
+  doc.setTextColor(45, 139, 139); // Teal color
   doc.text(t.invoice, pageWidth / 2, y, { align: "center" });
+  doc.setTextColor(0, 0, 0);
   y += 12;
 
   // Invoice details
@@ -529,8 +561,8 @@ async function generateAndUploadInvoicePdf(
   }
   y += 10;
 
-  // Line items table header
-  doc.setFillColor(59, 130, 246);
+  // Line items table header (teal)
+  doc.setFillColor(45, 139, 139);
   doc.rect(20, y, pageWidth - 40, 8, "F");
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
@@ -547,11 +579,13 @@ async function generateAndUploadInvoicePdf(
 
   lineItems.forEach((item, index) => {
     if (index % 2 === 0) {
-      doc.setFillColor(249, 250, 251);
+      doc.setFillColor(240, 253, 250); // Light teal
       doc.rect(20, y - 4, pageWidth - 40, 8, "F");
     }
     doc.text(item.description, 25, y);
+    doc.setTextColor(45, 139, 139); // Teal for amounts
     doc.text(formatCurrency(item.amount), pageWidth - 45, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
     y += 8;
   });
 
@@ -579,17 +613,14 @@ async function generateAndUploadInvoicePdf(
     y += 7;
   }
 
-  // Total line
-  doc.setDrawColor(59, 130, 246);
-  doc.setLineWidth(0.5);
-  doc.line(totalsX - 5, y, pageWidth - 20, y);
-  y += 8;
-
+  // Total box (teal)
+  y += 5;
+  doc.setFillColor(45, 139, 139);
+  doc.rect(pageWidth - 100, y, 80, 12, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text(t.total, totalsX, y);
-  doc.setTextColor(59, 130, 246);
-  doc.text(formatCurrency(invoice.totalAmount), pageWidth - 25, y, { align: "right" });
+  doc.setTextColor(255, 255, 255);
+  doc.text(t.total, pageWidth - 95, y + 8);
+  doc.text(formatCurrency(invoice.totalAmount), pageWidth - 25, y + 8, { align: "right" });
   doc.setTextColor(0, 0, 0);
 
   // Footer
@@ -622,6 +653,7 @@ async function generateAndUploadReceiptPdf(
         companyName: string | null;
         companyAddress: string | null;
         taxId: string | null;
+        logoUrl: string | null;
       };
       unit: { unitNumber: string };
       tenant: {
@@ -632,7 +664,8 @@ async function generateAndUploadReceiptPdf(
       };
     };
   },
-  lang: string
+  lang: string,
+  logoDataUrl?: string
 ): Promise<string> {
   const t = lang === "th" ? {
     receipt: "ใบเสร็จรับเงิน",
@@ -683,6 +716,16 @@ async function generateAndUploadReceiptPdf(
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
+
+  // Company logo (if available)
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", pageWidth / 2 - 15, y, 30, 30);
+      y += 35;
+    } catch (logoError) {
+      console.error("Error adding logo to receipt PDF:", logoError);
+    }
+  }
 
   // Company header
   doc.setFontSize(18);
