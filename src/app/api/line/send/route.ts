@@ -277,9 +277,9 @@ ${textLabels.footer}
           const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
           console.log("Receipt image buffer size:", imageBuffer.length, "bytes");
           const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
-          await uploadFile(s3Key, imageBuffer, "image/png");
-          imageUrl = await getPresignedUrl(s3Key, 3600);
-          console.log("Receipt image uploaded to S3, presigned URL generated");
+          await uploadFile(s3Key, imageBuffer, "image/png", true); // Public for LINE access
+          imageUrl = getPublicUrl(s3Key);
+          console.log("Receipt image uploaded to S3 (public), URL:", imageUrl);
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate receipt image:", imageResponse.status, errorText);
