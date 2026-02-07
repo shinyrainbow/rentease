@@ -89,13 +89,30 @@ const translations = {
 export async function GET(request: NextRequest) {
   try {
     // Load Noto Sans Thai font for proper Thai character rendering
-    const fontData = await fetch(
-      new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
-    ).then((res) => res.arrayBuffer());
+    let fontData: ArrayBuffer | null = null;
+    let fontDataBold: ArrayBuffer | null = null;
 
-    const fontDataBold = await fetch(
-      new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
-    ).then((res) => res.arrayBuffer());
+    try {
+      const fontPromise = fetch(
+        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
+      ).then((res) => res.arrayBuffer());
+
+      const fontBoldPromise = fetch(
+        new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
+      ).then((res) => res.arrayBuffer());
+
+      // Wait for fonts with timeout
+      const results = await Promise.race([
+        Promise.all([fontPromise, fontBoldPromise]),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
+      ]);
+
+      if (results) {
+        [fontData, fontDataBold] = results as [ArrayBuffer, ArrayBuffer];
+      }
+    } catch (fontError) {
+      console.error("Font loading failed:", fontError);
+    }
 
     const { searchParams } = new URL(request.url);
 
@@ -487,20 +504,22 @@ export async function GET(request: NextRequest) {
       {
         width: 1200,
         height: 1600,
-        fonts: [
-          {
-            name: "Noto Sans Thai",
-            data: fontData,
-            weight: 400,
-            style: "normal",
-          },
-          {
-            name: "Noto Sans Thai",
-            data: fontDataBold,
-            weight: 700,
-            style: "normal",
-          },
-        ],
+        ...(fontData && fontDataBold ? {
+          fonts: [
+            {
+              name: "Noto Sans Thai",
+              data: fontData,
+              weight: 400 as const,
+              style: "normal" as const,
+            },
+            {
+              name: "Noto Sans Thai",
+              data: fontDataBold,
+              weight: 700 as const,
+              style: "normal" as const,
+            },
+          ],
+        } : {}),
       }
     );
   } catch (error) {

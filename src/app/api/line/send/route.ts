@@ -345,7 +345,7 @@ ${textLabels.footer}
     });
 
     console.log("LINE API response status:", res.status);
-    console.log("Sent image URL:", imageUrl?.substring(0, 100) + "...");
+    console.log("Full image URL being sent to LINE:", imageUrl);
 
     if (!res.ok) {
       const error = await res.json();
