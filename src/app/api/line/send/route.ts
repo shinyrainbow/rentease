@@ -357,16 +357,16 @@ ${textLabels.footer}
 
     // Add image message if we have an image URL (for invoices/receipts)
     if (imageUrl) {
-      // Verify the presigned URL is accessible before sending to LINE
-      console.log("Verifying presigned URL accessibility...");
+      // Verify the image URL is accessible before sending to LINE
+      console.log("Verifying image URL accessibility...");
       try {
         const verifyRes = await fetch(imageUrl, { method: "HEAD" });
-        console.log("Presigned URL verify status:", verifyRes.status);
+        console.log("Image URL verify status:", verifyRes.status);
         if (!verifyRes.ok) {
-          console.error("Presigned URL is not accessible:", verifyRes.status);
+          console.error("Image URL is not accessible:", verifyRes.status);
         }
       } catch (verifyError) {
-        console.error("Error verifying presigned URL:", verifyError);
+        console.error("Error verifying image URL:", verifyError);
       }
 
       messages.push({
