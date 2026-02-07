@@ -99,6 +99,8 @@ export default function LineOAPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<string>("");
   const [savingSlip, setSavingSlip] = useState(false);
   const [unpaidInvoices, setUnpaidInvoices] = useState<Array<{ id: string; invoiceNo: string; totalAmount: number; paidAmount: number }>>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
@@ -324,14 +326,14 @@ export default function LineOAPage() {
         setIsSaveSlipOpen(false);
         setSlipMessageId("");
         setSelectedInvoice("");
-        alert("บันทึกสลิปเรียบร้อยแล้ว / Slip saved successfully");
+        setSuccessMessage("บันทึกสลิปเรียบร้อยแล้ว / Slip saved successfully");
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to save slip");
+        setErrorMessage(error.error || "Failed to save slip");
       }
     } catch (error) {
       console.error("Error saving slip:", error);
-      alert("Error saving slip");
+      setErrorMessage("Error saving slip");
     } finally {
       setSavingSlip(false);
     }
@@ -828,6 +830,42 @@ export default function LineOAPage() {
                 เก็บสลิป
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Message Dialog */}
+      <Dialog open={!!successMessage} onOpenChange={() => setSuccessMessage(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              สำเร็จ / Success
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-center py-4">{successMessage}</p>
+          <div className="flex justify-center">
+            <Button onClick={() => setSuccessMessage(null)}>
+              {tCommon("close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Message Dialog */}
+      <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="h-5 w-5" />
+              เกิดข้อผิดพลาด / Error
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-center py-4">{errorMessage}</p>
+          <div className="flex justify-center">
+            <Button variant="destructive" onClick={() => setErrorMessage(null)}>
+              {tCommon("close")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
