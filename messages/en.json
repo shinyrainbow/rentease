@@ -264,6 +264,7 @@
     "taxId": "Tax ID",
     "notes": "Notes",
     "pdfPreview": "PDF Preview",
+    "imagePreview": "Image Preview",
     "details": "Details",
     "billTo": "Bill To",
     "lineItems": "Items",
