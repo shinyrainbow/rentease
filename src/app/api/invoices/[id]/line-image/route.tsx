@@ -83,21 +83,25 @@ const translations = {
 
 export async function GET(request: NextRequest) {
   try {
-    // Load Noto Sans Thai font for proper Thai character rendering
+    // Load THSarabun font for proper Thai character rendering
     let fontData: ArrayBuffer | null = null;
     let fontDataBold: ArrayBuffer | null = null;
 
     try {
-      // Using Sarabun font - better handling of Thai tone marks (ี, ้, etc.)
+      // Get base URL from request
+      const url = new URL(request.url);
+      const baseUrl = `${url.protocol}//${url.host}`;
+
+      // Using THSarabun from our own public folder
       const fontPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YL5rilsz7g.ttf")
+        `${baseUrl}/fonts/THSarabun-Regular.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        new URL("https://fonts.gstatic.com/s/sarabun/v15/DtVmJx26TKEr37c9YOZuilsz7g.ttf")
+        `${baseUrl}/fonts/THSarabun-Bold.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -175,7 +179,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "'Sarabun', sans-serif",
+            fontFamily: "THSarabun, sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -369,13 +373,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Sarabun",
+              name: "THSarabun",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Sarabun",
+              name: "THSarabun",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,

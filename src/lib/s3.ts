@@ -22,14 +22,14 @@ export async function uploadFile(
     Key: key,
     Body: body,
     ContentType: contentType,
-    ...(isPublic && { ACL: "public-read" }),
+    ...(isPublic && { ACL: "public-read" as const }),
   });
 
   await s3Client.send(command);
   return key;
 }
 
-// Get public URL for objects with public-read ACL
+// Get public S3 URL for objects uploaded with ACL: public-read
 export function getPublicUrl(key: string): string {
   return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }
