@@ -42,6 +42,8 @@ const translations = {
     taxId: "Tax ID",
     billTo: "Bill To",
     unit: "Unit",
+    name: "Name",
+    address: "Address",
     description: "Description",
     amount: "Amount (THB)",
     subtotal: "Subtotal",
@@ -63,6 +65,8 @@ const translations = {
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
+    name: "ชื่อ",
+    address: "ที่อยู่",
     description: "รายการ",
     amount: "จำนวนเงิน (บาท)",
     subtotal: "รวม",
@@ -120,6 +124,8 @@ export async function GET(request: NextRequest) {
     const totalAmount = Number(searchParams.get("totalAmount") || 0);
     const unitNumber = searchParams.get("unitNumber") || "";
     const tenantName = searchParams.get("tenantName") || "";
+    const tenantAddress = searchParams.get("tenantAddress") || "";
+    const tenantTaxId = searchParams.get("tenantTaxId") || "";
     const companyName = searchParams.get("companyName") || "";
     const companyAddress = searchParams.get("companyAddress") || "";
     const taxId = searchParams.get("taxId") || "";
@@ -218,11 +224,29 @@ export async function GET(request: NextRequest) {
 
           {/* Bill To Section */}
           <div style={{ display: "flex", flexDirection: "column", marginBottom: "32px" }}>
-            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "8px" }}>
+            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
               {t.billTo}:
             </span>
-            <span style={{ fontSize: "24px", color: "#111827" }}>{tenantName}</span>
-            <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.unit}: {unitNumber}</span>
+            <div style={{ display: "flex", marginBottom: "4px" }}>
+              <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.unit}:</span>
+              <span style={{ fontSize: "20px", color: "#111827" }}>{unitNumber}</span>
+            </div>
+            <div style={{ display: "flex", marginBottom: "4px" }}>
+              <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.name}:</span>
+              <span style={{ fontSize: "20px", color: "#111827" }}>{tenantName}</span>
+            </div>
+            {tenantAddress && (
+              <div style={{ display: "flex", marginBottom: "4px" }}>
+                <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.address}:</span>
+                <span style={{ fontSize: "20px", color: "#111827", flex: 1 }}>{tenantAddress}</span>
+              </div>
+            )}
+            {tenantTaxId && (
+              <div style={{ display: "flex", marginBottom: "4px" }}>
+                <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.taxId}:</span>
+                <span style={{ fontSize: "20px", color: "#111827" }}>{tenantTaxId}</span>
+              </div>
+            )}
           </div>
 
           {/* Table Header */}

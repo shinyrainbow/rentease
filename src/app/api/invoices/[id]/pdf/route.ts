@@ -42,6 +42,8 @@ const translations = {
     taxId: "Tax ID",
     billTo: "Bill To",
     unit: "Unit",
+    name: "Name",
+    address: "Address",
     description: "Description",
     amount: "Amount (THB)",
     subtotal: "Subtotal",
@@ -63,6 +65,8 @@ const translations = {
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
+    name: "ชื่อ",
+    address: "ที่อยู่",
     description: "รายการ",
     amount: "จำนวนเงิน (บาท)",
     subtotal: "รวม",
@@ -209,17 +213,44 @@ export async function POST(
     y += 6;
 
     const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
-    doc.setFontSize(12);
-    doc.text(tenantName, margin, y);
+    const labelWidth = 35;
+
+    doc.setFontSize(9);
+    setThaiFont(doc, "normal");
+
+    // Unit
+    doc.setTextColor(107, 114, 128);
+    doc.text(`${t.unit}:`, margin, y);
+    doc.setTextColor(0, 0, 0);
+    doc.text(invoice.unit.unitNumber, margin + labelWidth, y);
     y += 5;
 
-    doc.setFontSize(10);
-    setThaiFont(doc, "normal");
+    // Name
     doc.setTextColor(107, 114, 128);
-    doc.text(`${t.unit}: ${invoice.unit.unitNumber}`, margin, y);
+    doc.text(`${t.name}:`, margin, y);
     doc.setTextColor(0, 0, 0);
+    doc.text(tenantName, margin + labelWidth, y);
+    y += 5;
 
-    y += 12;
+    // Address
+    if (invoice.tenant.address) {
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.address}:`, margin, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(invoice.tenant.address, margin + labelWidth, y);
+      y += 5;
+    }
+
+    // Tax ID
+    if (invoice.tenant.taxId) {
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.taxId}:`, margin, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(invoice.tenant.taxId, margin + labelWidth, y);
+      y += 5;
+    }
+
+    y += 8;
 
     // ============ LINE ITEMS TABLE ============
     const lineItems: LineItem[] = (invoice.lineItems as unknown as LineItem[]) || [];
