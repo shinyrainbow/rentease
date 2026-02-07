@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -28,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Send, FileDown, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Send, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
@@ -117,7 +118,6 @@ export default function ReceiptsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingReceiptId, setSendingReceiptId] = useState<string | null>(null);
-  const [downloadingReceiptId, setDownloadingReceiptId] = useState<string | null>(null);
   const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
   const [lineSendReceipt, setLineSendReceipt] = useState<Receipt | null>(null);
   const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
@@ -129,6 +129,9 @@ export default function ReceiptsPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<ReceiptDetail | null>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [previewLang, setPreviewLang] = useState<"th" | "en">("th");
+  const [isCopy, setIsCopy] = useState(false);
 
   // Create receipt state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -399,49 +402,39 @@ export default function ReceiptsPage() {
     }
   };
 
-  const handleDownloadPdf = async (receipt: Receipt) => {
-    setDownloadingReceiptId(receipt.id);
-
+  const fetchPdfPreview = async (receiptId: string, lang: "th" | "en", copy: boolean) => {
+    setPdfPreviewUrl(null);
     try {
-      const res = await fetch(`/api/receipts/${receipt.id}/pdf`, {
+      const pdfRes = await fetch(`/api/receipts/${receiptId}/pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: "th" }),
+        body: JSON.stringify({ lang, copy }),
       });
 
-      if (!res.ok) {
-        toast({
-          title: "Error",
-          description: "Failed to generate PDF",
-          variant: "destructive",
-        });
-        return;
+      if (pdfRes.ok) {
+        const pdfData = await pdfRes.json();
+        if (pdfData.url) {
+          setPdfPreviewUrl(pdfData.url);
+        }
       }
-
-      const data = await res.json();
-
-      // Open the PDF URL in a new tab
-      window.open(data.url, "_blank");
     } catch (error) {
-      console.error("Error downloading PDF:", error);
-      toast({
-        title: "Error",
-        description: "Failed to download PDF",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloadingReceiptId(null);
+      console.error("Error fetching PDF:", error);
     }
   };
 
   const handleViewReceipt = async (receipt: Receipt) => {
     setLoadingReceipt(true);
     setViewDialogOpen(true);
+    setPdfPreviewUrl(null);
+    setPreviewLang("th");
+    setIsCopy(false);
     try {
       const res = await fetch(`/api/receipts/${receipt.id}`);
       if (res.ok) {
         const data = await res.json();
         setSelectedReceipt(data);
+        // Generate PDF preview
+        await fetchPdfPreview(receipt.id, "th", false);
       } else {
         toast({
           title: tCommon("error") || "Error",
@@ -595,19 +588,6 @@ export default function ReceiptsPage() {
                             <Check className="h-4 w-4 text-green-600" />
                           ) : (
                             <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("downloadPdf")}
-                          onClick={() => handleDownloadPdf(receipt)}
-                          disabled={downloadingReceiptId === receipt.id}
-                        >
-                          {downloadingReceiptId === receipt.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <FileDown className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
@@ -792,8 +772,13 @@ export default function ReceiptsPage() {
       </Dialog>
 
       {/* Receipt Preview Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog open={viewDialogOpen} onOpenChange={(open) => {
+        setViewDialogOpen(open);
+        if (!open && pdfPreviewUrl) {
+          setPdfPreviewUrl(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t("viewReceipt") || "View Receipt"}</DialogTitle>
           </DialogHeader>
@@ -802,111 +787,148 @@ export default function ReceiptsPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : selectedReceipt ? (
-            <div className="space-y-6">
-              {/* Company Header */}
-              <div className="text-center">
-                <h3 className="text-xl font-bold">
-                  {selectedReceipt.invoice.project.companyName || selectedReceipt.invoice.project.name}
-                </h3>
-                {selectedReceipt.invoice.project.companyAddress && (
-                  <p className="text-sm text-muted-foreground">{selectedReceipt.invoice.project.companyAddress}</p>
-                )}
-                {selectedReceipt.invoice.project.taxId && (
-                  <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.project.taxId}</p>
-                )}
-              </div>
-
-              <div className="text-center">
-                <h4 className="text-lg font-semibold">{t("receiptTitle") || "RECEIPT"}</h4>
-              </div>
-
-              <Separator />
-
-              {/* Receipt Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("receiptNo")}</p>
-                  <p className="font-medium">{selectedReceipt.receiptNo}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("issuedAt")}</p>
-                  <p className="font-medium">{formatDate(selectedReceipt.issuedAt)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("invoiceRef") || "Invoice Ref"}</p>
-                  <p className="font-medium">{selectedReceipt.invoice.invoiceNo}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t("billingMonth") || "Billing Month"}</p>
-                  <p className="font-medium">{selectedReceipt.invoice.billingMonth}</p>
+            <Tabs defaultValue="pdf" className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <TabsList className="grid grid-cols-2 w-auto">
+                  <TabsTrigger value="pdf">{t("pdfPreview") || "PDF"}</TabsTrigger>
+                  <TabsTrigger value="details">{t("details") || "Details"}</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-4">
+                  {/* Copy Toggle */}
+                  <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                    <Button
+                      variant={!isCopy ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setIsCopy(false);
+                        fetchPdfPreview(selectedReceipt.id, previewLang, false);
+                      }}
+                    >
+                      ต้นฉบับ
+                    </Button>
+                    <Button
+                      variant={isCopy ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-3"
+                      onClick={() => {
+                        setIsCopy(true);
+                        fetchPdfPreview(selectedReceipt.id, previewLang, true);
+                      }}
+                    >
+                      สำเนา
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Tenant Info */}
-              <div>
-                <h4 className="font-semibold mb-2">{t("receivedFrom") || "Received From"}</h4>
-                <p className="font-medium">{selectedReceipt.invoice.tenant.name}</p>
-                {selectedReceipt.invoice.tenant.tenantType === "COMPANY" && (
-                  <p className="text-sm text-muted-foreground">{t("company") || "Company"}</p>
+              <TabsContent value="pdf" className="flex-1 overflow-hidden mt-4">
+                {pdfPreviewUrl ? (
+                  <iframe
+                    src={`${pdfPreviewUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                    className="w-full h-[55vh] border rounded-lg"
+                    title="Receipt PDF Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-[55vh]">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
                 )}
-                <p className="text-sm text-muted-foreground">{t("unit") || "Unit"}: {selectedReceipt.invoice.unit.unitNumber}</p>
-                {selectedReceipt.invoice.tenant.phone && (
-                  <p className="text-sm text-muted-foreground">{t("phone") || "Phone"}: {selectedReceipt.invoice.tenant.phone}</p>
-                )}
-                {selectedReceipt.invoice.tenant.taxId && (
-                  <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.tenant.taxId}</p>
-                )}
-              </div>
+              </TabsContent>
 
-              <Separator />
+              <TabsContent value="details" className="flex-1 overflow-y-auto mt-4">
+                <div className="space-y-6">
+                  {/* Company Header */}
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold">
+                      {selectedReceipt.invoice.project.companyName || selectedReceipt.invoice.project.name}
+                    </h3>
+                    {selectedReceipt.invoice.project.companyAddress && (
+                      <p className="text-sm text-muted-foreground">{selectedReceipt.invoice.project.companyAddress}</p>
+                    )}
+                    {selectedReceipt.invoice.project.taxId && (
+                      <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.project.taxId}</p>
+                    )}
+                  </div>
 
-              {/* Line Items */}
-              {selectedReceipt.invoice.lineItems && selectedReceipt.invoice.lineItems.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">{t("paymentFor") || "Payment For"}</h4>
-                  <div className="space-y-2">
-                    {selectedReceipt.invoice.lineItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span className="text-sm">{item.description}</span>
-                        <span className="text-sm">฿{item.amount.toLocaleString()}</span>
+                  <Separator />
+
+                  {/* Receipt Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("receiptNo")}</p>
+                      <p className="font-medium">{selectedReceipt.receiptNo}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("issuedAt")}</p>
+                      <p className="font-medium">{formatDate(selectedReceipt.issuedAt)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("invoiceRef") || "Invoice Ref"}</p>
+                      <p className="font-medium">{selectedReceipt.invoice.invoiceNo}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t("billingMonth") || "Billing Month"}</p>
+                      <p className="font-medium">{selectedReceipt.invoice.billingMonth}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Tenant Info */}
+                  <div>
+                    <h4 className="font-semibold mb-2">{t("receivedFrom") || "Received From"}</h4>
+                    <p className="font-medium">{selectedReceipt.invoice.tenant.name}</p>
+                    {selectedReceipt.invoice.tenant.tenantType === "COMPANY" && (
+                      <p className="text-sm text-muted-foreground">{t("company") || "Company"}</p>
+                    )}
+                    <p className="text-sm text-muted-foreground">{t("unit") || "Unit"}: {selectedReceipt.invoice.unit.unitNumber}</p>
+                    {selectedReceipt.invoice.tenant.phone && (
+                      <p className="text-sm text-muted-foreground">{t("phone") || "Phone"}: {selectedReceipt.invoice.tenant.phone}</p>
+                    )}
+                    {selectedReceipt.invoice.tenant.taxId && (
+                      <p className="text-sm text-muted-foreground">{t("taxId") || "Tax ID"}: {selectedReceipt.invoice.tenant.taxId}</p>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Line Items */}
+                  {selectedReceipt.invoice.lineItems && selectedReceipt.invoice.lineItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">{t("paymentFor") || "Payment For"}</h4>
+                      <div className="space-y-2">
+                        {selectedReceipt.invoice.lineItems.map((item, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span className="text-sm">{item.description}</span>
+                            <span className="text-sm">฿{item.amount.toLocaleString()}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {/* Totals */}
+                  <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
+                    <div className="flex justify-between">
+                      <span>{t("subtotal") || "Subtotal"}</span>
+                      <span>฿{selectedReceipt.invoice.subtotal.toLocaleString()}</span>
+                    </div>
+                    {selectedReceipt.invoice.withholdingTax > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>{t("withholdingTax") || "Withholding Tax"}</span>
+                        <span>-฿{selectedReceipt.invoice.withholdingTax.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between font-bold text-lg text-green-600">
+                      <span>{t("amountReceived") || "Amount Received"}</span>
+                      <span>฿{selectedReceipt.amount.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Totals */}
-              <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
-                <div className="flex justify-between">
-                  <span>{t("subtotal") || "Subtotal"}</span>
-                  <span>฿{selectedReceipt.invoice.subtotal.toLocaleString()}</span>
-                </div>
-                {selectedReceipt.invoice.withholdingTax > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t("withholdingTax") || "Withholding Tax"}</span>
-                    <span>-฿{selectedReceipt.invoice.withholdingTax.toLocaleString()}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-lg text-green-600">
-                  <span>{t("amountReceived") || "Amount Received"}</span>
-                  <span>฿{selectedReceipt.amount.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-                  {tCommon("close") || "Close"}
-                </Button>
-                <Button onClick={() => handleDownloadPdf(selectedReceipt as unknown as Receipt)}>
-                  <FileDown className="h-4 w-4 mr-2" />
-                  {t("downloadPdf")}
-                </Button>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           ) : null}
         </DialogContent>
       </Dialog>

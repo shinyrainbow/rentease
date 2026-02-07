@@ -382,7 +382,9 @@
     "paymentFor": "Payment For",
     "subtotal": "Subtotal",
     "withholdingTax": "Withholding Tax",
-    "amountReceived": "Amount Received"
+    "amountReceived": "Amount Received",
+    "pdfPreview": "PDF Preview",
+    "details": "Details"
   },
   "maintenance": {
     "title": "Maintenance Requests",

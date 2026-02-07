@@ -13,60 +13,81 @@ interface LineItem {
   rate?: number;
 }
 
+// Bank name mapping
+const BANK_NAMES: Record<string, string> = {
+  kbank: "ธนาคารกสิกรไทย",
+  scb: "ธนาคารไทยพาณิชย์",
+  bbl: "ธนาคารกรุงเทพ",
+  ktb: "ธนาคารกรุงไทย",
+  bay: "ธนาคารกรุงศรีอยุธยา",
+  ttb: "ธนาคารทหารไทยธนชาต",
+  gsb: "ธนาคารออมสิน",
+  uob: "ธนาคารยูโอบี",
+  cimb: "ธนาคารซีไอเอ็มบี ไทย",
+  lhbank: "ธนาคารแลนด์ แอนด์ เฮ้าส์",
+  tisco: "ธนาคารทิสโก้",
+  kkp: "ธนาคารเกียรตินาคินภัทร",
+  icbc: "ธนาคารไอซีบีซี (ไทย)",
+  baac: "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร",
+  ghb: "ธนาคารอาคารสงเคราะห์",
+};
+
 const translations = {
   en: {
     receipt: "RECEIPT",
-    original: "Original",
-    copy: "Copy",
+    original: "(Original)",
+    copy: "(Copy)",
     receiptNo: "Receipt No",
     date: "Date",
     referenceInvoice: "Ref. Invoice",
     billingMonth: "Billing Month",
     receivedFrom: "Received From",
     unit: "Unit",
+    name: "Name",
+    address: "Address",
     phone: "Phone",
     taxId: "Tax ID",
     description: "Description",
-    qtyUnit: "Units",
-    unitPrice: "Unit Price",
     amount: "Amount (THB)",
     subtotal: "Subtotal",
     withholdingTax: "Withholding Tax",
     total: "Total",
     thankYou: "Thank you for your payment",
-    bankInfo: "Bank Account Information",
-    bankName: "Bank",
+    paymentInfo: "Payment Information",
+    bankNameLabel: "Bank",
     accountNumber: "Account No",
     accountName: "Account Name",
     receiver: "Receiver",
   },
   th: {
     receipt: "ใบเสร็จรับเงิน",
-    original: "ต้นฉบับ",
-    copy: "สำเนา",
+    original: "(ต้นฉบับ)",
+    copy: "(สำเนา)",
     receiptNo: "เลขที่",
     date: "วันที่",
     referenceInvoice: "อ้างอิงใบแจ้งหนี้",
     billingMonth: "รอบบิล",
     receivedFrom: "รับเงินจาก",
     unit: "ห้อง",
+    name: "ชื่อ",
+    address: "ที่อยู่",
     phone: "โทร",
     taxId: "เลขประจำตัวผู้เสียภาษี",
     description: "รายการ",
-    qtyUnit: "ยูนิต",
-    unitPrice: "ราคา/หน่วย",
     amount: "จำนวนเงิน (บาท)",
     subtotal: "รวม",
     withholdingTax: "หัก ณ ที่จ่าย",
     total: "ยอดรวมทั้งสิ้น",
     thankYou: "ขอบคุณที่ชำระเงิน",
-    bankInfo: "ข้อมูลบัญชีธนาคาร",
-    bankName: "ธนาคาร",
+    paymentInfo: "ข้อมูลการชำระเงิน",
+    bankNameLabel: "ธนาคาร",
     accountNumber: "เลขบัญชี",
     accountName: "ชื่อบัญชี",
     receiver: "ผู้รับเงิน",
   },
 };
+
+const PRIMARY_COLOR = { r: 22, g: 163, b: 74 }; // #16a34a (green-600)
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("th-TH", {
@@ -97,7 +118,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { lang = "th" } = await request.json();
+    const { lang = "th", copy = false } = await request.json();
     const t = translations[lang as "en" | "th"] || translations.th;
 
     const receipt = await prisma.receipt.findFirst({
@@ -124,205 +145,289 @@ export async function POST(
     // Generate PDF with Thai font support
     const doc = await createPDFWithThaiFont();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const centerX = pageWidth / 2;
     let y = 20;
 
     // Fetch logo as base64
     const logoBase64 = await fetchImageAsBase64(receipt.invoice.project.logoUrl);
 
-    // Company header with logo
-    const companyName = receipt.invoice.project.companyName || receipt.invoice.project.name;
+    // ============ COMPANY HEADER - LEFT ALIGNED WITH LOGO ============
+    const logoSize = 20;
+    const textStartX = logoBase64 ? margin + logoSize + 8 : margin;
 
-    // Add logo if available
+    // Company name
+    const companyName = lang === "th" && receipt.invoice.project.companyNameTh
+      ? receipt.invoice.project.companyNameTh
+      : (receipt.invoice.project.companyName || receipt.invoice.project.name);
+
+    // Draw logo on left
     if (logoBase64) {
-      const logoSize = 15;
-      doc.addImage(logoBase64, "PNG", 20, y - 5, logoSize, logoSize);
+      doc.addImage(logoBase64, "PNG", margin, y, logoSize, logoSize);
     }
 
-    doc.setFontSize(18);
+    // Company details on right of logo
+    let textY = y + 4;
+    doc.setFontSize(16);
     setThaiFont(doc, "bold");
-    doc.text(companyName, pageWidth / 2, y, { align: "center" });
-    y += 8;
+    doc.text(companyName, textStartX, textY);
+    textY += 7;
 
+    // Company address
     if (receipt.invoice.project.companyAddress) {
       doc.setFontSize(10);
       setThaiFont(doc, "normal");
-      doc.text(receipt.invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-      y += 6;
+      doc.setTextColor(107, 114, 128);
+      doc.text(receipt.invoice.project.companyAddress, textStartX, textY);
+      textY += 5;
     }
 
+    // Tax ID
     if (receipt.invoice.project.taxId) {
-      doc.text(`${t.taxId}: ${receipt.invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
-      y += 6;
+      doc.setFontSize(10);
+      doc.text(`${t.taxId}: ${receipt.invoice.project.taxId}`, textStartX, textY);
+      textY += 5;
     }
+    doc.setTextColor(0, 0, 0);
 
-    y += 5;
+    // Move y to after logo or text, whichever is larger
+    y = Math.max(y + logoSize, textY) + 8;
 
-    // Separator line
-    doc.setDrawColor(200, 200, 200);
+    // Separator line above title
+    doc.setDrawColor(229, 231, 235); // gray-200
     doc.setLineWidth(0.5);
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
 
-    // Receipt title (green)
-    doc.setFontSize(16);
+    // ============ RECEIPT TITLE - CENTERED ============
+    doc.setFontSize(18);
     setThaiFont(doc, "bold");
-    doc.setTextColor(22, 163, 74);
-    doc.text(t.receipt, pageWidth / 2, y, { align: "center" });
+    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    const receiptTitle = `${t.receipt} ${copy ? t.copy : t.original}`;
+    doc.text(receiptTitle, centerX, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
+
+    y += 14;
+
+    // ============ RECEIPT DETAILS - TWO COLUMNS ============
+    doc.setFontSize(12);
+    setThaiFont(doc, "normal");
+
+    // Left: Receipt No
+    doc.text(`${t.receiptNo}: ${receipt.receiptNo}`, margin, y);
+    // Right: Date
+    doc.text(`${t.date}: ${formatDate(receipt.issuedAt, lang as "th" | "en")}`, pageWidth - margin, y, { align: "right" });
+    y += 6;
+
+    // Left: Ref Invoice
+    doc.text(`${t.referenceInvoice}: ${receipt.invoice.invoiceNo}`, margin, y);
+    // Right: Billing Month
+    doc.text(`${t.billingMonth}: ${receipt.invoice.billingMonth}`, pageWidth - margin, y, { align: "right" });
+
     y += 12;
 
-    // Receipt details
-    doc.setFontSize(10);
-    setThaiFont(doc, "normal");
-    doc.text(`${t.receiptNo}: ${receipt.receiptNo}`, 20, y);
-    doc.text(`${t.date}: ${formatDate(receipt.issuedAt, lang as "th" | "en")}`, pageWidth - 60, y);
-    y += 6;
-    doc.text(`${t.referenceInvoice}: ${receipt.invoice.invoiceNo}`, 20, y);
-    doc.text(`${t.billingMonth}: ${receipt.invoice.billingMonth}`, pageWidth - 60, y);
-    y += 12;
-
-    // Received from section
-    setThaiFont(doc, "bold");
-    doc.text(`${t.receivedFrom}:`, 20, y);
-    y += 6;
-    setThaiFont(doc, "normal");
+    // ============ RECEIVED FROM SECTION ============
     const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
-    doc.text(tenantName, 20, y);
+    const labelWidth = 40;
+
+    doc.setFontSize(11);
+    setThaiFont(doc, "normal");
+
+    // Unit
+    doc.setTextColor(107, 114, 128);
+    doc.text(`${t.unit}:`, margin, y);
+    doc.setTextColor(0, 0, 0);
+    doc.text(receipt.invoice.unit.unitNumber, margin + labelWidth, y);
     y += 5;
+
+    // Name
+    doc.setTextColor(107, 114, 128);
+    doc.text(`${t.name}:`, margin, y);
+    doc.setTextColor(0, 0, 0);
+    doc.text(tenantName, margin + labelWidth, y);
+    y += 5;
+
+    // Address
     if (receipt.invoice.tenant.address) {
-      doc.text(receipt.invoice.tenant.address, 20, y);
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.address}:`, margin, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(receipt.invoice.tenant.address, margin + labelWidth, y);
       y += 5;
     }
-    doc.text(`${t.unit}: ${receipt.invoice.unit.unitNumber}`, 20, y);
-    y += 5;
-    if (receipt.invoice.tenant.phone) {
-      doc.text(`${t.phone}: ${receipt.invoice.tenant.phone}`, 20, y);
-      y += 5;
-    }
+
+    // Tax ID
     if (receipt.invoice.tenant.taxId) {
-      doc.text(`${t.taxId}: ${receipt.invoice.tenant.taxId}`, 20, y);
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.taxId}:`, margin, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(receipt.invoice.tenant.taxId, margin + labelWidth, y);
       y += 5;
     }
-    y += 10;
 
-    // Line items
+    y += 8;
+
+    // ============ LINE ITEMS TABLE ============
     const lineItems: LineItem[] = (receipt.invoice.lineItems as unknown as LineItem[]) || [];
+    const tableWidth = pageWidth - margin * 2;
+    const colAmountX = pageWidth - margin - 5;
 
-    // Check if any line item has usage (utility items)
-    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
+    // Table header
+    const headerHeight = 14;
+    doc.setFillColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    doc.roundedRect(margin, y, tableWidth, headerHeight, 2, 2, "F");
 
-    // Line items table header (green)
-    doc.setFillColor(22, 163, 74);
-    doc.rect(20, y, pageWidth - 40, 8, "F");
-    setThaiFont(doc, "bold");
     doc.setTextColor(255, 255, 255);
-    doc.text(t.description, 25, y + 6);
-    if (hasUtilityItems) {
-      doc.text(t.qtyUnit, 100, y + 6, { align: "center" });
-      doc.text(t.unitPrice, 130, y + 6, { align: "right" });
-    }
-    doc.text(t.amount, pageWidth - 45, y + 6, { align: "right" });
-    y += 12;
+    doc.setFontSize(12);
+    setThaiFont(doc, "bold");
+    // Vertically center text in header
+    const headerTextY = y + headerHeight / 2 + 1.5;
+    doc.text(t.description, margin + 8, headerTextY);
+    doc.text(t.amount, colAmountX, headerTextY, { align: "right" });
 
-    // Reset text color
+    y += headerHeight + 2;
     doc.setTextColor(0, 0, 0);
 
-    // Line items rows
+    // Table rows
     setThaiFont(doc, "normal");
+    doc.setFontSize(12);
+
     lineItems.forEach((item, index) => {
+      // Alternating row background
       if (index % 2 === 0) {
-        doc.setFillColor(240, 253, 244);
-        doc.rect(20, y - 3, pageWidth - 40, 6, "F");
+        doc.setFillColor(249, 250, 251);
+      } else {
+        doc.setFillColor(255, 255, 255);
       }
-      doc.text(item.description, 25, y);
-      if (hasUtilityItems) {
-        // Only show units/rate for utility items
-        if (item.usage !== undefined) {
-          doc.text(String(item.usage), 100, y, { align: "center" });
-          doc.text(formatCurrency(item.rate || item.unitPrice || 0), 130, y, { align: "right" });
-        } else {
-          doc.text("-", 100, y, { align: "center" });
-          doc.text("-", 130, y, { align: "right" });
-        }
-      }
-      doc.text(formatCurrency(item.amount), pageWidth - 45, y, { align: "right" });
-      y += 6;
+      doc.rect(margin, y - 4, tableWidth, 12, "F");
+
+      // Border
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y + 8, pageWidth - margin, y + 8);
+      doc.line(margin, y - 4, margin, y + 8);
+      doc.line(pageWidth - margin, y - 4, pageWidth - margin, y + 8);
+
+      doc.text(item.description, margin + 8, y + 3);
+      doc.text(formatCurrency(item.amount), colAmountX, y + 3, { align: "right" });
+
+      y += 12;
     });
 
-    y += 5;
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
+    // Bottom border
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y - 4, pageWidth - margin, y - 4);
 
-    // Totals section
-    const totalsX = pageWidth - 90;
+    y += 8;
 
+    // ============ TOTALS SECTION ============
+    const totalsBoxWidth = 85;
+    const totalsX = pageWidth - margin - totalsBoxWidth;
+
+    // Subtotal
+    doc.setFontSize(12);
+    setThaiFont(doc, "normal");
+    doc.setTextColor(107, 114, 128);
     doc.text(t.subtotal, totalsX, y);
-    doc.text(formatCurrency(receipt.invoice.subtotal), pageWidth - 25, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+    doc.text(formatCurrency(receipt.invoice.subtotal), colAmountX, y, { align: "right" });
     y += 7;
 
+    // Withholding Tax
     if (receipt.invoice.withholdingTax > 0) {
-      const withholdingTaxRate = Math.round((receipt.invoice.withholdingTax / receipt.invoice.subtotal) * 100);
-      doc.text(`${t.withholdingTax} (${withholdingTaxRate}%)`, totalsX, y);
-      doc.text(`-${formatCurrency(receipt.invoice.withholdingTax)}`, pageWidth - 25, y, { align: "right" });
+      const withholdingTaxPercent = receipt.invoice.tenant.withholdingTax || 0;
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
+      doc.setTextColor(220, 38, 38); // Red
+      doc.text(`-${formatCurrency(receipt.invoice.withholdingTax)}`, colAmountX, y, { align: "right" });
       y += 7;
     }
 
-    // Total line (green)
-    doc.setDrawColor(22, 163, 74);
-    doc.setLineWidth(0.5);
-    doc.line(totalsX - 5, y, pageWidth - 20, y);
-    y += 8;
+    y += 4;
 
+    // Separator line above total
+    doc.setDrawColor(229, 231, 235); // gray-200
+    doc.setLineWidth(0.5);
+    doc.line(totalsX - 5, y, colAmountX + 5, y);
+    y += 7;
+
+    // Total (no background)
+    doc.setFontSize(14);
     setThaiFont(doc, "bold");
-    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0); // Black for label
     doc.text(t.total, totalsX, y);
-    doc.setTextColor(22, 163, 74);
-    doc.text(formatCurrency(receipt.amount), pageWidth - 25, y, { align: "right" });
+    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    doc.text(formatCurrency(receipt.amount), colAmountX, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    y += 20;
+    y += 35;
 
-    // Bank Account Information
-    if (receipt.invoice.project.bankName || receipt.invoice.project.bankAccountNumber) {
-      doc.setFontSize(10);
+    // ============ PAYMENT INFO + SIGNATURE SECTION ============
+    const hasBankInfo = receipt.invoice.project.bankName || receipt.invoice.project.bankAccountName || receipt.invoice.project.bankAccountNumber;
+
+    // Payment Info on left
+    if (hasBankInfo) {
+      doc.setFontSize(12);
       setThaiFont(doc, "bold");
-      doc.text(t.bankInfo, 20, y);
-      y += 6;
+      doc.text(t.paymentInfo, margin, y);
+      y += 7;
+
       setThaiFont(doc, "normal");
+      doc.setFontSize(11);
+
       if (receipt.invoice.project.bankName) {
-        doc.text(`${t.bankName}: ${receipt.invoice.project.bankName}`, 20, y);
-        y += 5;
-      }
-      if (receipt.invoice.project.bankAccountNumber) {
-        doc.text(`${t.accountNumber}: ${receipt.invoice.project.bankAccountNumber}`, 20, y);
-        y += 5;
+        const bankKey = receipt.invoice.project.bankName.toLowerCase();
+        const bankDisplayName = BANK_NAMES[bankKey] || receipt.invoice.project.bankName;
+        doc.setTextColor(107, 114, 128);
+        doc.text(`${t.bankNameLabel}:`, margin, y);
+        doc.setTextColor(0, 0, 0);
+        doc.text(bankDisplayName, margin + 28, y);
+        y += 6;
       }
       if (receipt.invoice.project.bankAccountName) {
-        doc.text(`${t.accountName}: ${receipt.invoice.project.bankAccountName}`, 20, y);
-        y += 5;
+        doc.setTextColor(107, 114, 128);
+        doc.text(`${t.accountName}:`, margin, y);
+        doc.setTextColor(0, 0, 0);
+        doc.text(receipt.invoice.project.bankAccountName, margin + 28, y);
+        y += 6;
       }
-      y += 10;
+      if (receipt.invoice.project.bankAccountNumber) {
+        doc.setTextColor(107, 114, 128);
+        doc.text(`${t.accountNumber}:`, margin, y);
+        doc.setTextColor(0, 0, 0);
+        doc.text(receipt.invoice.project.bankAccountNumber, margin + 28, y);
+      }
     }
 
-    // Receiver Signature Section
-    setThaiFont(doc, "bold");
-    doc.text(t.receiver, 20, y);
-    y += 15;
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(150, 150, 150);
-    doc.line(20, y, 80, y);
-    y += 5;
-    setThaiFont(doc, "normal");
-    doc.setFontSize(9);
-    const ownerName = receipt.invoice.project.owner?.name || "";
-    doc.text(ownerName, 50, y, { align: "center" });
+    // Signature section on right
+    const sigX = pageWidth - margin - 50;
+    const sigY = y - (hasBankInfo ? 18 : 0);
 
-    // Footer
-    y += 15;
-    doc.setFontSize(10);
+    // Signature line
+    doc.setDrawColor(17, 24, 39);
+    doc.setLineWidth(0.5);
+    doc.line(sigX, sigY + 15, sigX + 45, sigY + 15);
+
+    // Receiver label
+    doc.setFontSize(11);
+    setThaiFont(doc, "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.text(t.receiver, sigX + 22.5, sigY + 21, { align: "center" });
+
+    // Owner name
+    if (receipt.invoice.project.owner?.name) {
+      doc.setFontSize(10);
+      doc.setTextColor(107, 114, 128);
+      doc.text(`(${receipt.invoice.project.owner.name})`, sigX + 22.5, sigY + 26, { align: "center" });
+    }
+
+    // ============ FOOTER ============
+    doc.setFontSize(11);
     setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);
-    doc.text(t.thankYou, pageWidth / 2, y, { align: "center" });
+    doc.text(t.thankYou, centerX, pageHeight - 15, { align: "center" });
 
     // Get PDF as buffer
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));

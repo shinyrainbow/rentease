@@ -1,45 +1,26 @@
 import { jsPDF } from "jspdf";
+import fs from "fs";
+import path from "path";
 
 // Thai font support for jsPDF
-// We use Kanit font from Google Fonts which handles Thai diacritical marks well
+// THSarabun is the Thai government standard font for official documents
+// It has proper Thai diacritical mark support and better spacing
 
 let fontCache: { regular: string; bold: string } | null = null;
 
-async function fetchFontAsBase64(url: string): Promise<string> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Font fetch failed: ${response.status}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
-    return base64;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
-async function loadFonts(): Promise<{ regular: string; bold: string }> {
+function loadFontsFromFile(): { regular: string; bold: string } {
   if (fontCache) {
     return fontCache;
   }
 
-  // Kanit font from Google Fonts CDN (v15)
-  const [regular, bold] = await Promise.all([
-    fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/kanit/v15/nKKZ-Go6G5tXcraBGwA.ttf"
-    ),
-    fetchFontAsBase64(
-      "https://fonts.gstatic.com/s/kanit/v15/nKKU-Go6G5tXcr5aPhyzVA.ttf"
-    ),
-  ]);
+  // Load THSarabun fonts from public/fonts directory
+  const fontsDir = path.join(process.cwd(), "public", "fonts", "THSarabun");
+
+  const regularPath = path.join(fontsDir, "THSarabun.ttf");
+  const boldPath = path.join(fontsDir, "THSarabun Bold.ttf");
+
+  const regular = fs.readFileSync(regularPath).toString("base64");
+  const bold = fs.readFileSync(boldPath).toString("base64");
 
   fontCache = { regular, bold };
   return fontCache;
@@ -47,23 +28,23 @@ async function loadFonts(): Promise<{ regular: string; bold: string }> {
 
 export async function createPDFWithThaiFont(): Promise<jsPDF> {
   const doc = new jsPDF();
-  const fonts = await loadFonts();
+  const fonts = loadFontsFromFile();
 
   // Add font to virtual file system
-  doc.addFileToVFS("Kanit-Regular.ttf", fonts.regular);
-  doc.addFileToVFS("Kanit-Bold.ttf", fonts.bold);
+  doc.addFileToVFS("THSarabun.ttf", fonts.regular);
+  doc.addFileToVFS("THSarabun-Bold.ttf", fonts.bold);
 
   // Register fonts
-  doc.addFont("Kanit-Regular.ttf", "Kanit", "normal");
-  doc.addFont("Kanit-Bold.ttf", "Kanit", "bold");
+  doc.addFont("THSarabun.ttf", "THSarabun", "normal");
+  doc.addFont("THSarabun-Bold.ttf", "THSarabun", "bold");
 
-  // Set default font to Kanit
-  doc.setFont("Kanit", "normal");
+  // Set default font to THSarabun
+  doc.setFont("THSarabun", "normal");
 
   return doc;
 }
 
 // Helper to set font style
 export function setThaiFont(doc: jsPDF, style: "normal" | "bold" = "normal") {
-  doc.setFont("Kanit", style);
+  doc.setFont("THSarabun", style);
 }

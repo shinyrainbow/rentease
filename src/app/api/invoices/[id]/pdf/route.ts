@@ -163,25 +163,25 @@ export async function POST(
 
     // Company details on right of logo
     let textY = y + 4;
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     setThaiFont(doc, "bold");
     doc.text(companyName, textStartX, textY);
-    textY += 6;
+    textY += 7;
 
     // Company address
     if (invoice.project.companyAddress) {
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       setThaiFont(doc, "normal");
       doc.setTextColor(107, 114, 128);
       doc.text(invoice.project.companyAddress, textStartX, textY);
-      textY += 4;
+      textY += 5;
     }
 
     // Tax ID
     if (invoice.project.taxId) {
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.text(`${t.taxId}: ${invoice.project.taxId}`, textStartX, textY);
-      textY += 4;
+      textY += 5;
     }
     doc.setTextColor(0, 0, 0);
 
@@ -195,17 +195,17 @@ export async function POST(
     y += 8;
 
     // ============ INVOICE TITLE - CENTERED ============
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     setThaiFont(doc, "bold");
     doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
     const invoiceTitle = `${t.invoice} ${copy ? t.copy : t.original}`;
     doc.text(invoiceTitle, centerX, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
 
-    y += 12;
+    y += 14;
 
     // ============ INVOICE DETAILS - TWO COLUMNS ============
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     setThaiFont(doc, "normal");
 
     // Left: Invoice No
@@ -223,9 +223,9 @@ export async function POST(
 
     // ============ BILL TO SECTION ============
     const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
-    const labelWidth = 35;
+    const labelWidth = 40;
 
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     setThaiFont(doc, "normal");
 
     // Unit
@@ -268,21 +268,24 @@ export async function POST(
     const colAmountX = pageWidth - margin - 5;
 
     // Table header
+    const headerHeight = 14;
     doc.setFillColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
-    doc.roundedRect(margin, y, tableWidth, 10, 2, 2, "F");
+    doc.roundedRect(margin, y, tableWidth, headerHeight, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     setThaiFont(doc, "bold");
-    doc.text(t.description, margin + 8, y + 7);
-    doc.text(t.amount, colAmountX, y + 7, { align: "right" });
+    // Vertically center text in header
+    const headerTextY = y + headerHeight / 2 + 1.5;
+    doc.text(t.description, margin + 8, headerTextY);
+    doc.text(t.amount, colAmountX, headerTextY, { align: "right" });
 
-    y += 12;
+    y += headerHeight + 2;
     doc.setTextColor(0, 0, 0);
 
     // Table rows
     setThaiFont(doc, "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
 
     lineItems.forEach((item, index) => {
       // Alternating row background
@@ -291,19 +294,19 @@ export async function POST(
       } else {
         doc.setFillColor(255, 255, 255);
       }
-      doc.rect(margin, y - 4, tableWidth, 10, "F");
+      doc.rect(margin, y - 4, tableWidth, 12, "F");
 
       // Border
       doc.setDrawColor(229, 231, 235);
       doc.setLineWidth(0.2);
-      doc.line(margin, y + 6, pageWidth - margin, y + 6);
-      doc.line(margin, y - 4, margin, y + 6);
-      doc.line(pageWidth - margin, y - 4, pageWidth - margin, y + 6);
+      doc.line(margin, y + 8, pageWidth - margin, y + 8);
+      doc.line(margin, y - 4, margin, y + 8);
+      doc.line(pageWidth - margin, y - 4, pageWidth - margin, y + 8);
 
-      doc.text(item.description, margin + 8, y + 2);
-      doc.text(formatCurrency(item.amount), colAmountX, y + 2, { align: "right" });
+      doc.text(item.description, margin + 8, y + 3);
+      doc.text(formatCurrency(item.amount), colAmountX, y + 3, { align: "right" });
 
-      y += 10;
+      y += 12;
     });
 
     // Bottom border with rounded corners (last row)
@@ -318,13 +321,13 @@ export async function POST(
     const totalsX = pageWidth - margin - totalsBoxWidth;
 
     // Subtotal
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);
     doc.text(t.subtotal, totalsX, y);
     doc.setTextColor(0, 0, 0);
     doc.text(formatCurrency(invoice.subtotal), colAmountX, y, { align: "right" });
-    y += 6;
+    y += 7;
 
     // Withholding Tax
     if (invoice.withholdingTax > 0) {
@@ -333,7 +336,7 @@ export async function POST(
       doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
       doc.setTextColor(220, 38, 38); // Red
       doc.text(`-${formatCurrency(invoice.withholdingTax)}`, colAmountX, y, { align: "right" });
-      y += 6;
+      y += 7;
     }
 
     y += 4;
@@ -342,10 +345,10 @@ export async function POST(
     doc.setDrawColor(229, 231, 235); // gray-200
     doc.setLineWidth(0.5);
     doc.line(totalsX - 5, y, colAmountX + 5, y);
-    y += 6;
+    y += 7;
 
     // Total (no background)
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     setThaiFont(doc, "bold");
     doc.setTextColor(0, 0, 0); // Black for label
     doc.text(t.total, totalsX, y);
@@ -360,13 +363,13 @@ export async function POST(
 
     // Payment Info on left
     if (hasBankInfo) {
-      doc.setFontSize(10);
+      doc.setFontSize(12);
       setThaiFont(doc, "bold");
       doc.text(t.paymentInfo, margin, y);
-      y += 6;
+      y += 7;
 
       setThaiFont(doc, "normal");
-      doc.setFontSize(9);
+      doc.setFontSize(11);
 
       if (invoice.project.bankName) {
         const bankKey = invoice.project.bankName.toLowerCase();
@@ -374,27 +377,27 @@ export async function POST(
         doc.setTextColor(107, 114, 128);
         doc.text(`${t.bankNameLabel}:`, margin, y);
         doc.setTextColor(0, 0, 0);
-        doc.text(bankDisplayName, margin + 25, y);
-        y += 5;
+        doc.text(bankDisplayName, margin + 28, y);
+        y += 6;
       }
       if (invoice.project.bankAccountName) {
         doc.setTextColor(107, 114, 128);
         doc.text(`${t.accountName}:`, margin, y);
         doc.setTextColor(0, 0, 0);
-        doc.text(invoice.project.bankAccountName, margin + 25, y);
-        y += 5;
+        doc.text(invoice.project.bankAccountName, margin + 28, y);
+        y += 6;
       }
       if (invoice.project.bankAccountNumber) {
         doc.setTextColor(107, 114, 128);
         doc.text(`${t.accountNumber}:`, margin, y);
         doc.setTextColor(0, 0, 0);
-        doc.text(invoice.project.bankAccountNumber, margin + 25, y);
+        doc.text(invoice.project.bankAccountNumber, margin + 28, y);
       }
     }
 
     // Signature section on right
     const sigX = pageWidth - margin - 50;
-    const sigY = y - (hasBankInfo ? 15 : 0);
+    const sigY = y - (hasBankInfo ? 18 : 0);
 
     // Signature line
     doc.setDrawColor(17, 24, 39);
@@ -402,20 +405,20 @@ export async function POST(
     doc.line(sigX, sigY + 15, sigX + 45, sigY + 15);
 
     // Biller label
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     setThaiFont(doc, "normal");
     doc.setTextColor(0, 0, 0);
-    doc.text(t.biller, sigX + 22.5, sigY + 20, { align: "center" });
+    doc.text(t.biller, sigX + 22.5, sigY + 21, { align: "center" });
 
     // Owner name
     if (invoice.project.owner?.name) {
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setTextColor(107, 114, 128);
-      doc.text(`(${invoice.project.owner.name})`, sigX + 22.5, sigY + 24, { align: "center" });
+      doc.text(`(${invoice.project.owner.name})`, sigX + 22.5, sigY + 26, { align: "center" });
     }
 
     // ============ FOOTER ============
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     setThaiFont(doc, "normal");
     doc.setTextColor(107, 114, 128);
     doc.text(t.pleasePayBy, centerX, pageHeight - 15, { align: "center" });

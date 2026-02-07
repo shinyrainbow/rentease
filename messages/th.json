@@ -382,7 +382,9 @@
     "paymentFor": "ชำระสำหรับ",
     "subtotal": "ยอดรวม",
     "withholdingTax": "หักภาษี ณ ที่จ่าย",
-    "amountReceived": "จำนวนเงินที่รับ"
+    "amountReceived": "จำนวนเงินที่รับ",
+    "pdfPreview": "ตัวอย่าง PDF",
+    "details": "รายละเอียด"
   },
   "maintenance": {
     "title": "แจ้งซ่อม",
