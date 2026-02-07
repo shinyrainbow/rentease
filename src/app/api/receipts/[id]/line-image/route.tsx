@@ -54,11 +54,17 @@ export async function GET(request: NextRequest) {
     try {
       const fontPromise = fetch(
         new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RspzF-QRvzzXg.ttf")
-      ).then((res) => res.arrayBuffer());
+      ).then((res) => {
+        if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
+        return res.arrayBuffer();
+      });
 
       const fontBoldPromise = fetch(
         new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
-      ).then((res) => res.arrayBuffer());
+      ).then((res) => {
+        if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
+        return res.arrayBuffer();
+      });
 
       const results = await Promise.race([
         Promise.all([fontPromise, fontBoldPromise]),
