@@ -98,7 +98,20 @@ export async function POST(request: NextRequest) {
         bankAccountName: invoice.project.bankAccountName || "",
         bankAccountNumber: invoice.project.bankAccountNumber || "",
       });
-      imageUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
+
+      // Pre-generate the image and upload to S3 for reliable delivery
+      const imageGenerateUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
+      const imageResponse = await fetch(imageGenerateUrl);
+      if (imageResponse.ok) {
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
+        await uploadFile(s3Key, imageBuffer, "image/png");
+        imageUrl = await getPresignedUrl(s3Key, 3600);
+      } else {
+        console.error("Failed to generate invoice image:", imageResponse.status);
+        // Fallback to direct URL
+        imageUrl = imageGenerateUrl;
+      }
 
       // Prepare a text summary
       const textLabels = lang === "th" ? {
@@ -214,7 +227,20 @@ ${textLabels.footer}
         bankAccountName: receipt.invoice.project.bankAccountName || "",
         bankAccountNumber: receipt.invoice.project.bankAccountNumber || "",
       });
-      imageUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
+
+      // Pre-generate the image and upload to S3 for reliable delivery
+      const imageGenerateUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
+      const imageResponse = await fetch(imageGenerateUrl);
+      if (imageResponse.ok) {
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
+        await uploadFile(s3Key, imageBuffer, "image/png");
+        imageUrl = await getPresignedUrl(s3Key, 3600);
+      } else {
+        console.error("Failed to generate receipt image:", imageResponse.status);
+        // Fallback to direct URL
+        imageUrl = imageGenerateUrl;
+      }
 
       // Prepare text summary
       const textLabels = lang === "th" ? {
