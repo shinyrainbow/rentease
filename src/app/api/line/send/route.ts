@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
+      const host = request.headers.get("host") || "";
+      const protocol = host.includes("localhost") ? "http" : "https";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `${protocol}://${host}`);
+      console.log("Using baseUrl for image generation:", baseUrl);
       const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
       const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
 
@@ -101,15 +104,28 @@ export async function POST(request: NextRequest) {
 
       // Pre-generate the image and upload to S3 for reliable delivery
       const imageGenerateUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
-      const imageResponse = await fetch(imageGenerateUrl);
-      if (imageResponse.ok) {
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
-        await uploadFile(s3Key, imageBuffer, "image/png");
-        imageUrl = await getPresignedUrl(s3Key, 3600);
-      } else {
-        console.error("Failed to generate invoice image:", imageResponse.status);
-        // Fallback to direct URL
+      console.log("Generating invoice image from:", imageGenerateUrl.substring(0, 100) + "...");
+
+      try {
+        const imageResponse = await fetch(imageGenerateUrl);
+        console.log("Image generation response status:", imageResponse.status);
+
+        if (imageResponse.ok) {
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          console.log("Image buffer size:", imageBuffer.length, "bytes");
+
+          const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 3600);
+          console.log("Image uploaded to S3, presigned URL generated");
+        } else {
+          const errorText = await imageResponse.text();
+          console.error("Failed to generate invoice image:", imageResponse.status, errorText);
+          // Fallback to direct URL
+          imageUrl = imageGenerateUrl;
+        }
+      } catch (imgError) {
+        console.error("Error generating/uploading invoice image:", imgError);
         imageUrl = imageGenerateUrl;
       }
 
@@ -187,7 +203,10 @@ ${textLabels.footer}
       }
 
       // Use direct image URL that LINE will fetch (Edge runtime generates on-demand)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${process.env.VERCEL_URL}`;
+      const host = request.headers.get("host") || "";
+      const protocol = host.includes("localhost") ? "http" : "https";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `${protocol}://${host}`);
+      console.log("Using baseUrl for receipt image generation:", baseUrl);
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
       const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
 
@@ -230,15 +249,27 @@ ${textLabels.footer}
 
       // Pre-generate the image and upload to S3 for reliable delivery
       const imageGenerateUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
-      const imageResponse = await fetch(imageGenerateUrl);
-      if (imageResponse.ok) {
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
-        await uploadFile(s3Key, imageBuffer, "image/png");
-        imageUrl = await getPresignedUrl(s3Key, 3600);
-      } else {
-        console.error("Failed to generate receipt image:", imageResponse.status);
-        // Fallback to direct URL
+      console.log("Generating receipt image from:", imageGenerateUrl.substring(0, 100) + "...");
+
+      try {
+        const imageResponse = await fetch(imageGenerateUrl);
+        console.log("Receipt image generation response status:", imageResponse.status);
+
+        if (imageResponse.ok) {
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          console.log("Receipt image buffer size:", imageBuffer.length, "bytes");
+          const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 3600);
+          console.log("Receipt image uploaded to S3, presigned URL generated");
+        } else {
+          const errorText = await imageResponse.text();
+          console.error("Failed to generate receipt image:", imageResponse.status, errorText);
+          // Fallback to direct URL
+          imageUrl = imageGenerateUrl;
+        }
+      } catch (imgError) {
+        console.error("Error generating/uploading receipt image:", imgError);
         imageUrl = imageGenerateUrl;
       }
 
@@ -313,10 +344,14 @@ ${textLabels.footer}
       }),
     });
 
+    console.log("LINE API response status:", res.status);
+    console.log("Sent image URL:", imageUrl?.substring(0, 100) + "...");
+
     if (!res.ok) {
       const error = await res.json();
       console.error("LINE API error:", error);
-      return NextResponse.json({ error: "Failed to send LINE message" }, { status: 500 });
+      console.error("LINE API error details:", JSON.stringify(error, null, 2));
+      return NextResponse.json({ error: "Failed to send LINE message", details: error }, { status: 500 });
     }
 
     // Store outgoing message
