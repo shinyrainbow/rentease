@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getS3Key, isS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getPublicUrl, getS3Key, isS3Key } from "@/lib/s3";
 import { jsPDF } from "jspdf";
 
 interface LineItem {
@@ -133,9 +133,9 @@ export async function POST(request: NextRequest) {
           console.log("Image buffer size:", imageBuffer.length, "bytes");
 
           const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
-          await uploadFile(s3Key, imageBuffer, "image/png");
-          imageUrl = await getPresignedUrl(s3Key, 3600);
-          console.log("Image uploaded to S3, presigned URL generated");
+          await uploadFile(s3Key, imageBuffer, "image/png", true); // Public for LINE access
+          imageUrl = getPublicUrl(s3Key);
+          console.log("Image uploaded to S3 (public), URL:", imageUrl);
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate invoice image:", imageResponse.status, errorText);
