@@ -83,13 +83,8 @@ export async function POST(request: NextRequest) {
       const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
       const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
 
-      // Convert logo S3 key to presigned URL if needed
-      let logoUrl = "";
-      if (invoice.project.logoUrl) {
-        logoUrl = isS3Key(invoice.project.logoUrl)
-          ? await getPresignedUrl(invoice.project.logoUrl, 3600)
-          : invoice.project.logoUrl;
-      }
+      // Pass the S3 key directly - the line-image route will resolve it
+      const logoKey = invoice.project.logoUrl || "";
 
       const params = new URLSearchParams({
         lang,
@@ -107,7 +102,7 @@ export async function POST(request: NextRequest) {
         companyNameTh: invoice.project.companyNameTh || "",
         companyAddress: invoice.project.companyAddress || "",
         taxId: invoice.project.taxId || "",
-        logoUrl,
+        logoKey,
         ownerName: invoice.project.owner?.name || "",
         // Additional details
         subtotal: String(invoice.subtotal),
@@ -230,13 +225,8 @@ ${textLabels.footer}
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
       const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
 
-      // Convert logo S3 key to presigned URL if needed
-      let receiptLogoUrl = "";
-      if (receipt.invoice.project.logoUrl) {
-        receiptLogoUrl = isS3Key(receipt.invoice.project.logoUrl)
-          ? await getPresignedUrl(receipt.invoice.project.logoUrl, 3600)
-          : receipt.invoice.project.logoUrl;
-      }
+      // Pass the S3 key directly - the line-image route will resolve it
+      const logoKey = receipt.invoice.project.logoUrl || "";
 
       const params = new URLSearchParams({
         lang,
@@ -253,7 +243,7 @@ ${textLabels.footer}
         companyNameTh: receipt.invoice.project.companyNameTh || "",
         companyAddress: receipt.invoice.project.companyAddress || "",
         companyTaxId: receipt.invoice.project.taxId || "",
-        logoUrl: receiptLogoUrl,
+        logoKey,
         ownerName: receipt.invoice.project.owner?.name || "",
         // Additional details
         billingMonth: receipt.invoice.billingMonth,
@@ -343,11 +333,24 @@ ${textLabels.footer}
 
     // Add image message if we have an image URL (for invoices/receipts)
     if (imageUrl) {
+      // Verify the presigned URL is accessible before sending to LINE
+      console.log("Verifying presigned URL accessibility...");
+      try {
+        const verifyRes = await fetch(imageUrl, { method: "HEAD" });
+        console.log("Presigned URL verify status:", verifyRes.status);
+        if (!verifyRes.ok) {
+          console.error("Presigned URL is not accessible:", verifyRes.status);
+        }
+      } catch (verifyError) {
+        console.error("Error verifying presigned URL:", verifyError);
+      }
+
       messages.push({
         type: "image",
         originalContentUrl: imageUrl,
         previewImageUrl: imageUrl,
       });
+      console.log("Image URL length:", imageUrl.length);
     } else if (messageContent) {
       // Only add text message if no image (for direct messages)
       messages.push({ type: "text", text: messageContent });
@@ -367,13 +370,16 @@ ${textLabels.footer}
     });
 
     console.log("LINE API response status:", res.status);
-    console.log("Full image URL being sent to LINE:", imageUrl);
+    console.log("Image URL length:", imageUrl?.length || 0);
+
+    const responseText = await res.text();
+    console.log("LINE API response body:", responseText);
 
     if (!res.ok) {
-      const error = await res.json();
-      console.error("LINE API error:", error);
-      console.error("LINE API error details:", JSON.stringify(error, null, 2));
-      return NextResponse.json({ error: "Failed to send LINE message", details: error }, { status: 500 });
+      console.error("LINE API error status:", res.status);
+      console.error("LINE API error body:", responseText);
+      console.error("Full image URL that failed:", imageUrl);
+      return NextResponse.json({ error: "Failed to send LINE message", details: responseText }, { status: 500 });
     }
 
     // Store outgoing message
