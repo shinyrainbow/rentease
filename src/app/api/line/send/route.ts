@@ -504,16 +504,16 @@ async function generateAndUploadInvoicePdf(
   }
 
   // Company header
-  doc.setFontSize(18);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text(invoice.project.companyName || invoice.project.name, pageWidth / 2, y, { align: "center" });
-  y += 8;
+  y += 6;
 
   if (invoice.project.companyAddress) {
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text(invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-    y += 6;
+    y += 5;
   }
 
   if (invoice.project.taxId) {
@@ -624,7 +624,7 @@ async function generateAndUploadInvoicePdf(
   doc.setTextColor(0, 0, 0);
 
   // Footer
-  y = doc.internal.pageSize.getHeight() - 20;
+  y = doc.internal.pageSize.getHeight() - 12;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);
@@ -728,21 +728,21 @@ async function generateAndUploadReceiptPdf(
   }
 
   // Company header
-  doc.setFontSize(18);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text(receipt.invoice.project.companyName || receipt.invoice.project.name, pageWidth / 2, y, { align: "center" });
-  y += 8;
+  y += 6;
 
   if (receipt.invoice.project.companyAddress) {
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text(receipt.invoice.project.companyAddress, pageWidth / 2, y, { align: "center" });
-    y += 6;
+    y += 5;
   }
 
   if (receipt.invoice.project.taxId) {
     doc.text(`${t.taxId}: ${receipt.invoice.project.taxId}`, pageWidth / 2, y, { align: "center" });
-    y += 6;
+    y += 5;
   }
 
   y += 10;
@@ -810,7 +810,7 @@ async function generateAndUploadReceiptPdf(
   doc.setTextColor(0, 0, 0);
 
   // Footer
-  y = doc.internal.pageSize.getHeight() - 20;
+  y = doc.internal.pageSize.getHeight() - 12;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);

@@ -141,16 +141,16 @@ export async function GET(request: NextRequest) {
                 style={{ objectFit: "contain", marginBottom: "16px", borderRadius: "8px" }}
               />
             )}
-            <span style={{ fontSize: "36px", fontWeight: "bold", color: "#111827" }}>
+            <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
               {companyName}
             </span>
             {companyAddress && (
-              <span style={{ fontSize: "20px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
+              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
                 {companyAddress}
               </span>
             )}
             {taxId && (
-              <span style={{ fontSize: "20px", color: "#6B7280", marginTop: "4px" }}>
+              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
                 {t.taxId}: {taxId}
               </span>
             )}
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
           </div>
 
           {/* Footer */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "40px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "80px" }}>
             <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.pleasePayBy}</span>
           </div>
         </div>
