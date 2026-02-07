@@ -83,24 +83,8 @@ export async function GET(request: NextRequest) {
     const companyName = searchParams.get("companyName") || "";
     const companyAddress = searchParams.get("companyAddress") || "";
     const companyTaxId = searchParams.get("companyTaxId") || "";
-    const logoKey = searchParams.get("logoKey") || "";
+    const logoUrl = searchParams.get("logoUrl") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
-
-    // Resolve logo S3 key to presigned URL if needed
-    let logoUrl = "";
-    if (logoKey) {
-      try {
-        // Check if it's an S3 key (not a full URL)
-        if (!logoKey.startsWith("http://") && !logoKey.startsWith("https://")) {
-          const { getPresignedUrl } = await import("@/lib/s3");
-          logoUrl = await getPresignedUrl(logoKey, 3600);
-        } else {
-          logoUrl = logoKey;
-        }
-      } catch (logoError) {
-        console.error("Error resolving logo URL:", logoError);
-      }
-    }
 
     const lineItemsStr = searchParams.get("lineItems") || "[]";
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);

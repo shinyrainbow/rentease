@@ -83,8 +83,20 @@ export async function POST(request: NextRequest) {
       const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
       const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
 
-      // Pass the S3 key directly - the line-image route will resolve it
-      const logoKey = invoice.project.logoUrl || "";
+      // Generate presigned URL for logo if it's an S3 key
+      let logoUrl = "";
+      const logoKeyOrUrl = invoice.project.logoUrl || "";
+      if (logoKeyOrUrl) {
+        if (isS3Key(logoKeyOrUrl)) {
+          try {
+            logoUrl = await getPresignedUrl(logoKeyOrUrl, 3600);
+          } catch (e) {
+            console.error("Error getting presigned URL for logo:", e);
+          }
+        } else {
+          logoUrl = logoKeyOrUrl;
+        }
+      }
 
       const params = new URLSearchParams({
         lang,
@@ -102,7 +114,7 @@ export async function POST(request: NextRequest) {
         companyNameTh: invoice.project.companyNameTh || "",
         companyAddress: invoice.project.companyAddress || "",
         taxId: invoice.project.taxId || "",
-        logoKey,
+        logoUrl,
         ownerName: invoice.project.owner?.name || "",
         // Additional details
         subtotal: String(invoice.subtotal),
@@ -225,8 +237,20 @@ ${textLabels.footer}
       const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
       const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
 
-      // Pass the S3 key directly - the line-image route will resolve it
-      const logoKey = receipt.invoice.project.logoUrl || "";
+      // Generate presigned URL for logo if it's an S3 key
+      let logoUrl = "";
+      const logoKeyOrUrl = receipt.invoice.project.logoUrl || "";
+      if (logoKeyOrUrl) {
+        if (isS3Key(logoKeyOrUrl)) {
+          try {
+            logoUrl = await getPresignedUrl(logoKeyOrUrl, 3600);
+          } catch (e) {
+            console.error("Error getting presigned URL for logo:", e);
+          }
+        } else {
+          logoUrl = logoKeyOrUrl;
+        }
+      }
 
       const params = new URLSearchParams({
         lang,
@@ -243,7 +267,7 @@ ${textLabels.footer}
         companyNameTh: receipt.invoice.project.companyNameTh || "",
         companyAddress: receipt.invoice.project.companyAddress || "",
         companyTaxId: receipt.invoice.project.taxId || "",
-        logoKey,
+        logoUrl,
         ownerName: receipt.invoice.project.owner?.name || "",
         // Additional details
         billingMonth: receipt.invoice.billingMonth,
