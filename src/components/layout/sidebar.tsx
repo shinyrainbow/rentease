@@ -18,6 +18,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  FileSignature,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/projects", icon: Building2, label: "projects" },
   { href: "/units", icon: DoorOpen, label: "units" },
   { href: "/tenants", icon: Users, label: "tenants" },
+  { href: "/contracts", icon: FileSignature, label: "contracts" },
   { href: "/meters", icon: Gauge, label: "meters" },
   { href: "/invoices", icon: FileText, label: "invoices" },
   { href: "/payments", icon: CreditCard, label: "payments" },
