@@ -140,11 +140,10 @@ export async function POST(request: NextRequest) {
           console.log("Image buffer size:", imageBuffer.length, "bytes");
 
           const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
-          // Upload with public access for reliable LINE delivery
+          // Upload with public-read ACL for reliable LINE delivery
           await uploadFile(s3Key, imageBuffer, "image/png", true);
           imageUrl = getPublicUrl(s3Key);
-          console.log("Image uploaded to S3 (public), URL length:", imageUrl.length);
-          console.log("Public URL:", imageUrl);
+          console.log("Image uploaded to S3 (public), URL:", imageUrl);
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate invoice image:", imageResponse.status, errorText);
@@ -293,11 +292,10 @@ ${textLabels.footer}
           const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
           console.log("Receipt image buffer size:", imageBuffer.length, "bytes");
           const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
-          // Upload with public access for reliable LINE delivery
+          // Upload with public-read ACL for reliable LINE delivery
           await uploadFile(s3Key, imageBuffer, "image/png", true);
           imageUrl = getPublicUrl(s3Key);
-          console.log("Receipt image uploaded to S3 (public), URL length:", imageUrl.length);
-          console.log("Public URL:", imageUrl);
+          console.log("Receipt image uploaded to S3 (public), URL:", imageUrl);
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate receipt image:", imageResponse.status, errorText);
