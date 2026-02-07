@@ -14,75 +14,38 @@ interface LineItem {
 
 const TEAL_COLOR = "#2D8B8B";
 
-// Bank name mapping
-const BANK_NAMES: Record<string, string> = {
-  BBL: "Bangkok Bank",
-  KBANK: "Kasikorn Bank",
-  KTB: "Krungthai Bank",
-  SCB: "SCB",
-  BAY: "Bank of Ayudhya",
-  TMB: "TTB",
-  CIMB: "CIMB Thai",
-  UOB: "UOB",
-  TISCO: "TISCO Bank",
-  KKP: "KKP",
-  LH: "LH Bank",
-  ICBC: "ICBC",
-  GSB: "GSB",
-  BAAC: "BAAC",
-  GHB: "GHB",
-};
-
 const translations = {
   en: {
     invoice: "INVOICE",
-    original: "Original",
-    copy: "Copy",
-    invoiceNo: "Invoice No.",
-    dateCreated: "Date",
+    invoiceNo: "Invoice No",
+    date: "Date",
     dueDate: "Due Date",
     billingMonth: "Billing Month",
     taxId: "Tax ID",
-    idCard: "ID Card",
     billTo: "Bill To",
     unit: "Unit",
     description: "Description",
-    qtyUnit: "Units",
-    unitPrice: "Unit Price",
-    amount: "Amount",
+    amount: "Amount (THB)",
     subtotal: "Subtotal",
     withholdingTax: "Withholding Tax",
     total: "Total",
-    paymentInfo: "Payment Information",
-    bankName: "Bank",
-    accountName: "Account Name",
-    accountNumber: "Account No.",
-    biller: "Biller",
+    pleasePayBy: "Please pay by the due date",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
-    original: "ต้นฉบับ",
-    copy: "สำเนา",
     invoiceNo: "เลขที่",
-    dateCreated: "วันที่",
+    date: "วันที่",
     dueDate: "กำหนดชำระ",
     billingMonth: "รอบบิล",
     taxId: "เลขประจำตัวผู้เสียภาษี",
-    idCard: "เลขบัตรประชาชน",
     billTo: "เรียกเก็บจาก",
-    unit: "ห้อง/ยูนิต",
+    unit: "ห้อง",
     description: "รายการ",
-    qtyUnit: "ยูนิต",
-    unitPrice: "ราคา/หน่วย",
-    amount: "จำนวนเงิน",
+    amount: "จำนวนเงิน (บาท)",
     subtotal: "รวม",
     withholdingTax: "หัก ณ ที่จ่าย",
     total: "ยอดรวมทั้งสิ้น",
-    paymentInfo: "ข้อมูลการชำระเงิน",
-    bankName: "ธนาคาร",
-    accountName: "ชื่อบัญชี",
-    accountNumber: "เลขที่บัญชี",
-    biller: "ผู้วางบิล",
+    pleasePayBy: "กรุณาชำระภายในกำหนด",
   },
 };
 
@@ -101,7 +64,6 @@ export async function GET(request: NextRequest) {
         new URL("https://fonts.gstatic.com/s/notosansthai/v25/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpDF-QRvzzXg.ttf")
       ).then((res) => res.arrayBuffer());
 
-      // Wait for fonts with timeout
       const results = await Promise.race([
         Promise.all([fontPromise, fontBoldPromise]),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
@@ -116,7 +78,6 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
 
-    // Get data from query params (passed by send route)
     const invoiceNo = searchParams.get("invoiceNo") || "";
     const billingMonth = searchParams.get("billingMonth") || "";
     const dueDate = searchParams.get("dueDate") || "";
@@ -124,32 +85,16 @@ export async function GET(request: NextRequest) {
     const totalAmount = Number(searchParams.get("totalAmount") || 0);
     const unitNumber = searchParams.get("unitNumber") || "";
     const tenantName = searchParams.get("tenantName") || "";
-    const tenantAddress = searchParams.get("tenantAddress") || "";
-    const tenantTaxId = searchParams.get("tenantTaxId") || "";
-    const tenantIdCard = searchParams.get("tenantIdCard") || "";
     const companyName = searchParams.get("companyName") || "";
-    const companyNameTh = searchParams.get("companyNameTh") || "";
     const companyAddress = searchParams.get("companyAddress") || "";
     const taxId = searchParams.get("taxId") || "";
-    const logoUrl = searchParams.get("logoUrl") || "";
-    const ownerName = searchParams.get("ownerName") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
-    const version = (searchParams.get("version") as "original" | "copy") || "original";
 
-    // Additional details
     const subtotal = Number(searchParams.get("subtotal") || 0);
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
     const withholdingTaxPercent = Number(searchParams.get("withholdingTaxPercent") || 0);
     const lineItemsStr = searchParams.get("lineItems") || "[]";
     const lineItems: LineItem[] = JSON.parse(lineItemsStr);
-
-    // Check if any line item has usage (utility items)
-    const hasUtilityItems = lineItems.some(item => item.usage !== undefined);
-
-    // Bank info
-    const bankName = searchParams.get("bankName") || "";
-    const bankAccountName = searchParams.get("bankAccountName") || "";
-    const bankAccountNumber = searchParams.get("bankAccountNumber") || "";
 
     const t = translations[lang] || translations.th;
 
@@ -181,323 +126,124 @@ export async function GET(request: NextRequest) {
             height: "100%",
             backgroundColor: "#ffffff",
             fontFamily: "'Noto Sans Thai', sans-serif",
+            padding: "60px 80px",
           }}
         >
-          {/* Top accent bar */}
+          {/* Company Header - Centered */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
+            <span style={{ fontSize: "36px", fontWeight: "bold", color: "#111827" }}>
+              {companyName}
+            </span>
+            {companyAddress && (
+              <span style={{ fontSize: "20px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
+                {companyAddress}
+              </span>
+            )}
+            {taxId && (
+              <span style={{ fontSize: "20px", color: "#6B7280", marginTop: "4px" }}>
+                {t.taxId}: {taxId}
+              </span>
+            )}
+          </div>
+
+          {/* Invoice Title - Centered */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
+            <span style={{ fontSize: "40px", fontWeight: "bold", color: TEAL_COLOR }}>
+              {t.invoice}
+            </span>
+          </div>
+
+          {/* Invoice Details */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+            <span style={{ fontSize: "22px", color: "#111827" }}>{t.invoiceNo}: {invoiceNo}</span>
+            <span style={{ fontSize: "22px", color: "#111827" }}>{t.date}: {formatDate(dateCreated)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+            <span style={{ fontSize: "22px", color: "#111827" }}>{t.billingMonth}: {billingMonth}</span>
+            <span style={{ fontSize: "22px", color: "#111827" }}>{t.dueDate}: {formatDate(dueDate)}</span>
+          </div>
+
+          {/* Bill To Section */}
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: "32px" }}>
+            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "8px" }}>
+              {t.billTo}:
+            </span>
+            <span style={{ fontSize: "24px", color: "#111827" }}>{tenantName}</span>
+            <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.unit}: {unitNumber}</span>
+          </div>
+
+          {/* Table Header */}
           <div
             style={{
               display: "flex",
-              height: "10px",
               backgroundColor: TEAL_COLOR,
+              padding: "16px 24px",
+              borderRadius: "8px 8px 0 0",
             }}
-          />
-
-          <div style={{ display: "flex", flexDirection: "column", padding: "48px 64px" }}>
-            {/* Header - Company Info & Invoice Title */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px" }}>
-              {/* Left - Company Info */}
-              <div style={{ display: "flex", flexDirection: "column", maxWidth: "55%" }}>
-                {/* Logo and Company Name */}
-                <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: "16px" }}>
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt="Logo"
-                      width={100}
-                      height={100}
-                      style={{ objectFit: "contain", borderRadius: "12px", border: "2px solid #E5E7EB" }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100px",
-                        height: "100px",
-                        backgroundColor: TEAL_COLOR,
-                        borderRadius: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#ffffff",
-                        fontSize: "44px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {companyName.charAt(0)}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "32px", fontWeight: "bold", color: "#111827" }}>
-                      {companyName}
-                    </span>
-                    {companyNameTh && companyName !== companyNameTh && (
-                      <span style={{ fontSize: "22px", color: "#6B7280", marginTop: "4px" }}>
-                        {companyNameTh}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {/* Company Address */}
-                {companyAddress && (
-                  <span style={{ fontSize: "18px", color: "#6B7280", marginBottom: "4px", lineHeight: 1.4 }}>
-                    {companyAddress}
-                  </span>
-                )}
-                {/* Company Tax ID */}
-                {taxId && (
-                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                    {t.taxId}: {taxId}
-                  </span>
-                )}
-              </div>
-
-              {/* Right - Invoice Title & Badge */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "52px", fontWeight: "bold", color: TEAL_COLOR, letterSpacing: "-1px" }}>
-                    {t.invoice}
-                  </span>
-                  <div
-                    style={{
-                      backgroundColor: version === "original" ? TEAL_COLOR : "#6B7280",
-                      color: "#ffffff",
-                      padding: "8px 24px",
-                      borderRadius: "24px",
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {version === "original" ? t.original : t.copy}
-                  </div>
-                </div>
-                {/* Invoice Details */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: "6px",
-                  }}
-                >
-                  <span style={{ fontSize: "22px", color: "#111827", fontWeight: "600" }}>
-                    {t.invoiceNo}: {invoiceNo}
-                  </span>
-                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                    {t.dateCreated}: {formatDate(dateCreated)}
-                  </span>
-                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                    {t.dueDate}: {formatDate(dueDate)}
-                  </span>
-                  <span style={{ fontSize: "18px", color: "#6B7280" }}>
-                    {t.billingMonth}: {billingMonth}
-                  </span>
-                </div>
-              </div>
+          >
+            <div style={{ flex: 1, display: "flex" }}>
+              <span style={{ fontSize: "22px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
             </div>
+            <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
+              <span style={{ fontSize: "22px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
+            </div>
+          </div>
 
-            {/* Bill To Section */}
+          {/* Table Rows */}
+          {lineItems.map((item, index) => (
             <div
+              key={index}
               style={{
                 display: "flex",
-                flexDirection: "column",
-                padding: "24px 0",
-                marginBottom: "32px",
-                borderTop: "2px solid #E5E7EB",
-                borderBottom: "2px solid #E5E7EB",
+                padding: "16px 24px",
+                backgroundColor: index % 2 === 0 ? "#F9FAFB" : "#ffffff",
+                borderLeft: "1px solid #E5E7EB",
+                borderRight: "1px solid #E5E7EB",
+                borderBottom: "1px solid #E5E7EB",
+                ...(index === lineItems.length - 1 ? { borderRadius: "0 0 8px 8px" } : {}),
               }}
             >
-              <span style={{ fontSize: "16px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
-                {t.billTo}
-              </span>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
-                    {tenantName}
-                  </span>
-                  {tenantAddress && (
-                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "8px" }}>
-                      {tenantAddress}
-                    </span>
-                  )}
-                  {tenantTaxId && (
-                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "6px" }}>
-                      {t.taxId}: {tenantTaxId}
-                    </span>
-                  )}
-                  {tenantIdCard && !tenantTaxId && (
-                    <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "6px" }}>
-                      {t.idCard}: {tenantIdCard}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                  <span style={{ fontSize: "16px", color: "#6B7280", marginBottom: "4px" }}>
-                    {t.unit}
-                  </span>
-                  <span style={{ fontSize: "32px", fontWeight: "bold", color: TEAL_COLOR }}>
-                    {unitNumber}
-                  </span>
-                </div>
+              <div style={{ flex: 1, display: "flex" }}>
+                <span style={{ fontSize: "22px", color: "#111827" }}>{item.description}</span>
+              </div>
+              <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ fontSize: "22px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
               </div>
             </div>
+          ))}
 
-            {/* Items Table */}
-            <div style={{ display: "flex", flexDirection: "column", marginBottom: "48px" }}>
-              {/* Table Header */}
-              <div
-                style={{
-                  display: "flex",
-                  backgroundColor: TEAL_COLOR,
-                  borderRadius: "8px 8px 0 0",
-                  padding: "18px 24px",
-                }}
-              >
-                <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
-                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
-                </div>
-                {hasUtilityItems && (
-                  <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.qtyUnit}</span>
-                  </div>
-                )}
-                {hasUtilityItems && (
-                  <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
-                  </div>
-                )}
-                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
-                </div>
-              </div>
-
-              {/* Table Rows */}
-              {lineItems.map((item, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    padding: "18px 24px",
-                    borderBottom: "1px solid #E5E7EB",
-                    borderLeft: "1px solid #E5E7EB",
-                    borderRight: "1px solid #E5E7EB",
-                    ...(index === lineItems.length - 1 ? { borderRadius: "0 0 8px 8px" } : {}),
-                  }}
-                >
-                  <div style={{ flex: hasUtilityItems ? 4 : 6, display: "flex" }}>
-                    <span style={{ fontSize: "20px", color: "#111827" }}>{item.description}</span>
-                  </div>
-                  {hasUtilityItems && (
-                    <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                      <span style={{ fontSize: "20px", color: "#111827" }}>
-                        {item.usage !== undefined ? item.usage : "-"}
-                      </span>
-                    </div>
-                  )}
-                  {hasUtilityItems && (
-                    <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                      <span style={{ fontSize: "20px", color: "#111827" }}>
-                        {item.usage !== undefined ? formatCurrency(item.rate || item.unitPrice || 0) : "-"}
-                      </span>
-                    </div>
-                  )}
-                  <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>{formatCurrency(item.amount)}</span>
-                  </div>
-                </div>
-              ))}
+          {/* Totals Section */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "24px" }}>
+            <div style={{ display: "flex", width: "400px", justifyContent: "space-between", marginBottom: "8px" }}>
+              <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.subtotal}</span>
+              <span style={{ fontSize: "22px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
             </div>
-
-            {/* Totals Section */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "36px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  width: "420px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #E5E7EB" }}>
-                  <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.subtotal}</span>
-                  <span style={{ fontSize: "20px", color: "#111827", fontWeight: "500" }}>{formatCurrency(subtotal)}</span>
-                </div>
-                {withholdingTax > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #E5E7EB" }}>
-                    <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
-                    <span style={{ fontSize: "20px", color: "#DC2626", fontWeight: "500" }}>-{formatCurrency(withholdingTax)}</span>
-                  </div>
-                )}
-                {/* Total */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "16px 0",
-                    borderBottom: `3px solid ${TEAL_COLOR}`,
-                  }}
-                >
-                  <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
-                  <span style={{ fontSize: "32px", fontWeight: "bold", color: TEAL_COLOR }}>
-                    {formatCurrency(totalAmount)}
-                  </span>
-                </div>
+            {withholdingTax > 0 && (
+              <div style={{ display: "flex", width: "400px", justifyContent: "space-between", marginBottom: "8px" }}>
+                <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
+                <span style={{ fontSize: "22px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
               </div>
-            </div>
-
-            {/* Footer - Bank Info & Signature */}
+            )}
+            {/* Total Box */}
             <div
               style={{
                 display: "flex",
+                width: "400px",
                 justifyContent: "space-between",
-                borderTop: "2px solid #E5E7EB",
-                paddingTop: "28px",
-                marginTop: "auto",
+                backgroundColor: TEAL_COLOR,
+                padding: "16px 24px",
+                borderRadius: "8px",
+                marginTop: "8px",
               }}
             >
-              {/* Bank Info */}
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "18px", fontWeight: "bold", color: TEAL_COLOR, marginBottom: "12px" }}>
-                  {t.paymentInfo}
-                </span>
-                {bankName && (
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.bankName}:</span>
-                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "500" }}>{BANK_NAMES[bankName] || bankName}</span>
-                  </div>
-                )}
-                {bankAccountName && (
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.accountName}:</span>
-                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "500" }}>{bankAccountName}</span>
-                  </div>
-                )}
-                {bankAccountNumber && (
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <span style={{ fontSize: "17px", color: "#6B7280" }}>{t.accountNumber}:</span>
-                    <span style={{ fontSize: "17px", color: "#111827", fontWeight: "600", letterSpacing: "1px" }}>{bankAccountNumber}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Signature */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "280px" }}>
-                <div
-                  style={{
-                    width: "200px",
-                    height: "70px",
-                    borderBottom: "2px solid #9CA3AF",
-                    display: "flex",
-                  }}
-                />
-                <span style={{ fontSize: "17px", color: "#6B7280", marginTop: "10px" }}>
-                  {t.biller}
-                </span>
-                {ownerName && (
-                  <span style={{ fontSize: "17px", color: "#111827", fontWeight: "600", marginTop: "4px" }}>
-                    {ownerName}
-                  </span>
-                )}
-              </div>
+              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{t.total}</span>
+              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#ffffff" }}>{formatCurrency(totalAmount)}</span>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "40px" }}>
+            <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.pleasePayBy}</span>
           </div>
         </div>
       ),
