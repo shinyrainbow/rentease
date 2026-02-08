@@ -360,6 +360,8 @@ export default function InvoicesPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/invoices/${invoiceToDelete.id}`, { method: "DELETE" });
+      const data = await res.json();
+
       if (res.ok) {
         toast({
           title: t("invoiceDeleted") || "Invoice Deleted",
@@ -369,9 +371,10 @@ export default function InvoicesPage() {
         setInvoiceToDelete(null);
         fetchData();
       } else {
+        // Show specific error message for linked payments/receipts
         toast({
           title: tCommon("error") || "Error",
-          description: "Failed to delete invoice",
+          description: data.error || "Failed to delete invoice",
           variant: "destructive",
         });
       }
@@ -411,15 +414,24 @@ export default function InvoicesPage() {
 
     setBulkDeleting(true);
     try {
-      const deletePromises = Array.from(selectedInvoices).map((id) =>
-        fetch(`/api/invoices/${id}`, { method: "DELETE" })
-      );
+      const deletePromises = Array.from(selectedInvoices).map(async (id) => {
+        const response = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+        const data = await response.json();
+        return { response, data, id };
+      });
       const results = await Promise.all(deletePromises);
-      const successCount = results.filter((r) => r.ok).length;
+      const successCount = results.filter((r) => r.response.ok).length;
+      const failedWithLinks = results.filter((r) => !r.response.ok && (r.data.errorCode === "HAS_PAYMENTS" || r.data.errorCode === "HAS_RECEIPT"));
+
+      let description = t("bulkDeleteMessage").replace("{count}", String(successCount));
+      if (failedWithLinks.length > 0) {
+        description += ` ${failedWithLinks.length} invoice(s) could not be deleted due to linked payments or receipts.`;
+      }
 
       toast({
         title: t("bulkDeleteComplete"),
-        description: t("bulkDeleteMessage").replace("{count}", String(successCount)),
+        description,
+        variant: failedWithLinks.length > 0 ? "destructive" : "default",
       });
       setSelectedInvoices(new Set());
       fetchData();
@@ -1167,28 +1179,24 @@ export default function InvoicesPage() {
                             <Send className="h-4 w-4" />
                           )}
                         </Button>
-                        {invoice.status !== "PAID" && (
-                          <>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              title={t("editInvoice") || "Edit Invoice"}
-                              onClick={() => handleEdit(invoice)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              title={t("deleteInvoice") || "Delete Invoice"}
-                              onClick={() => openDeleteDialog(invoice)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={t("editInvoice") || "Edit Invoice"}
+                          onClick={() => handleEdit(invoice)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={t("deleteInvoice") || "Delete Invoice"}
+                          onClick={() => openDeleteDialog(invoice)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

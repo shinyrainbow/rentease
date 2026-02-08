@@ -180,10 +180,35 @@ export async function DELETE(
 
     const existingInvoice = await prisma.invoice.findFirst({
       where: { id, project: { ownerId: session.user.id } },
+      include: {
+        payments: true,
+        receipt: true,
+      },
     });
 
     if (!existingInvoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // Check if invoice has linked payments or receipts
+    if (existingInvoice.payments && existingInvoice.payments.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete invoice with linked payments. Please delete all payments first.",
+          errorCode: "HAS_PAYMENTS"
+        },
+        { status: 400 }
+      );
+    }
+
+    if (existingInvoice.receipt) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete invoice with linked receipt. Please delete the receipt first.",
+          errorCode: "HAS_RECEIPT"
+        },
+        { status: 400 }
+      );
     }
 
     await prisma.invoice.delete({ where: { id } });

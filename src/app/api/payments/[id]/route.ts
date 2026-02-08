@@ -47,12 +47,41 @@ export async function PATCH(
       include: {
         invoice: {
           select: {
+            id: true,
             invoiceNo: true,
+            totalAmount: true,
             project: { select: { name: true, nameTh: true } },
             unit: { select: { unitNumber: true } },
           },
         },
         tenant: { select: { name: true, nameTh: true } },
+      },
+    });
+
+    // Recalculate invoice's paidAmount and status
+    const allPayments = await prisma.payment.findMany({
+      where: {
+        invoiceId: payment.invoice.id,
+        status: "VERIFIED",
+      },
+    });
+
+    const newPaidAmount = allPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalAmount = payment.invoice.totalAmount;
+
+    let newStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" = "PENDING";
+    if (newPaidAmount >= totalAmount) {
+      newStatus = "PAID";
+    } else if (newPaidAmount > 0) {
+      newStatus = "PARTIAL";
+    }
+
+    // Update invoice with new paidAmount and status
+    await prisma.invoice.update({
+      where: { id: payment.invoice.id },
+      data: {
+        paidAmount: newPaidAmount,
+        status: newStatus,
       },
     });
 
@@ -82,13 +111,32 @@ export async function DELETE(
         invoice: { project: { ownerId: session.user.id } },
       },
       include: {
-        invoice: true,
+        invoice: {
+          include: {
+            receipt: true,
+          },
+        },
       },
     });
 
     if (!existingPayment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
+
+    // Check if invoice has a receipt
+    if (existingPayment.invoice.receipt) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete payment for an invoice with a receipt. Please delete the receipt first.",
+          errorCode: "INVOICE_HAS_RECEIPT"
+        },
+        { status: 400 }
+      );
+    }
+
+    // Store invoice info before deletion
+    const invoiceId = existingPayment.invoice.id;
+    const totalAmount = existingPayment.invoice.totalAmount;
 
     // Delete associated slips first
     await prisma.paymentSlip.deleteMany({
@@ -98,6 +146,32 @@ export async function DELETE(
     // Delete the payment
     await prisma.payment.delete({
       where: { id },
+    });
+
+    // Recalculate invoice's paidAmount and status
+    const remainingPayments = await prisma.payment.findMany({
+      where: {
+        invoiceId: invoiceId,
+        status: "VERIFIED",
+      },
+    });
+
+    const newPaidAmount = remainingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    let newStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" = "PENDING";
+    if (newPaidAmount >= totalAmount) {
+      newStatus = "PAID";
+    } else if (newPaidAmount > 0) {
+      newStatus = "PARTIAL";
+    }
+
+    // Update invoice with new paidAmount and status
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        paidAmount: newPaidAmount,
+        status: newStatus,
+      },
     });
 
     return NextResponse.json({ success: true });
