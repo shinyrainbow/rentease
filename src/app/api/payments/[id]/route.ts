@@ -31,19 +31,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // Only allow editing PENDING payments
-    if (existingPayment.status !== "PENDING") {
-      return NextResponse.json(
-        { error: "Cannot edit verified or rejected payments" },
-        { status: 400 }
-      );
-    }
-
     const payment = await prisma.payment.update({
       where: { id },
       data: {
         amount: data.amount,
         method: data.method,
+        status: data.status,
         transferRef: data.method === "TRANSFER" ? data.transferRef : null,
         transferBank: data.method === "TRANSFER" ? data.transferBank : null,
         checkNo: data.method === "CHECK" ? data.checkNo : null,
@@ -95,14 +88,6 @@ export async function DELETE(
 
     if (!existingPayment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    }
-
-    // Only allow deleting PENDING payments
-    if (existingPayment.status !== "PENDING") {
-      return NextResponse.json(
-        { error: "Cannot delete verified or rejected payments" },
-        { status: 400 }
-      );
     }
 
     // Delete associated slips first

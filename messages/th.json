@@ -295,6 +295,7 @@
     "amount": "จำนวนเงิน",
     "method": "วิธีการชำระ",
     "status": "สถานะ",
+    "billingMonth": "รอบบิล",
     "slipUrl": "สลิปการชำระเงิน",
     "transferRef": "เลขอ้างอิงการโอน",
     "transferBank": "ธนาคาร",
