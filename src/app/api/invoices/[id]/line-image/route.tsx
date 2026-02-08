@@ -183,21 +183,32 @@ export async function GET(request: NextRequest) {
             padding: "60px 80px",
           }}
         >
-          {/* Company Header */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
-            <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
-              {companyName}
-            </span>
-            {companyAddress && (
-              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
-                {companyAddress}
-              </span>
+          {/* Company Header - Logo on Left, Details on Right */}
+          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "40px" }}>
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                width={100}
+                height={100}
+                style={{ objectFit: "contain", borderRadius: "8px", marginRight: "24px" }}
+              />
             )}
-            {taxId && (
-              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
-                {t.taxId}: {taxId}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+                {companyName}
               </span>
-            )}
+              {companyAddress && (
+                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px" }}>
+                  {companyAddress}
+                </span>
+              )}
+              {taxId && (
+                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
+                  {t.taxId}: {taxId}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Separator line */}
