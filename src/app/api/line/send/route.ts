@@ -127,23 +127,22 @@ export async function POST(request: NextRequest) {
         bankAccountNumber: invoice.project.bankAccountNumber || "",
       });
 
-      // Pre-generate the image and upload to S3 for reliable delivery
+      // Generate image and upload to S3 for reliable delivery
       const imageGenerateUrl = `${baseUrl}/api/invoices/${invoice.id}/line-image?${params.toString()}`;
       console.log("Generating invoice image from:", imageGenerateUrl.substring(0, 100) + "...");
 
       try {
         const imageResponse = await fetch(imageGenerateUrl);
-        console.log("Image generation response status:", imageResponse.status);
+        console.log("Invoice image generation response status:", imageResponse.status);
 
         if (imageResponse.ok) {
           const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-          console.log("Image buffer size:", imageBuffer.length, "bytes");
-
+          console.log("Invoice image buffer size:", imageBuffer.length, "bytes");
           const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
           // Upload with public-read ACL for LINE delivery
           await uploadFile(s3Key, imageBuffer, "image/png", true);
           imageUrl = getPublicUrl(s3Key);
-          console.log("Image uploaded to S3, public URL:", imageUrl);
+          console.log("Invoice image uploaded to S3, public URL:", imageUrl);
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate invoice image:", imageResponse.status, errorText);
@@ -280,7 +279,7 @@ ${textLabels.footer}
         bankAccountNumber: receipt.invoice.project.bankAccountNumber || "",
       });
 
-      // Pre-generate the image and upload to S3 for reliable delivery
+      // Generate image and upload to S3 for reliable delivery
       const imageGenerateUrl = `${baseUrl}/api/receipts/${receipt.id}/line-image?${params.toString()}`;
       console.log("Generating receipt image from:", imageGenerateUrl.substring(0, 100) + "...");
 

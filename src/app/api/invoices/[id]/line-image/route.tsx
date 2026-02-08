@@ -92,16 +92,16 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const baseUrl = `${url.protocol}//${url.host}`;
 
-      // Using Sarabun from our own public folder
+      // Using Noto Sans Thai from our own public folder
       const fontPromise = fetch(
-        `${baseUrl}/fonts/Sarabun-Regular.ttf`
+        `${baseUrl}/fonts/NotoSansThai-Regular.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        `${baseUrl}/fonts/Sarabun-Bold.ttf`
+        `${baseUrl}/fonts/NotoSansThai-Bold.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -179,36 +179,25 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "Sarabun, sans-serif",
+            fontFamily: "Noto Sans Thai, sans-serif",
             padding: "60px 80px",
           }}
         >
-          {/* Company Header - Logo on Left, Details on Right */}
-          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "40px" }}>
-            {logoUrl && (
-              <img
-                src={logoUrl}
-                alt="Logo"
-                width={100}
-                height={100}
-                style={{ objectFit: "contain", borderRadius: "8px", marginRight: "24px" }}
-              />
-            )}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
-                {companyName}
+          {/* Company Header */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "40px" }}>
+            <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+              {companyName}
+            </span>
+            {companyAddress && (
+              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px", textAlign: "center" }}>
+                {companyAddress}
               </span>
-              {companyAddress && (
-                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px" }}>
-                  {companyAddress}
-                </span>
-              )}
-              {taxId && (
-                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
-                  {t.taxId}: {taxId}
-                </span>
-              )}
-            </div>
+            )}
+            {taxId && (
+              <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
+                {t.taxId}: {taxId}
+              </span>
+            )}
           </div>
 
           {/* Separator line */}
@@ -368,18 +357,18 @@ export async function GET(request: NextRequest) {
         </div>
       ),
       {
-        width: 1200,
-        height: 1600,
+        width: 1024,
+        height: 1366,
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Sarabun",
+              name: "Noto Sans Thai",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Sarabun",
+              name: "Noto Sans Thai",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,
