@@ -683,6 +683,21 @@ export default function ReceiptsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                         <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t("sendViaLine")}
+                          onClick={() => openLineSendDialog(receipt)}
+                          disabled={sendingReceiptId === receipt.id}
+                        >
+                          {sendingReceiptId === receipt.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : receipt.sentViaLine ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -698,21 +713,6 @@ export default function ReceiptsPage() {
                           onClick={() => openDeleteDialog(receipt)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("sendViaLine")}
-                          onClick={() => openLineSendDialog(receipt)}
-                          disabled={sendingReceiptId === receipt.id}
-                        >
-                          {sendingReceiptId === receipt.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : receipt.sentViaLine ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
                         </Button>
                       </div>
                     </TableCell>

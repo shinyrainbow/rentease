@@ -86,6 +86,8 @@ interface Invoice {
     tenantType: string;
     taxId: string | null;
   };
+  payments?: Array<{ id: string }>;
+  receipt?: { id: string } | null;
 }
 
 interface InvoiceDetail extends Invoice {
@@ -1552,14 +1554,26 @@ export default function InvoicesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteInvoice") || "Delete Invoice"}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("confirmDelete")} {invoiceToDelete?.invoiceNo}?
+              {invoiceToDelete?.payments && invoiceToDelete.payments.length > 0 ? (
+                <span className="text-destructive font-medium">
+                  {t("cannotDeleteHasPayments") || "Cannot delete invoice with linked payments. Please remove all payments first."}
+                </span>
+              ) : invoiceToDelete?.receipt ? (
+                <span className="text-destructive font-medium">
+                  {t("cannotDeleteHasReceipt") || "Cannot delete invoice with linked receipt. Please remove the receipt first."}
+                </span>
+              ) : (
+                <>
+                  {t("confirmDelete")} {invoiceToDelete?.invoiceNo}?
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleting || (invoiceToDelete?.payments && invoiceToDelete.payments.length > 0) || !!invoiceToDelete?.receipt}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

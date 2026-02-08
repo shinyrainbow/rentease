@@ -195,7 +195,8 @@
     },
     "allProjects": "ทุกโครงการ",
     "searchPlaceholder": "ค้นหาชื่อ, เบอร์โทร, ห้อง...",
-    "clickToUploadImage": "คลิกเพื่ออัปโหลดรูปภาพ"
+    "clickToUploadImage": "คลิกเพื่ออัปโหลดรูปภาพ",
+    "contractStartMustBeLessThanEnd": "วันเริ่มสัญญาต้องน้อยกว่าวันสิ้นสุดสัญญา"
   },
   "meters": {
     "title": "จดมิเตอร์",
@@ -287,6 +288,9 @@
     "generate": "สร้าง",
     "original": "ต้นฉบับ",
     "copy": "สำเนา",
+    "invoiceVersion": "เวอร์ชั่น",
+    "originalVersion": "ต้นฉบับ",
+    "copyVersion": "สำเนา",
     "cannotDeleteHasPayments": "ไม่สามารถลบใบแจ้งหนี้ที่มีการชำระเงินแล้ว กรุณาลบการชำระเงินทั้งหมดก่อน",
     "cannotDeleteHasReceipt": "ไม่สามารถลบใบแจ้งหนี้ที่มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน"
   },
@@ -439,7 +443,12 @@
       "IN_PROGRESS": "กำลังดำเนินการ",
       "COMPLETED": "เสร็จสิ้น",
       "CANCELLED": "ยกเลิก"
-    }
+    },
+    "deleteRequest": "ลบคำขอ",
+    "deleteRequestConfirm": "คุณต้องการลบคำขอซ่อมบำรุงนี้หรือไม่?",
+    "deleteRequestWarning": "การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+    "requestDeleted": "ลบคำขอแล้ว",
+    "requestDeletedDesc": "คำขอซ่อมบำรุงถูกลบเรียบร้อยแล้ว"
   },
   "floorPlans": {
     "title": "ผังอาคาร",

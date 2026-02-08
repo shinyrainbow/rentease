@@ -194,7 +194,8 @@
     },
     "allProjects": "All Projects",
     "searchPlaceholder": "Search name, phone, unit...",
-    "clickToUploadImage": "Click to upload photo"
+    "clickToUploadImage": "Click to upload photo",
+    "contractStartMustBeLessThanEnd": "Contract start date must be less than contract end date"
   },
   "meters": {
     "title": "Meter Readings",
@@ -284,7 +285,10 @@
     "confirmBulkDelete": "Are you sure you want to delete {count} selected invoices?",
     "generate": "Generate",
     "original": "Original",
-    "copy": "Copy"
+    "copy": "Copy",
+    "invoiceVersion": "Version",
+    "originalVersion": "Original",
+    "copyVersion": "Copy"
   },
   "payments": {
     "title": "Payments",
@@ -420,7 +424,12 @@
       "IN_PROGRESS": "In Progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "deleteRequest": "Delete Request",
+    "deleteRequestConfirm": "Are you sure you want to delete this maintenance request?",
+    "deleteRequestWarning": "This action cannot be undone.",
+    "requestDeleted": "Request Deleted",
+    "requestDeletedDesc": "Maintenance request has been deleted successfully"
   },
   "floorPlans": {
     "title": "Floor Plans",

@@ -82,6 +82,7 @@ interface Payment {
     billingMonth: string;
     project: { name: string };
     unit: { unitNumber: string };
+    receipt?: { id: string } | null;
   };
   tenant: { name: string };
   slips: PaymentSlip[];
