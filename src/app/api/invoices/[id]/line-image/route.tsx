@@ -92,16 +92,16 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const baseUrl = `${url.protocol}//${url.host}`;
 
-      // Using Noto Sans Thai from our own public folder
+      // Using Kanit from our own public folder
       const fontPromise = fetch(
-        `${baseUrl}/fonts/NotoSansThai-Regular.ttf`
+        `${baseUrl}/fonts/Kanit-Regular.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        `${baseUrl}/fonts/NotoSansThai-Bold.ttf`
+        `${baseUrl}/fonts/Kanit-Bold.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "Noto Sans Thai, sans-serif",
+            fontFamily: "Kanit, sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -373,13 +373,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Noto Sans Thai",
+              name: "Kanit",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Noto Sans Thai",
+              name: "Kanit",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,
