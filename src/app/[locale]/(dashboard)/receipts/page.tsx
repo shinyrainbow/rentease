@@ -272,7 +272,8 @@ export default function ReceiptsPage() {
   // Fetch paid invoices without receipts
   const fetchPaidInvoices = async (projectId?: string) => {
     try {
-      const params = new URLSearchParams({ status: "PAID" });
+      // Include both PAID and PARTIAL status invoices (both have payments)
+      const params = new URLSearchParams({ status: "PAID,PARTIAL" });
       if (projectId) params.append("projectId", projectId);
       const res = await fetch(`/api/invoices?${params.toString()}`);
       if (res.ok) {

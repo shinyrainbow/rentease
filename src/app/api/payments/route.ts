@@ -98,6 +98,14 @@ export async function POST(request: NextRequest) {
         checkDate: data.checkDate ? new Date(data.checkDate) : null,
         notes: data.notes,
         paidAt: new Date(),
+        // Invoice snapshot (preserve data at time of payment)
+        invoiceNo: invoice.invoiceNo,
+        invoiceDate: invoice.invoiceDate,
+        invoiceTotalAmount: invoice.totalAmount,
+        // Tenant snapshot (preserve data at time of payment)
+        tenantName: invoice.tenantName || invoice.tenant.name,
+        tenantNameTh: invoice.tenantNameTh || invoice.tenant.nameTh,
+        tenantType: invoice.tenantType || invoice.tenant.tenantType,
       },
       include: {
         invoice: {

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Verify the invoice belongs to the user
     const invoice = await prisma.invoice.findFirst({
       where: { id: data.invoiceId, project: { ownerId: session.user.id } },
-      include: { project: true, receipt: true },
+      include: { project: true, receipt: true, tenant: true },
     });
 
     if (!invoice) {
@@ -75,6 +75,15 @@ export async function POST(request: NextRequest) {
         invoiceId: invoice.id,
         amount: data.amount || invoice.totalAmount,
         issuedAt: data.issuedAt ? new Date(data.issuedAt) : new Date(),
+        // Invoice snapshot (preserve data at time of receipt)
+        invoiceNo: invoice.invoiceNo,
+        invoiceDate: invoice.invoiceDate,
+        invoiceTotalAmount: invoice.totalAmount,
+        // Tenant snapshot (preserve data at time of receipt)
+        tenantName: invoice.tenantName || invoice.tenant?.name,
+        tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
+        tenantType: invoice.tenantType || invoice.tenant?.tenantType,
+        tenantTaxId: invoice.tenantTaxId || invoice.tenant?.taxId,
       },
       include: {
         invoice: {

@@ -370,6 +370,16 @@ model Payment {
   notes       String?
   paidAt      DateTime?
 
+  // Invoice snapshot (data at time of payment)
+  invoiceNo          String?
+  invoiceDate        DateTime?
+  invoiceTotalAmount Float?
+
+  // Tenant snapshot (data at time of payment)
+  tenantName         String?
+  tenantNameTh       String?
+  tenantType         TenantType?
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -423,6 +433,17 @@ model Receipt {
   sentAt      DateTime?
 
   pdfUrl      String?
+
+  // Invoice snapshot (data at time of receipt)
+  invoiceNo          String?
+  invoiceDate        DateTime?
+  invoiceTotalAmount Float?
+
+  // Tenant snapshot (data at time of receipt)
+  tenantName         String?
+  tenantNameTh       String?
+  tenantType         TenantType?
+  tenantTaxId        String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -1103,7 +1103,20 @@ export default function PaymentsPage() {
               <Label>{t("method") || "วิธีชำระ"} *</Label>
               <Select
                 value={editFormData.method}
-                onValueChange={(v) => setEditFormData((prev) => ({ ...prev, method: v as "CASH" | "CHECK" | "TRANSFER" }))}
+                onValueChange={(v) => {
+                  const newMethod = v as "CASH" | "CHECK" | "TRANSFER";
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    method: newMethod,
+                    // Clear check fields if not check method
+                    checkNo: newMethod === "CHECK" ? prev.checkNo : "",
+                    checkBank: newMethod === "CHECK" ? prev.checkBank : "",
+                    checkDate: newMethod === "CHECK" ? prev.checkDate : "",
+                    // Clear transfer fields if not transfer method
+                    transferRef: newMethod === "TRANSFER" ? prev.transferRef : "",
+                    transferBank: newMethod === "TRANSFER" ? prev.transferBank : "",
+                  }));
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
