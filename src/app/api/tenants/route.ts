@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
             project: { select: { name: true, nameTh: true } },
           },
         },
+        invoices: { select: { id: true, invoiceNo: true } },
       },
       orderBy: { createdAt: "desc" },
     });

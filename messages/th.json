@@ -196,7 +196,9 @@
     "allProjects": "ทุกโครงการ",
     "searchPlaceholder": "ค้นหาชื่อ, เบอร์โทร, ห้อง...",
     "clickToUploadImage": "คลิกเพื่ออัปโหลดรูปภาพ",
-    "contractStartMustBeLessThanEnd": "วันเริ่มสัญญาต้องน้อยกว่าวันสิ้นสุดสัญญา"
+    "contractStartMustBeLessThanEnd": "วันเริ่มสัญญาต้องน้อยกว่าวันสิ้นสุดสัญญา",
+    "cannotDeleteTenantTitle": "ไม่สามารถลบผู้เช่า",
+    "cannotDeleteTenantMessage": "ผู้เช่ารายนี้มีใบแจ้งหนี้ {count} ใบที่เชื่อมโยง ข้อมูลประวัติต้องถูกเก็บรักษาไว้และไม่สามารถลบได้"
   },
   "meters": {
     "title": "จดมิเตอร์",

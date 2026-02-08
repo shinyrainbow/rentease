@@ -1205,7 +1205,15 @@ export default function PaymentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmDeletePayment") || "ยืนยันการลบ"}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("confirmDeletePaymentDesc") || "คุณแน่ใจหรือไม่ว่าต้องการลบการชำระเงินนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้"}
+              {deletingPayment?.invoice?.receipt ? (
+                <span className="text-destructive font-medium">
+                  {t("cannotDeleteHasReceipt") || "Cannot delete payment because the invoice has a receipt. Please remove the receipt first."}
+                </span>
+              ) : (
+                <>
+                  {t("confirmDeletePaymentDesc") || "คุณแน่ใจหรือไม่ว่าต้องการลบการชำระเงินนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้"}
+                </>
+              )}
               {deletingPayment && (
                 <div className="mt-2 p-2 bg-muted rounded text-foreground">
                   <div>{t("invoice") || "ใบแจ้งหนี้"}: {deletingPayment.invoice.invoiceNo}</div>
@@ -1218,7 +1226,7 @@ export default function PaymentsPage() {
             <AlertDialogCancel disabled={isDeleting}>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePayment}
-              disabled={isDeleting}
+              disabled={isDeleting || !!deletingPayment?.invoice?.receipt}
               className="bg-red-600 hover:bg-red-700"
             >
               {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

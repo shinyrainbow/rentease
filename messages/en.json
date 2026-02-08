@@ -195,7 +195,9 @@
     "allProjects": "All Projects",
     "searchPlaceholder": "Search name, phone, unit...",
     "clickToUploadImage": "Click to upload photo",
-    "contractStartMustBeLessThanEnd": "Contract start date must be less than contract end date"
+    "contractStartMustBeLessThanEnd": "Contract start date must be less than contract end date",
+    "cannotDeleteTenantTitle": "Cannot Delete Tenant",
+    "cannotDeleteTenantMessage": "This tenant has {count} invoice(s) linked. Historical data must be preserved and cannot be deleted."
   },
   "meters": {
     "title": "Meter Readings",

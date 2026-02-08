@@ -1062,11 +1062,30 @@ export default function TenantsPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("deleteTenant")}</DialogTitle>
+            <DialogTitle>
+              {tenantToDelete?.invoices && tenantToDelete.invoices.length > 0
+                ? t("cannotDeleteTenantTitle")
+                : t("deleteTenant")}
+            </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {tenantToDelete?.name} - {tenantToDelete?.unit.unitNumber}
-          </p>
+          {tenantToDelete?.invoices && tenantToDelete.invoices.length > 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm text-destructive font-medium">
+                {t("cannotDeleteTenantMessage", { count: tenantToDelete.invoices.length })}
+              </p>
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm font-medium">{tenantToDelete.name}</p>
+                <p className="text-xs text-muted-foreground">{tenantToDelete.unit.unitNumber}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Linked invoices: {tenantToDelete.invoices.map(inv => inv.invoiceNo).join(", ")}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {tenantToDelete?.name} - {tenantToDelete?.unit.unitNumber}
+            </p>
+          )}
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
               {tCommon("cancel")}
@@ -1074,7 +1093,7 @@ export default function TenantsPage() {
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleting || (tenantToDelete?.invoices && tenantToDelete.invoices.length > 0)}
             >
               {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {tCommon("delete")}
