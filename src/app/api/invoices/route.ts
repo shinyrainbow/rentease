@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit or tenant not found" }, { status: 404 });
     }
 
-    const invoiceNo = generateInvoiceNo(unit.project.name.substring(0, 3).toUpperCase(), new Date());
+    // Use billing month for invoice number generation
+    const [year, month] = data.billingMonth.split("-");
+    const billingDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const invoiceNo = generateInvoiceNo(unit.project.name.substring(0, 3).toUpperCase(), billingDate);
 
     // Calculate amounts based on type
     let lineItems: { description: string; amount: number }[] = [];

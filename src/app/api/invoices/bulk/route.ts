@@ -62,11 +62,15 @@ export async function POST(request: NextRequest) {
 
     const createdInvoices = [];
 
+    // Use billing month for invoice number generation
+    const [year, month] = billingMonth.split("-");
+    const billingDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+
     for (const tenant of tenantsToProcess) {
       const unit = tenant.unit;
       const project = unit.project;
 
-      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), new Date());
+      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), billingDate);
 
       // Calculate amounts based on type
       const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number }[] = [];
