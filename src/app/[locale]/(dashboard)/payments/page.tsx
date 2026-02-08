@@ -79,6 +79,7 @@ interface Payment {
   paidAt: string;
   invoice: {
     invoiceNo: string;
+    billingMonth: string;
     project: { name: string };
     unit: { unitNumber: string };
   };
@@ -130,6 +131,7 @@ export default function PaymentsPage() {
   const [editFormData, setEditFormData] = useState({
     amount: "",
     method: "CASH" as "CASH" | "CHECK" | "TRANSFER",
+    status: "PENDING" as "PENDING" | "VERIFIED" | "REJECTED",
     checkNo: "",
     checkBank: "",
     checkDate: "",
@@ -385,6 +387,7 @@ export default function PaymentsPage() {
     setEditFormData({
       amount: String(payment.amount),
       method: payment.method as "CASH" | "CHECK" | "TRANSFER",
+      status: payment.status as "PENDING" | "VERIFIED" | "REJECTED",
       checkNo: "",
       checkBank: "",
       checkDate: "",
@@ -407,6 +410,7 @@ export default function PaymentsPage() {
         body: JSON.stringify({
           amount: parseFloat(editFormData.amount),
           method: editFormData.method,
+          status: editFormData.status,
           checkNo: editFormData.method === "CHECK" ? editFormData.checkNo : undefined,
           checkBank: editFormData.method === "CHECK" ? editFormData.checkBank : undefined,
           checkDate: editFormData.method === "CHECK" ? editFormData.checkDate : undefined,
@@ -539,6 +543,8 @@ export default function PaymentsPage() {
     switch (sortColumn) {
       case "invoiceNo":
         return direction * a.invoice.invoiceNo.localeCompare(b.invoice.invoiceNo);
+      case "billingMonth":
+        return direction * a.invoice.billingMonth.localeCompare(b.invoice.billingMonth);
       case "project":
         return direction * a.invoice.project.name.localeCompare(b.invoice.project.name);
       case "unit":
@@ -618,6 +624,9 @@ export default function PaymentsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
                   {t("invoice")} <SortIcon column="invoiceNo" />
                 </TableHead>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("billingMonth")}>
+                  {t("billingMonth") || "รอบบิล"} <SortIcon column="billingMonth" />
+                </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
                   {t("project")} <SortIcon column="project" />
                 </TableHead>
@@ -643,7 +652,7 @@ export default function PaymentsPage() {
             <TableBody>
               {sortedPayments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     {tCommon("noData")}
                   </TableCell>
                 </TableRow>
@@ -651,6 +660,7 @@ export default function PaymentsPage() {
                 sortedPayments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.invoice.invoiceNo}</TableCell>
+                    <TableCell>{payment.invoice.billingMonth}</TableCell>
                     <TableCell>{payment.invoice.project.name}</TableCell>
                     <TableCell>{payment.invoice.unit.unitNumber}</TableCell>
                     <TableCell>{payment.tenant.name}</TableCell>
@@ -1077,6 +1087,24 @@ export default function PaymentsPage() {
                   <SelectItem value="CASH">{t("methods.CASH") || "เงินสด"}</SelectItem>
                   <SelectItem value="CHECK">{t("methods.CHECK") || "เช็ค"}</SelectItem>
                   <SelectItem value="TRANSFER">{t("methods.TRANSFER") || "โอนเงิน"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label>{tCommon("status") || "สถานะ"} *</Label>
+              <Select
+                value={editFormData.status}
+                onValueChange={(v) => setEditFormData((prev) => ({ ...prev, status: v as "PENDING" | "VERIFIED" | "REJECTED" }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">{t("statuses.PENDING") || "รอตรวจสอบ"}</SelectItem>
+                  <SelectItem value="VERIFIED">{t("statuses.VERIFIED") || "ยืนยันแล้ว"}</SelectItem>
+                  <SelectItem value="REJECTED">{t("statuses.REJECTED") || "ปฏิเสธ"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
