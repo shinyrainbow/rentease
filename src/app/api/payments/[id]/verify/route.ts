@@ -48,20 +48,26 @@ export async function POST(
         },
       });
 
-      // Create receipt if fully paid
+      // Create receipt if fully paid (only if doesn't exist yet)
       if (newStatus === "PAID") {
-        const receiptNo = generateReceiptNo(
-          payment.invoice.project.name.substring(0, 3).toUpperCase(),
-          new Date()
-        );
-
-        await prisma.receipt.create({
-          data: {
-            receiptNo,
-            invoiceId: payment.invoiceId,
-            amount: payment.invoice.totalAmount,
-          },
+        const existingReceipt = await prisma.receipt.findUnique({
+          where: { invoiceId: payment.invoiceId },
         });
+
+        if (!existingReceipt) {
+          const receiptNo = generateReceiptNo(
+            payment.invoice.project.name.substring(0, 3).toUpperCase(),
+            new Date()
+          );
+
+          await prisma.receipt.create({
+            data: {
+              receiptNo,
+              invoiceId: payment.invoiceId,
+              amount: payment.invoice.totalAmount,
+            },
+          });
+        }
       }
     }
 

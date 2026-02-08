@@ -85,6 +85,13 @@ export async function PATCH(
       },
     });
 
+    // Delete receipt if invoice is no longer fully paid
+    if (newStatus !== "PAID") {
+      await prisma.receipt.deleteMany({
+        where: { invoiceId: payment.invoice.id },
+      });
+    }
+
     return NextResponse.json(payment);
   } catch (error) {
     console.error("Error updating payment:", error);
@@ -173,6 +180,13 @@ export async function DELETE(
         status: newStatus,
       },
     });
+
+    // Delete receipt if invoice is no longer fully paid
+    if (newStatus !== "PAID") {
+      await prisma.receipt.deleteMany({
+        where: { invoiceId: invoiceId },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
