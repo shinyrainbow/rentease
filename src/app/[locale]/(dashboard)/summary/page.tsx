@@ -412,7 +412,7 @@ export default function SummaryPage() {
                 />
                 <YAxis tickFormatter={(value) => `฿${(value / 1000).toFixed(0)}k`} />
                 <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value) => (value !== undefined ? formatCurrency(value) : '')}
                   labelFormatter={(label) => formatMonth(label)}
                 />
                 <Legend />
@@ -445,7 +445,7 @@ export default function SummaryPage() {
                     <Cell key={`cell-${index}`} fill={Object.values(COLORS)[index]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value) => (value !== undefined ? formatCurrency(value) : '')} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
