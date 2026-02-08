@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadFile, getPresignedUrl, getPublicUrl } from "@/lib/s3";
+import { uploadFile, getPresignedUrl } from "@/lib/s3";
 import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -40,12 +40,10 @@ export async function POST(request: NextRequest) {
 
     // Create S3 key based on type
     let s3Key: string;
-    let isPublic = false;
 
     if (type === "logo" && projectId) {
       // Logos are stored in "logo" folder
       s3Key = `logo/${projectId}/${timestamp}.${ext}`;
-      isPublic = true;
     } else if (type === "tenant" && tenantId) {
       // Tenant images are stored in "tenants" folder
       s3Key = `tenants/${tenantId}/${timestamp}.${ext}`;
@@ -53,8 +51,8 @@ export async function POST(request: NextRequest) {
       s3Key = `uploads/${session.user.id}/${timestamp}.${ext}`;
     }
 
-    // Upload to S3 (always private, no ACL)
-    await uploadFile(s3Key, buffer, file.type, false);
+    // Upload to S3 (no ACL - bucket has ACLs disabled)
+    await uploadFile(s3Key, buffer, file.type);
 
     // If uploading a tenant image, update the tenant record
     if (type === "tenant" && tenantId) {

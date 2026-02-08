@@ -22,14 +22,17 @@ export async function uploadFile(
     Key: key,
     Body: body,
     ContentType: contentType,
-    ...(isPublic && { ACL: "public-read" as const }),
+    // Note: ACL removed - bucket has ACLs disabled
+    // Use presigned URLs or bucket policies for public access instead
   });
 
   await s3Client.send(command);
   return key;
 }
 
-// Get public S3 URL for objects uploaded with ACL: public-read
+// DEPRECATED: This function is no longer used since bucket has ACLs disabled
+// Use getPresignedUrl() instead for secure temporary access
+// @deprecated
 export function getPublicUrl(key: string): string {
   return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }

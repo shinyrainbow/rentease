@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { uploadFile, getPresignedUrl, getPublicUrl, getS3Key, isS3Key } from "@/lib/s3";
+import { uploadFile, getPresignedUrl, getS3Key, isS3Key } from "@/lib/s3";
 import { jsPDF } from "jspdf";
 
 interface LineItem {
@@ -140,10 +140,10 @@ export async function POST(request: NextRequest) {
           console.log("Image buffer size:", imageBuffer.length, "bytes");
 
           const s3Key = `line-images/invoice-${invoice.id}-${lang}-${Date.now()}.png`;
-          // Upload with public-read ACL and get public URL for LINE delivery
-          await uploadFile(s3Key, imageBuffer, "image/png", true);
-          imageUrl = getPublicUrl(s3Key);
-          console.log("Image uploaded to S3, public URL:", imageUrl);
+          // Upload and get presigned URL for LINE delivery (valid for 24 hours)
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 86400); // 24 hours
+          console.log("Image uploaded to S3, presigned URL generated");
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate invoice image:", imageResponse.status, errorText);
@@ -292,10 +292,10 @@ ${textLabels.footer}
           const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
           console.log("Receipt image buffer size:", imageBuffer.length, "bytes");
           const s3Key = `line-images/receipt-${receipt.id}-${lang}-${Date.now()}.png`;
-          // Upload with public-read ACL and get public URL for LINE delivery
-          await uploadFile(s3Key, imageBuffer, "image/png", true);
-          imageUrl = getPublicUrl(s3Key);
-          console.log("Receipt image uploaded to S3, public URL:", imageUrl);
+          // Upload and get presigned URL for LINE delivery (valid for 24 hours)
+          await uploadFile(s3Key, imageBuffer, "image/png");
+          imageUrl = await getPresignedUrl(s3Key, 86400); // 24 hours
+          console.log("Receipt image uploaded to S3, presigned URL generated");
         } else {
           const errorText = await imageResponse.text();
           console.error("Failed to generate receipt image:", imageResponse.status, errorText);
