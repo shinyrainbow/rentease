@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Send, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Send, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye, Edit, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
@@ -144,6 +144,21 @@ export default function ReceiptsPage() {
     amount: "",
     issuedAt: new Date().toISOString().split("T")[0],
   });
+
+  // Edit receipt state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    id: "",
+    receiptNo: "",
+    amount: "",
+    issuedAt: "",
+  });
+
+  // Delete receipt state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [receiptToDelete, setReceiptToDelete] = useState<Receipt | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -336,6 +351,98 @@ export default function ReceiptsPage() {
   };
 
   const selectedInvoiceForReceipt = paidInvoices.find((inv) => inv.id === createFormData.invoiceId);
+
+  const handleEditReceipt = async (receipt: Receipt) => {
+    setEditFormData({
+      id: receipt.id,
+      receiptNo: receipt.receiptNo,
+      amount: String(receipt.amount),
+      issuedAt: new Date(receipt.issuedAt).toISOString().split("T")[0],
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateReceipt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditingReceipt(true);
+    try {
+      const res = await fetch(`/api/receipts/${editFormData.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiptNo: editFormData.receiptNo,
+          amount: parseFloat(editFormData.amount),
+          issuedAt: editFormData.issuedAt,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("receiptUpdated") || "Receipt Updated",
+          description: t("receiptUpdatedDesc") || "Receipt has been updated successfully",
+        });
+        setIsEditOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to update receipt",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating receipt:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setEditingReceipt(false);
+    }
+  };
+
+  const openDeleteDialog = (receipt: Receipt) => {
+    setReceiptToDelete(receipt);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteReceipt = async () => {
+    if (!receiptToDelete) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/receipts/${receiptToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("receiptDeleted") || "Receipt Deleted",
+          description: t("receiptDeletedDesc") || "Receipt has been deleted successfully",
+        });
+        setDeleteDialogOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to delete receipt",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting receipt:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const openLineSendDialog = (receipt: Receipt) => {
     setLineSendReceipt(receipt);
@@ -575,6 +682,22 @@ export default function ReceiptsPage() {
                           onClick={() => handleViewReceipt(receipt)}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={tCommon("edit") || "Edit"}
+                          onClick={() => handleEditReceipt(receipt)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={tCommon("delete") || "Delete"}
+                          onClick={() => openDeleteDialog(receipt)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -921,6 +1044,91 @@ export default function ReceiptsPage() {
               </TabsContent>
             </Tabs>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Receipt Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("editReceipt") || "Edit Receipt"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateReceipt} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("receiptNo") || "Receipt No"} *</Label>
+              <Input
+                value={editFormData.receiptNo}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, receiptNo: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("amount") || "Amount"} *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editFormData.amount}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("issuedAt") || "Issued Date"} *</Label>
+              <Input
+                type="date"
+                value={editFormData.issuedAt}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, issuedAt: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} disabled={editingReceipt}>
+                {tCommon("cancel")}
+              </Button>
+              <Button type="submit" disabled={editingReceipt}>
+                {editingReceipt && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save") || "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("deleteReceipt") || "Delete Receipt"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>{t("deleteReceiptConfirm") || "Are you sure you want to delete this receipt?"}</p>
+            {receiptToDelete && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <p className="text-sm font-medium">{receiptToDelete.receiptNo}</p>
+                <p className="text-xs text-muted-foreground">
+                  {receiptToDelete.invoice.tenant.name} - {receiptToDelete.invoice.unit.unitNumber}
+                </p>
+                <p className="text-sm font-semibold mt-1">
+                  ฿{receiptToDelete.amount.toLocaleString()}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {t("deleteReceiptWarning") || "Deleting this receipt will update the invoice status to PARTIAL or PENDING."}
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+                {tCommon("cancel")}
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteReceipt} disabled={deleting}>
+                {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("delete") || "Delete"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -343,7 +343,9 @@
       "VERIFIED": "ยืนยันแล้ว",
       "REJECTED": "ปฏิเสธ"
     },
-    "cannotDeleteHasReceipt": "ไม่สามารถลบการชำระเงินที่ใบแจ้งหนี้มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน"
+    "cannotDeleteHasReceipt": "ไม่สามารถลบการชำระเงินที่ใบแจ้งหนี้มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน",
+    "statusChangeWarning": "คำเตือน: การเปลี่ยนสถานะจาก \"ยืนยันแล้ว\" จะทำให้ใบเสร็จที่เชื่อมโยงกับใบแจ้งหนี้นี้ถูกลบโดยอัตโนมัติ",
+    "statusChangeWarningDesc": "กรุณาตรวจสอบให้แน่ใจก่อนทำการเปลี่ยนแปลง"
   },
   "receipts": {
     "title": "ใบเสร็จ",
@@ -389,7 +391,18 @@
     "withholdingTax": "หักภาษี ณ ที่จ่าย",
     "amountReceived": "จำนวนเงินที่รับ",
     "pdfPreview": "ตัวอย่าง PDF",
-    "details": "รายละเอียด"
+    "details": "รายละเอียด",
+    "editReceipt": "แก้ไขใบเสร็จ",
+    "deleteReceipt": "ลบใบเสร็จ",
+    "receiptUpdated": "อัปเดตใบเสร็จแล้ว",
+    "receiptUpdatedDesc": "ใบเสร็จถูกอัปเดตเรียบร้อย",
+    "receiptDeleted": "ลบใบเสร็จแล้ว",
+    "receiptDeletedDesc": "ใบเสร็จถูกลบเรียบร้อย",
+    "deleteReceiptConfirm": "คุณแน่ใจหรือไม่ว่าต้องการลบใบเสร็จนี้?",
+    "deleteReceiptWarning": "การลบใบเสร็จจะทำให้สถานะของใบแจ้งหนี้เปลี่ยนเป็น PARTIAL หรือ PENDING",
+    "originalVersion": "ต้นฉบับ",
+    "copyVersion": "สำเนา",
+    "receiptVersion": "เวอร์ชั่น"
   },
   "maintenance": {
     "title": "แจ้งซ่อม",

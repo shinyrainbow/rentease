@@ -1107,6 +1107,16 @@ export default function PaymentsPage() {
                   <SelectItem value="REJECTED">{t("statuses.REJECTED") || "ปฏิเสธ"}</SelectItem>
                 </SelectContent>
               </Select>
+              {editingPayment?.status === "VERIFIED" && editFormData.status !== "VERIFIED" && (
+                <div className="rounded-lg border border-amber-500 bg-amber-50 dark:bg-amber-950/20 p-3">
+                  <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                    ⚠️ {t("statusChangeWarning") || "คำเตือน: การเปลี่ยนสถานะจาก \"ยืนยันแล้ว\" จะทำให้ใบเสร็จที่เชื่อมโยงกับใบแจ้งหนี้นี้ถูกลบโดยอัตโนมัติ"}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    {t("statusChangeWarningDesc") || "กรุณาตรวจสอบให้แน่ใจก่อนทำการเปลี่ยนแปลง"}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Check Fields */}
