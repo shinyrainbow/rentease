@@ -90,16 +90,16 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const baseUrl = `${url.protocol}//${url.host}`;
 
-      // Using Kanit from our own public folder
+      // Using THSarabun from our own public folder
       const fontPromise = fetch(
-        `${baseUrl}/fonts/Kanit-Regular.ttf`
+        `${baseUrl}/fonts/THSarabun-Regular.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        `${baseUrl}/fonts/Kanit-Bold.ttf`
+        `${baseUrl}/fonts/THSarabun-Bold.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "Kanit, sans-serif",
+            fontFamily: "THSarabun, sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -193,16 +193,16 @@ export async function GET(request: NextRequest) {
               />
             )}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>
                 {companyName}
               </span>
               {companyAddress && (
-                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "8px" }}>
+                <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
                   {companyAddress}
                 </span>
               )}
               {companyTaxId && (
-                <span style={{ fontSize: "16px", color: "#6B7280", marginTop: "4px" }}>
+                <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "4px" }}>
                   {t.taxId}: {companyTaxId}
                 </span>
               )}
@@ -214,41 +214,41 @@ export async function GET(request: NextRequest) {
 
           {/* Receipt Title - Centered */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
-            <span style={{ fontSize: "40px", fontWeight: "bold", color: PRIMARY_COLOR }}>
+            <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
               {t.receipt}
             </span>
           </div>
 
           {/* Receipt Details */}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-            <span style={{ fontSize: "22px", color: "#111827" }}>{t.receiptNo}: {receiptNo}</span>
-            <span style={{ fontSize: "22px", color: "#111827" }}>{t.date}: {formatDate(issuedAt)}</span>
+            <span style={{ fontSize: "15px", color: "#111827" }}>{t.receiptNo}: {receiptNo}</span>
+            <span style={{ fontSize: "15px", color: "#111827" }}>{t.date}: {formatDate(issuedAt)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-            <span style={{ fontSize: "22px", color: "#111827" }}>{t.invoiceRef}: {invoiceNo}</span>
-            <span style={{ fontSize: "22px", color: "#111827" }}>{t.billingMonth}: {billingMonth}</span>
+            <span style={{ fontSize: "15px", color: "#111827" }}>{t.invoiceRef}: {invoiceNo}</span>
+            <span style={{ fontSize: "15px", color: "#111827" }}>{t.billingMonth}: {billingMonth}</span>
           </div>
 
           {/* Received From Section */}
           <div style={{ display: "flex", flexDirection: "column", marginBottom: "32px" }}>
             <div style={{ display: "flex", marginBottom: "4px" }}>
-              <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.unit}:</span>
-              <span style={{ fontSize: "20px", color: "#111827" }}>{unitNumber}</span>
+              <span style={{ fontSize: "14px", color: "#6B7280", width: "220px" }}>{t.unit}:</span>
+              <span style={{ fontSize: "14px", color: "#111827" }}>{unitNumber}</span>
             </div>
             <div style={{ display: "flex", marginBottom: "4px" }}>
-              <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.name}:</span>
-              <span style={{ fontSize: "20px", color: "#111827" }}>{tenantName}</span>
+              <span style={{ fontSize: "14px", color: "#6B7280", width: "220px" }}>{t.name}:</span>
+              <span style={{ fontSize: "14px", color: "#111827" }}>{tenantName}</span>
             </div>
             {tenantAddress && (
               <div style={{ display: "flex", marginBottom: "4px" }}>
-                <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.address}:</span>
-                <span style={{ fontSize: "20px", color: "#111827", flex: 1 }}>{tenantAddress}</span>
+                <span style={{ fontSize: "14px", color: "#6B7280", width: "220px" }}>{t.address}:</span>
+                <span style={{ fontSize: "14px", color: "#111827", flex: 1 }}>{tenantAddress}</span>
               </div>
             )}
             {tenantTaxId && (
               <div style={{ display: "flex", marginBottom: "4px" }}>
-                <span style={{ fontSize: "20px", color: "#6B7280", width: "220px" }}>{t.taxId}:</span>
-                <span style={{ fontSize: "20px", color: "#111827" }}>{tenantTaxId}</span>
+                <span style={{ fontSize: "14px", color: "#6B7280", width: "220px" }}>{t.taxId}:</span>
+                <span style={{ fontSize: "14px", color: "#111827" }}>{tenantTaxId}</span>
               </div>
             )}
           </div>
@@ -263,10 +263,10 @@ export async function GET(request: NextRequest) {
             }}
           >
             <div style={{ flex: 1, display: "flex" }}>
-              <span style={{ fontSize: "22px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
             </div>
             <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
-              <span style={{ fontSize: "22px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
             </div>
           </div>
 
@@ -285,10 +285,10 @@ export async function GET(request: NextRequest) {
               }}
             >
               <div style={{ flex: 1, display: "flex" }}>
-                <span style={{ fontSize: "22px", color: "#111827" }}>{item.description}</span>
+                <span style={{ fontSize: "15px", color: "#111827" }}>{item.description}</span>
               </div>
               <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "22px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
               </div>
             </div>
           ))}
@@ -296,13 +296,13 @@ export async function GET(request: NextRequest) {
           {/* Totals Section */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "24px" }}>
             <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.subtotal}</span>
-              <span style={{ fontSize: "22px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
+              <span style={{ fontSize: "15px", color: "#6B7280" }}>{t.subtotal}</span>
+              <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
             </div>
             {withholdingTax > 0 && (
               <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "22px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
-                <span style={{ fontSize: "22px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
+                <span style={{ fontSize: "15px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
+                <span style={{ fontSize: "15px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
               </div>
             )}
             {/* Separator line */}
@@ -315,8 +315,8 @@ export async function GET(request: NextRequest) {
                 justifyContent: "space-between",
               }}
             >
-              <span style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
-              <span style={{ fontSize: "24px", fontWeight: "bold", color: PRIMARY_COLOR }}>{formatCurrency(totalAmount)}</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: PRIMARY_COLOR }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
 
@@ -325,25 +325,25 @@ export async function GET(request: NextRequest) {
             {/* Payment Information */}
             {(displayBankName || bankAccountName || bankAccountNumber) && (
               <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-                <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
+                <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
                   {t.paymentInfo}
                 </span>
                 {displayBankName && (
                   <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.bankNameLabel}:</span>
-                    <span style={{ fontSize: "20px", color: "#111827" }}>{displayBankName}</span>
+                    <span style={{ fontSize: "14px", color: "#6B7280", width: "140px" }}>{t.bankNameLabel}:</span>
+                    <span style={{ fontSize: "14px", color: "#111827" }}>{displayBankName}</span>
                   </div>
                 )}
                 {bankAccountName && (
                   <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.accountName}:</span>
-                    <span style={{ fontSize: "20px", color: "#111827" }}>{bankAccountName}</span>
+                    <span style={{ fontSize: "14px", color: "#6B7280", width: "140px" }}>{t.accountName}:</span>
+                    <span style={{ fontSize: "14px", color: "#111827" }}>{bankAccountName}</span>
                   </div>
                 )}
                 {bankAccountNumber && (
                   <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "20px", color: "#6B7280", width: "140px" }}>{t.accountNumber}:</span>
-                    <span style={{ fontSize: "20px", color: "#111827" }}>{bankAccountNumber}</span>
+                    <span style={{ fontSize: "14px", color: "#6B7280", width: "140px" }}>{t.accountNumber}:</span>
+                    <span style={{ fontSize: "14px", color: "#111827" }}>{bankAccountNumber}</span>
                   </div>
                 )}
               </div>
@@ -352,16 +352,16 @@ export async function GET(request: NextRequest) {
             {/* Signature Section */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "300px" }}>
               <div style={{ width: "200px", borderBottom: "2px solid #111827", marginBottom: "12px", marginTop: "60px" }} />
-              <span style={{ fontSize: "20px", color: "#111827" }}>{t.receiver}</span>
+              <span style={{ fontSize: "14px", color: "#111827" }}>{t.receiver}</span>
               {ownerName && (
-                <span style={{ fontSize: "18px", color: "#6B7280", marginTop: "4px" }}>({ownerName})</span>
+                <span style={{ fontSize: "15px", color: "#6B7280", marginTop: "4px" }}>({ownerName})</span>
               )}
             </div>
           </div>
 
           {/* Footer */}
           <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "40px" }}>
-            <span style={{ fontSize: "20px", color: "#6B7280" }}>{t.thankYou}</span>
+            <span style={{ fontSize: "14px", color: "#6B7280" }}>{t.thankYou}</span>
           </div>
         </div>
       ),
@@ -371,13 +371,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Kanit",
+              name: "THSarabun",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Kanit",
+              name: "THSarabun",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,
