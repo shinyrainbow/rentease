@@ -93,7 +93,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -103,7 +103,7 @@ export async function DELETE(
     });
 
     if (!existingRequest) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบคำขอซ่อมบำรุง (Request not found)" }, { status: 404 });
     }
 
     await prisma.maintenanceRequest.delete({ where: { id } });
@@ -111,6 +111,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting maintenance request:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

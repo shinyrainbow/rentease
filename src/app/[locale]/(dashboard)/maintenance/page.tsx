@@ -29,9 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Unit {
   id: string;
@@ -55,6 +56,7 @@ interface MaintenanceRequest {
 export default function MaintenancePage() {
   const t = useTranslations("maintenance");
   const tCommon = useTranslations("common");
+  const { toast } = useToast();
 
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -62,6 +64,11 @@ export default function MaintenancePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<MaintenanceRequest | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<MaintenanceRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -144,6 +151,47 @@ export default function MaintenancePage() {
       resolution: "",
     });
     setIsDialogOpen(true);
+  };
+
+  const openDeleteDialog = (request: MaintenanceRequest) => {
+    setRequestToDelete(request);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!requestToDelete) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/maintenance/${requestToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("requestDeleted") || "Request Deleted",
+          description: t("requestDeletedDesc") || "Maintenance request has been deleted successfully",
+        });
+        setDeleteDialogOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error") || "Error",
+          description: data.error || "Failed to delete request",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      toast({
+        title: tCommon("error") || "Error",
+        description: "Network error",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const resetForm = () => {
@@ -369,9 +417,14 @@ export default function MaintenancePage() {
                     </TableCell>
                     <TableCell>{formatDate(request.createdAt)}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(request)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(request)} title={tCommon("edit") || "Edit"}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(request)} title={tCommon("delete") || "Delete"}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -380,6 +433,46 @@ export default function MaintenancePage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("deleteRequest") || "Delete Maintenance Request"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>{t("deleteRequestConfirm") || "Are you sure you want to delete this maintenance request?"}</p>
+            {requestToDelete && (
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <p className="text-sm font-medium">{requestToDelete.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {requestToDelete.project.name} - {requestToDelete.unit.unitNumber}
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Badge className={getPriorityBadgeColor(requestToDelete.priority)}>
+                    {t(`priorities.${requestToDelete.priority}`)}
+                  </Badge>
+                  <Badge className={getStatusBadgeColor(requestToDelete.status)}>
+                    {t(`statuses.${requestToDelete.status}`)}
+                  </Badge>
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {t("deleteRequestWarning") || "This action cannot be undone."}
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+                {tCommon("cancel")}
+              </Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("delete") || "Delete"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

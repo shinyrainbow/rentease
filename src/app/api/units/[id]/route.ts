@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -36,7 +36,7 @@ export async function GET(
     });
 
     if (!unit) {
-      return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -46,7 +46,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching unit:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -57,7 +57,7 @@ export async function PUT(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -68,7 +68,7 @@ export async function PUT(
     });
 
     if (!existingUnit) {
-      return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
     // Only allow physical unit properties to be updated
@@ -110,7 +110,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error updating unit:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -121,7 +121,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -135,14 +135,14 @@ export async function DELETE(
     });
 
     if (!existingUnit) {
-      return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
     // Check for linked tenants
     if (existingUnit.tenants.length > 0) {
       return NextResponse.json(
         {
-          error: "Cannot delete unit with linked tenants",
+          error: `ห้องพักนี้มีผู้เช่า ${existingUnit.tenants.length} คน กรุณาลบหรือย้ายผู้เช่าก่อนลบห้องพัก (This unit has linked ${existingUnit.tenants.length} tenant(s). Please remove them first before deleting the unit.)`,
           details: `This unit has ${existingUnit.tenants.length} tenant(s) associated with it. Please remove or transfer the tenant(s) before deleting the unit.`,
           linkedTenants: existingUnit.tenants.length,
         },
@@ -154,7 +154,7 @@ export async function DELETE(
     if (existingUnit.invoices.length > 0) {
       return NextResponse.json(
         {
-          error: "Cannot delete unit with linked invoices",
+          error: `ห้องพักนี้มีใบแจ้งหนี้ ${existingUnit.invoices.length} ใบ กรุณาลบใบแจ้งหนี้ก่อนลบห้องพัก (This unit has linked ${existingUnit.invoices.length} invoice(s). Please remove them first before deleting the unit.)`,
           details: `This unit has ${existingUnit.invoices.length} invoice(s) associated with it. Please remove or archive the invoice(s) before deleting the unit.`,
           linkedInvoices: existingUnit.invoices.length,
         },
@@ -167,6 +167,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting unit:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

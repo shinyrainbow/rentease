@@ -74,6 +74,19 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    // Validate contract dates
+    if (data.contractStart && data.contractEnd) {
+      const startDate = new Date(data.contractStart);
+      const endDate = new Date(data.contractEnd);
+
+      if (startDate >= endDate) {
+        return NextResponse.json(
+          { error: "วันที่เริ่มสัญญาต้องน้อยกว่าวันที่สิ้นสุดสัญญา (Contract start date must be less than contract end date)" },
+          { status: 400 }
+        );
+      }
+    }
+
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
     });

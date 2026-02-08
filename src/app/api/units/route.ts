@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(unitsWithTenant);
   } catch (error) {
     console.error("Error fetching units:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const data = await request.json();
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบโครงการ (Project not found)" }, { status: 404 });
     }
 
     // Sanitize and map data for Prisma (only physical unit properties)
@@ -116,6 +116,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error creating unit:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

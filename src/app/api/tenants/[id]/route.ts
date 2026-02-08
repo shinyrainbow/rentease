@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -24,13 +24,13 @@ export async function GET(
     });
 
     if (!tenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
     }
 
     return NextResponse.json(tenant);
   } catch (error) {
     console.error("Error fetching tenant:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -47,12 +47,25 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
 
+    // Validate contract dates
+    if (data.contractStart && data.contractEnd) {
+      const startDate = new Date(data.contractStart);
+      const endDate = new Date(data.contractEnd);
+
+      if (startDate >= endDate) {
+        return NextResponse.json(
+          { error: "วันที่เริ่มสัญญาต้องน้อยกว่าวันที่สิ้นสุดสัญญา (Contract start date must be less than contract end date)" },
+          { status: 400 }
+        );
+      }
+    }
+
     const existingTenant = await prisma.tenant.findFirst({
       where: { id, unit: { project: { ownerId: session.user.id } } },
     });
 
     if (!existingTenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
     }
 
     // Properly map and sanitize the data for Prisma
@@ -91,7 +104,7 @@ export async function PUT(
     return NextResponse.json(tenant);
   } catch (error) {
     console.error("Error updating tenant:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -103,7 +116,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -115,7 +128,7 @@ export async function PATCH(
     });
 
     if (!existingTenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
     }
 
     // End contract by setting contractEnd to now (or specified date)
@@ -155,10 +168,10 @@ export async function PATCH(
       return NextResponse.json(tenant);
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    return NextResponse.json({ error: "คำสั่งไม่ถูกต้อง (Invalid action)" }, { status: 400 });
   } catch (error) {
     console.error("Error updating tenant:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -169,7 +182,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -183,14 +196,14 @@ export async function DELETE(
     });
 
     if (!existingTenant) {
-      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
     }
 
     // Check for linked invoices - historical data must be preserved
     if (existingTenant.invoices.length > 0) {
       return NextResponse.json(
         {
-          error: "Cannot delete tenant with linked invoices",
+          error: `ผู้เช่ารายนี้มีใบแจ้งหนี้ ${existingTenant.invoices.length} ใบ ข้อมูลประวัติต้องถูกเก็บรักษาไว้ ไม่สามารถลบผู้เช่ารายนี้ได้ (Cannot delete tenant with linked ${existingTenant.invoices.length} invoice(s). Historical data must be preserved.)`,
           details: `This tenant has ${existingTenant.invoices.length} invoice(s) associated with it. Historical data must be preserved. You cannot delete this tenant.`,
           linkedInvoices: existingTenant.invoices.length,
         },
@@ -225,6 +238,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting tenant:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

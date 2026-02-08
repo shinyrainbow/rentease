@@ -220,6 +220,23 @@ export default function TenantsPage() {
       }
     }
 
+    // Validate contract start date is less than contract end date
+    if (formData.contractStart && formData.contractEnd) {
+      const startDate = new Date(formData.contractStart);
+      const endDate = new Date(formData.contractEnd);
+
+      if (startDate >= endDate) {
+        const errorMsg = t("contractStartMustBeLessThanEnd") || "Contract start date must be less than contract end date";
+        setDateError(errorMsg);
+        toast({
+          title: tCommon("error"),
+          description: errorMsg,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const url = editingTenant ? `/api/tenants/${editingTenant.id}` : "/api/tenants";
