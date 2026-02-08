@@ -297,12 +297,22 @@ model Invoice {
 
   billingMonth String
   dueDate      DateTime
+  invoiceDate  DateTime  @default(now())  // Editable invoice issue date (for accounting)
 
   subtotal         Float
   discountAmount   Float     @default(0)
   withholdingTax   Float     @default(0)
   totalAmount      Float
   paidAmount       Float     @default(0)
+
+  // Tenant snapshot (data at time of invoice creation)
+  tenantName       String?
+  tenantNameTh     String?
+  tenantType       TenantType?
+  tenantTaxId      String?
+  tenantIdCard     String?
+  tenantPhone      String?
+  tenantEmail      String?
 
   lineItems    Json?
   notes        String?

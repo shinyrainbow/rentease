@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -98,6 +98,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
+  const [billingMonthFilter, setBillingMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -168,10 +169,20 @@ export default function PaymentsPage() {
     }
   };
 
-  // Filter payments by project and search query
+  // Extract unique billing months from payments, sorted descending
+  const billingMonths = useMemo(() => {
+    const months = [...new Set(payments.map((p) => p.invoice.billingMonth))];
+    return months.sort((a, b) => b.localeCompare(a));
+  }, [payments]);
+
+  // Filter payments by project, billing month, and search query
   const filteredPayments = payments.filter((payment) => {
     // Project filter
     if (projectFilter && payment.invoice.project.name !== projectFilter) {
+      return false;
+    }
+    // Billing month filter
+    if (billingMonthFilter && payment.invoice.billingMonth !== billingMonthFilter) {
       return false;
     }
     // Search filter
@@ -597,6 +608,19 @@ export default function PaymentsPage() {
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.name}>
                 {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={billingMonthFilter || "__all__"} onValueChange={(v) => setBillingMonthFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("allBillingMonths") || "All Billing Months"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allBillingMonths") || "All Billing Months"}</SelectItem>
+            {billingMonths.map((month) => (
+              <SelectItem key={month} value={month}>
+                {month}
               </SelectItem>
             ))}
           </SelectContent>

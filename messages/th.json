@@ -315,6 +315,7 @@
     "notes": "หมายเหตุ",
     "searchPlaceholder": "ค้นหาใบแจ้งหนี้, ผู้เช่า, ห้อง...",
     "allProjects": "โครงการทั้งหมด",
+    "allBillingMonths": "ทุกรอบบิล",
     "project": "โครงการ",
     "selectInvoice": "เลือกใบแจ้งหนี้",
     "selectInvoicePlaceholder": "เลือกใบแจ้งหนี้ที่ต้องการชำระ",

@@ -144,11 +144,12 @@ export async function DELETE(
       newStatus = "PARTIAL";
     }
 
-    // Update invoice with new status
+    // Update invoice with new status and paidAmount
     await prisma.invoice.update({
       where: { id: invoiceId },
       data: {
         status: newStatus,
+        paidAmount: paidAmount,
       },
     });
 

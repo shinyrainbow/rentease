@@ -145,10 +145,19 @@ export async function POST(request: NextRequest) {
           type,
           billingMonth,
           dueDate: new Date(dueDate),
+          invoiceDate: billingDate,  // Use billing date for bulk invoices
           subtotal,
           withholdingTax,
           totalAmount,
           lineItems: lineItems as Prisma.InputJsonValue,
+          // Tenant snapshot (preserve data at time of invoice creation)
+          tenantName: tenant.name,
+          tenantNameTh: tenant.nameTh,
+          tenantType: tenant.tenantType,
+          tenantTaxId: tenant.taxId,
+          tenantIdCard: tenant.idCard,
+          tenantPhone: tenant.phone,
+          tenantEmail: tenant.email,
         },
       });
 

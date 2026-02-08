@@ -37,7 +37,18 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(invoices);
+    // Use snapshot data if available, otherwise fall back to joined tenant data
+    const invoicesWithSnapshot = invoices.map(invoice => ({
+      ...invoice,
+      tenant: invoice.tenantName ? {
+        name: invoice.tenantName,
+        nameTh: invoice.tenantNameTh,
+        tenantType: invoice.tenantType,
+        taxId: invoice.tenantTaxId,
+      } : invoice.tenant,
+    }));
+
+    return NextResponse.json(invoicesWithSnapshot);
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -113,10 +124,19 @@ export async function POST(request: NextRequest) {
         type: data.type,
         billingMonth: data.billingMonth,
         dueDate: new Date(data.dueDate),
+        invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : new Date(),
         subtotal,
         withholdingTax,
         totalAmount,
         lineItems,
+        // Tenant snapshot (preserve data at time of invoice creation)
+        tenantName: activeTenant.name,
+        tenantNameTh: activeTenant.nameTh,
+        tenantType: activeTenant.tenantType,
+        tenantTaxId: activeTenant.taxId,
+        tenantIdCard: activeTenant.idCard,
+        tenantPhone: activeTenant.phone,
+        tenantEmail: activeTenant.email,
       },
       include: {
         project: { select: { name: true, nameTh: true } },

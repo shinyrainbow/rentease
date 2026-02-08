@@ -310,6 +310,7 @@
     "notes": "Notes",
     "searchPlaceholder": "Search invoice, tenant, unit...",
     "allProjects": "All Projects",
+    "allBillingMonths": "All Billing Months",
     "project": "Project",
     "selectInvoice": "Select Invoice",
     "selectInvoicePlaceholder": "Select invoice to pay",
