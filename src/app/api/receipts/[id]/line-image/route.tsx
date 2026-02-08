@@ -90,16 +90,16 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const baseUrl = `${url.protocol}//${url.host}`;
 
-      // Using Sarabun from our own public folder
+      // Using IBM Plex Sans Thai from our own public folder
       const fontPromise = fetch(
-        `${baseUrl}/fonts/Sarabun-Regular.ttf`
+        `${baseUrl}/fonts/IBMPlexSansThai-Regular.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
         return res.arrayBuffer();
       });
 
       const fontBoldPromise = fetch(
-        `${baseUrl}/fonts/Sarabun-Bold.ttf`
+        `${baseUrl}/fonts/IBMPlexSansThai-Bold.ttf`
       ).then((res) => {
         if (!res.ok) throw new Error(`Font bold fetch failed: ${res.status}`);
         return res.arrayBuffer();
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
             width: "100%",
             height: "100%",
             backgroundColor: "#ffffff",
-            fontFamily: "Sarabun, sans-serif",
+            fontFamily: "IBM Plex Sans Thai, sans-serif",
             padding: "60px 80px",
           }}
         >
@@ -371,13 +371,13 @@ export async function GET(request: NextRequest) {
         ...(fontData && fontDataBold ? {
           fonts: [
             {
-              name: "Sarabun",
+              name: "IBM Plex Sans Thai",
               data: fontData,
               weight: 400 as const,
               style: "normal" as const,
             },
             {
-              name: "Sarabun",
+              name: "IBM Plex Sans Thai",
               data: fontDataBold,
               weight: 700 as const,
               style: "normal" as const,
