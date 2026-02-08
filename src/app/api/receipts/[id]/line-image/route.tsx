@@ -216,13 +216,8 @@ export async function GET(request: NextRequest) {
           {/* Receipt Title - Centered */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
             <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
-              {t.receipt}
+              {t.receipt} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
             </span>
-            {isCopy && (
-              <span style={{ fontSize: "20px", fontWeight: "bold", color: "#DC2626", backgroundColor: "#FEE2E2", padding: "4px 12px", borderRadius: "4px" }}>
-                {lang === "th" ? "สำเนา" : "COPY"}
-              </span>
-            )}
           </div>
 
           {/* Receipt Details */}
