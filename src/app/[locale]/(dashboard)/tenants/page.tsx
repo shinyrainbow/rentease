@@ -81,6 +81,7 @@ interface Tenant {
     unitNumber: string;
     project: { name: string };
   };
+  invoices?: Array<{ id: string; invoiceNo: string }>;
 }
 
 export default function TenantsPage() {
@@ -305,7 +306,27 @@ export default function TenantsPage() {
     setIsDialogOpen(true);
   };
 
-  const openDeleteDialog = (tenant: Tenant) => {
+  const openDeleteDialog = async (tenant: Tenant) => {
+    // First check if the tenant has linked invoices
+    try {
+      const res = await fetch(`/api/tenants/${tenant.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const hasInvoices = data.invoices && data.invoices.length > 0;
+
+        if (hasInvoices) {
+          toast({
+            title: "Cannot Delete Tenant",
+            description: `This tenant has ${data.invoices.length} invoice(s) linked. Historical data must be preserved and cannot be deleted.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking tenant data:", error);
+    }
+
     setTenantToDelete(tenant);
     setDeleteDialogOpen(true);
   };
@@ -330,11 +351,14 @@ export default function TenantsPage() {
         setTenantToDelete(null);
         fetchData();
       } else {
+        const data = await res.json();
         toast({
           title: tCommon("error"),
-          description: "Failed to delete tenant",
+          description: data.details || data.error || "Failed to delete tenant",
           variant: "destructive",
         });
+        setDeleteDialogOpen(false);
+        setTenantToDelete(null);
       }
     } catch (error) {
       console.error("Error deleting tenant:", error);

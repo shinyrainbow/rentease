@@ -176,11 +176,26 @@ export async function DELETE(
 
     const existingTenant = await prisma.tenant.findFirst({
       where: { id, unit: { project: { ownerId: session.user.id } } },
-      include: { unit: true },
+      include: {
+        unit: true,
+        invoices: true,
+      },
     });
 
     if (!existingTenant) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+    }
+
+    // Check for linked invoices - historical data must be preserved
+    if (existingTenant.invoices.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete tenant with linked invoices",
+          details: `This tenant has ${existingTenant.invoices.length} invoice(s) associated with it. Historical data must be preserved. You cannot delete this tenant.`,
+          linkedInvoices: existingTenant.invoices.length,
+        },
+        { status: 400 }
+      );
     }
 
     await prisma.tenant.delete({ where: { id } });

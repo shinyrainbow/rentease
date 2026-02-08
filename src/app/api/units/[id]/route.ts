@@ -128,10 +128,38 @@ export async function DELETE(
 
     const existingUnit = await prisma.unit.findFirst({
       where: { id, project: { ownerId: session.user.id } },
+      include: {
+        tenants: true,
+        invoices: true,
+      },
     });
 
     if (!existingUnit) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
+    }
+
+    // Check for linked tenants
+    if (existingUnit.tenants.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete unit with linked tenants",
+          details: `This unit has ${existingUnit.tenants.length} tenant(s) associated with it. Please remove or transfer the tenant(s) before deleting the unit.`,
+          linkedTenants: existingUnit.tenants.length,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check for linked invoices
+    if (existingUnit.invoices.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete unit with linked invoices",
+          details: `This unit has ${existingUnit.invoices.length} invoice(s) associated with it. Please remove or archive the invoice(s) before deleting the unit.`,
+          linkedInvoices: existingUnit.invoices.length,
+        },
+        { status: 400 }
+      );
     }
 
     await prisma.unit.delete({ where: { id } });

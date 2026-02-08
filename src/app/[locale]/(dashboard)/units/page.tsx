@@ -58,6 +58,8 @@ interface Unit {
   status: string;
   project: { name: string; nameTh: string | null };
   tenant: { name: string; nameTh: string | null } | null;
+  tenants?: Array<{ id: string; name: string }>;
+  invoices?: Array<{ id: string; invoiceNo: string }>;
 }
 
 export default function UnitsPage() {
@@ -169,7 +171,36 @@ export default function UnitsPage() {
     setIsDialogOpen(true);
   };
 
-  const openDeleteDialog = (unit: Unit) => {
+  const openDeleteDialog = async (unit: Unit) => {
+    // First check if the unit has linked data
+    try {
+      const res = await fetch(`/api/units/${unit.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const hasActiveTenants = data.tenants && data.tenants.length > 0;
+        const hasInvoices = data.invoices && data.invoices.length > 0;
+
+        if (hasActiveTenants || hasInvoices) {
+          const warnings = [];
+          if (hasActiveTenants) {
+            warnings.push(`${data.tenants.length} tenant(s)`);
+          }
+          if (hasInvoices) {
+            warnings.push(`${data.invoices.length} invoice(s)`);
+          }
+
+          toast({
+            title: "Cannot Delete Unit",
+            description: `This unit has linked ${warnings.join(" and ")}. Please remove them first before deleting the unit.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking unit data:", error);
+    }
+
     setUnitToDelete(unit);
     setDeleteDialogOpen(true);
   };
@@ -192,9 +223,11 @@ export default function UnitsPage() {
         const data = await res.json();
         toast({
           title: tCommon("error"),
-          description: data.error || "Failed to delete unit",
+          description: data.details || data.error || "Failed to delete unit",
           variant: "destructive",
         });
+        setDeleteDialogOpen(false);
+        setUnitToDelete(null);
       }
     } catch (error) {
       console.error("Error deleting unit:", error);
