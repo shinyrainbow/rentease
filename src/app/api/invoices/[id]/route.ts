@@ -173,7 +173,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -187,14 +187,14 @@ export async function DELETE(
     });
 
     if (!existingInvoice) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบใบแจ้งหนี้ (Invoice not found)" }, { status: 404 });
     }
 
     // Check if invoice has linked payments or receipts
     if (existingInvoice.payments && existingInvoice.payments.length > 0) {
       return NextResponse.json(
         {
-          error: "Cannot delete invoice with linked payments. Please delete all payments first.",
+          error: "ไม่สามารถลบใบแจ้งหนี้ที่มีการชำระเงินแล้ว กรุณาลบการชำระเงินทั้งหมดก่อน (Cannot delete invoice with linked payments)",
           errorCode: "HAS_PAYMENTS"
         },
         { status: 400 }
@@ -204,7 +204,7 @@ export async function DELETE(
     if (existingInvoice.receipt) {
       return NextResponse.json(
         {
-          error: "Cannot delete invoice with linked receipt. Please delete the receipt first.",
+          error: "ไม่สามารถลบใบแจ้งหนี้ที่มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน (Cannot delete invoice with linked receipt)",
           errorCode: "HAS_RECEIPT"
         },
         { status: 400 }
@@ -216,6 +216,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting invoice:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

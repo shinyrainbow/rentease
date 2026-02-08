@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -28,13 +28,13 @@ export async function GET(
     });
 
     if (!receipt) {
-      return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบใบเสร็จ (Receipt not found)" }, { status: 404 });
     }
 
     return NextResponse.json(receipt);
   } catch (error) {
     console.error("Error fetching receipt:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -45,7 +45,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -60,7 +60,7 @@ export async function PATCH(
     });
 
     if (!existingReceipt) {
-      return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบใบเสร็จ (Receipt not found)" }, { status: 404 });
     }
 
     const receipt = await prisma.receipt.update({
@@ -87,7 +87,7 @@ export async function PATCH(
     return NextResponse.json(receipt);
   } catch (error) {
     console.error("Error updating receipt:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
 
@@ -98,7 +98,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -115,7 +115,7 @@ export async function DELETE(
     });
 
     if (!existingReceipt) {
-      return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบใบเสร็จ (Receipt not found)" }, { status: 404 });
     }
 
     // Store invoice info before deletion
@@ -155,6 +155,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting receipt:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }

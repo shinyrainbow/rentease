@@ -10,7 +10,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -22,7 +22,7 @@ export async function POST(
     });
 
     if (!payment) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบข้อมูลการชำระเงิน (Payment not found)" }, { status: 404 });
     }
 
     const updatedPayment = await prisma.payment.update({
@@ -99,6 +99,6 @@ export async function POST(
     return NextResponse.json(updatedPayment);
   } catch (error) {
     console.error("Error verifying payment:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
   }
 }
