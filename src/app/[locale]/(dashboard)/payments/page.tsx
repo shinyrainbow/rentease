@@ -53,6 +53,8 @@ interface UnpaidInvoice {
   invoiceNo: string;
   totalAmount: number;
   paidAmount: number;
+  billingMonth: string;
+  type: string;
   project: { name: string };
   unit: { unitNumber: string };
   tenant: { name: string };
@@ -710,25 +712,25 @@ export default function PaymentsPage() {
                             >
                               <X className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenEditDialog(payment)}
-                              title={t("editPayment") || "Edit"}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600"
-                              onClick={() => handleOpenDeleteDialog(payment)}
-                              title={t("deletePayment") || "Delete"}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenEditDialog(payment)}
+                          title={t("editPayment") || "Edit"}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-600"
+                          onClick={() => handleOpenDeleteDialog(payment)}
+                          title={t("deletePayment") || "Delete"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -864,11 +866,14 @@ export default function PaymentsPage() {
                       {t("noUnpaidInvoices") || "ไม่มีใบแจ้งหนี้ค้างชำระ"}
                     </SelectItem>
                   ) : (
-                    unpaidInvoices.map((inv) => (
-                      <SelectItem key={inv.id} value={inv.id}>
-                        {inv.invoiceNo} - {inv.project.name} - {inv.unit.unitNumber} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
-                      </SelectItem>
-                    ))
+                    unpaidInvoices.map((inv) => {
+                      const typeLabel = inv.type === "RENT" ? "ค่าเช่า" : inv.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
+                      return (
+                        <SelectItem key={inv.id} value={inv.id}>
+                          {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {typeLabel} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>

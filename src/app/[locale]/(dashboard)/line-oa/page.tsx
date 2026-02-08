@@ -98,7 +98,7 @@ export default function LineOAPage() {
   const [slipMessageId, setSlipMessageId] = useState<string>("");
   const [selectedInvoice, setSelectedInvoice] = useState<string>("");
   const [savingSlip, setSavingSlip] = useState(false);
-  const [unpaidInvoices, setUnpaidInvoices] = useState<Array<{ id: string; invoiceNo: string; totalAmount: number; paidAmount: number }>>([]);
+  const [unpaidInvoices, setUnpaidInvoices] = useState<Array<{ id: string; invoiceNo: string; totalAmount: number; paidAmount: number; billingMonth: string; type: string; tenant: { name: string } }>>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -808,11 +808,14 @@ export default function LineOAPage() {
                       ไม่มีใบแจ้งหนี้ค้างชำระ
                     </div>
                   ) : (
-                    unpaidInvoices.map((invoice) => (
-                      <SelectItem key={invoice.id} value={invoice.id}>
-                        {invoice.invoiceNo} - ฿{(invoice.totalAmount - invoice.paidAmount).toLocaleString()}
-                      </SelectItem>
-                    ))
+                    unpaidInvoices.map((invoice) => {
+                      const typeLabel = invoice.type === "RENT" ? "ค่าเช่า" : invoice.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
+                      return (
+                        <SelectItem key={invoice.id} value={invoice.id}>
+                          {invoice.invoiceNo} - {invoice.tenant.name} - {invoice.billingMonth} - {typeLabel} (฿{(invoice.totalAmount - invoice.paidAmount).toLocaleString()})
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
