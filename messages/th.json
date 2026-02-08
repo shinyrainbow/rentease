@@ -56,6 +56,7 @@
   },
   "nav": {
     "dashboard": "แดชบอร์ด",
+    "summary": "สรุปยอด",
     "projects": "โครงการ",
     "units": "ห้อง/ยูนิต",
     "tenants": "ผู้เช่า",
@@ -534,5 +535,26 @@
       "termination": "การยกเลิกสัญญา",
       "terminationContent": "ฝ่ายใดฝ่ายหนึ่งสามารถยกเลิกสัญญาได้โดยแจ้งล่วงหน้าเป็นลายลักษณ์อักษร 30 วัน การยกเลิกก่อนกำหนดโดยผู้เช่าอาจส่งผลให้เสียสิทธิ์ในเงินประกัน"
     }
+  },
+  "summary": {
+    "title": "สรุปยอด",
+    "totalRevenue": "รายได้รวม",
+    "totalOutstanding": "ยอดค้างชำระ",
+    "collectionRate": "อัตราการเก็บเงิน",
+    "overdueAmount": "ยอดเกินกำหนด",
+    "monthlyTrend": "แนวโน้มรายเดือน",
+    "revenueByType": "รายได้แยกตามประเภท",
+    "collectionTrend": "แนวโน้มการเก็บเงิน",
+    "monthlyBreakdown": "สรุปรายเดือน",
+    "billingMonth": "รอบบิล",
+    "invoiced": "ออกบิล",
+    "collected": "เก็บได้",
+    "outstanding": "คงค้าง",
+    "rate": "อัตรา",
+    "last3Months": "3 เดือนล่าสุด",
+    "last6Months": "6 เดือนล่าสุด",
+    "last12Months": "12 เดือนล่าสุด",
+    "allTime": "ทั้งหมด",
+    "exportData": "ส่งออกข้อมูล"
   }
 }

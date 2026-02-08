@@ -19,12 +19,14 @@ import {
   ChevronLeft,
   ChevronRight,
   FileSignature,
+  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "dashboard" },
+  { href: "/summary", icon: BarChart3, label: "summary" },
   { href: "/projects", icon: Building2, label: "projects" },
   { href: "/units", icon: DoorOpen, label: "units" },
   { href: "/tenants", icon: Users, label: "tenants" },
