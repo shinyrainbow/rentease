@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { lineContactId, message, invoiceId, receiptId, lang = "th", format = "image" } = await request.json();
+    const { lineContactId, message, invoiceId, receiptId, lang = "th", format = "image", copy = false } = await request.json();
 
     let lineContact = null;
     let messageContent = message;
@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
         bankName: invoice.project.bankName || "",
         bankAccountName: invoice.project.bankAccountName || "",
         bankAccountNumber: invoice.project.bankAccountNumber || "",
+        copy: String(copy),
       });
 
       // Generate image and upload to S3 for reliable delivery
@@ -277,6 +278,7 @@ ${textLabels.footer}
         bankName: receipt.invoice.project.bankName || "",
         bankAccountName: receipt.invoice.project.bankAccountName || "",
         bankAccountNumber: receipt.invoice.project.bankAccountNumber || "",
+        copy: String(copy),
       });
 
       // Generate image and upload to S3 for reliable delivery

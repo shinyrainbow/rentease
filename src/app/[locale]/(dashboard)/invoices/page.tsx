@@ -169,8 +169,7 @@ export default function InvoicesPage() {
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
   const [lineSendInvoice, setLineSendInvoice] = useState<Invoice | null>(null);
-  const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
-  const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
+  const [lineSendCopy, setLineSendCopy] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -480,8 +479,7 @@ export default function InvoicesPage() {
 
   const openLineSendDialog = (invoice: Invoice) => {
     setLineSendInvoice(invoice);
-    setLineSendLang("th");
-    setLineSendFormat("image");
+    setLineSendCopy(false);
     setLineSendDialogOpen(true);
   };
 
@@ -495,7 +493,7 @@ export default function InvoicesPage() {
       const res = await fetch("/api/line/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId: lineSendInvoice.id, lang: lineSendLang, format: lineSendFormat }),
+        body: JSON.stringify({ invoiceId: lineSendInvoice.id, lang: "th", format: "image", copy: lineSendCopy }),
       });
 
       const data = await res.json();
@@ -1480,27 +1478,14 @@ export default function InvoicesPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("invoiceFormat") || "Format"}</Label>
-              <Select value={lineSendFormat} onValueChange={(v) => setLineSendFormat(v as "image" | "pdf")}>
+              <Label>{t("invoiceVersion") || "Version"}</Label>
+              <Select value={lineSendCopy ? "copy" : "original"} onValueChange={(v) => setLineSendCopy(v === "copy")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">{t("sendAsImage") || "Image"}</SelectItem>
-                  <SelectItem value="pdf">{t("sendAsPdf") || "PDF"}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t("invoiceLanguage") || "Language"}</Label>
-              <Select value={lineSendLang} onValueChange={(v) => setLineSendLang(v as "th" | "en")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="th">ไทย (Thai)</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="original">{t("originalVersion") || "Original"}</SelectItem>
+                  <SelectItem value="copy">{t("copyVersion") || "Copy"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

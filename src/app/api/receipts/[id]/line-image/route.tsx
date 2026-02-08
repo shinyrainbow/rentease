@@ -133,6 +133,7 @@ export async function GET(request: NextRequest) {
     const companyTaxId = searchParams.get("companyTaxId") || "";
     const logoUrl = searchParams.get("logoUrl") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
+    const isCopy = searchParams.get("copy") === "true";
 
     const subtotal = Number(searchParams.get("subtotal") || 0);
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
@@ -213,10 +214,15 @@ export async function GET(request: NextRequest) {
           <div style={{ width: "100%", height: "1px", backgroundColor: "#E5E7EB", marginBottom: "24px" }} />
 
           {/* Receipt Title - Centered */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
             <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
               {t.receipt}
             </span>
+            {isCopy && (
+              <span style={{ fontSize: "20px", fontWeight: "bold", color: "#DC2626", backgroundColor: "#FEE2E2", padding: "4px 12px", borderRadius: "4px" }}>
+                {lang === "th" ? "สำเนา" : "COPY"}
+              </span>
+            )}
           </div>
 
           {/* Receipt Details */}

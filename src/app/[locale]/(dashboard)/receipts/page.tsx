@@ -44,6 +44,8 @@ interface PaidInvoice {
   id: string;
   invoiceNo: string;
   totalAmount: number;
+  billingMonth: string;
+  type: string;
   project: { name: string };
   unit: { unitNumber: string };
   tenant: { name: string };
@@ -120,8 +122,7 @@ export default function ReceiptsPage() {
   const [sendingReceiptId, setSendingReceiptId] = useState<string | null>(null);
   const [lineSendDialogOpen, setLineSendDialogOpen] = useState(false);
   const [lineSendReceipt, setLineSendReceipt] = useState<Receipt | null>(null);
-  const [lineSendLang, setLineSendLang] = useState<"th" | "en">("th");
-  const [lineSendFormat, setLineSendFormat] = useState<"image" | "pdf">("image");
+  const [lineSendCopy, setLineSendCopy] = useState(false);
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("receiptNo");
@@ -338,8 +339,7 @@ export default function ReceiptsPage() {
 
   const openLineSendDialog = (receipt: Receipt) => {
     setLineSendReceipt(receipt);
-    setLineSendLang("th");
-    setLineSendFormat("image");
+    setLineSendCopy(false);
     setLineSendDialogOpen(true);
   };
 
@@ -355,8 +355,9 @@ export default function ReceiptsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           receiptId: lineSendReceipt.id,
-          lang: lineSendLang,
-          format: lineSendFormat,
+          lang: "th",
+          format: "image",
+          copy: lineSendCopy,
         }),
       });
 
@@ -608,27 +609,14 @@ export default function ReceiptsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("receiptFormat") || "Format"}</Label>
-              <Select value={lineSendFormat} onValueChange={(v) => setLineSendFormat(v as "image" | "pdf")}>
+              <Label>{t("receiptVersion") || "Version"}</Label>
+              <Select value={lineSendCopy ? "copy" : "original"} onValueChange={(v) => setLineSendCopy(v === "copy")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">{t("sendAsImage") || "Image"}</SelectItem>
-                  <SelectItem value="pdf">{t("sendAsPdf") || "PDF"}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t("receiptLanguage") || "Language"}</Label>
-              <Select value={lineSendLang} onValueChange={(v) => setLineSendLang(v as "th" | "en")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="th">ไทย (Thai)</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="original">{t("originalVersion") || "Original"}</SelectItem>
+                  <SelectItem value="copy">{t("copyVersion") || "Copy"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -711,7 +699,7 @@ export default function ReceiptsPage() {
                   ) : (
                     paidInvoices.map((inv) => (
                       <SelectItem key={inv.id} value={inv.id}>
-                        {inv.invoiceNo} - {inv.project.name} - {inv.unit.unitNumber} (฿{inv.totalAmount.toLocaleString()})
+                        {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {inv.type} (฿{inv.totalAmount.toLocaleString()})
                       </SelectItem>
                     ))
                   )}
