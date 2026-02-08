@@ -470,7 +470,7 @@ export default function SummaryPage() {
               />
               <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
               <Tooltip
-                formatter={(value: number) => `${value}%`}
+                formatter={(value) => (typeof value === 'number' ? `${value}%` : '')}
                 labelFormatter={(label) => formatMonth(label)}
               />
               <Line
