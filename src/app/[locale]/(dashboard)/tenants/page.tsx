@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -71,9 +72,6 @@ interface Tenant {
   deposit: number | null;
   discountPercent: number | null;
   discountAmount: number | null;
-  // Meter info
-  electricMeterNo: string | null;
-  waterMeterNo: string | null;
   contractStart: string | null;
   contractEnd: string | null;
   imageUrl: string | null;
@@ -107,6 +105,7 @@ export default function TenantsPage() {
   const [sortColumn, setSortColumn] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dateError, setDateError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
 
@@ -129,9 +128,6 @@ export default function TenantsPage() {
     deposit: "",
     discountPercent: "",
     discountAmount: "",
-    // Meter info
-    electricMeterNo: "",
-    waterMeterNo: "",
     contractStart: "",
     contractEnd: "",
   });
@@ -189,6 +185,7 @@ export default function TenantsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setDateError(null);
+    setFormError(null);
 
     // Validate contract dates if unit has existing tenant
     if (!editingTenant && formData.unitId) {
@@ -277,17 +274,21 @@ export default function TenantsPage() {
         fetchData();
       } else {
         const data = await res.json();
+        const errorMsg = data.error || "Failed to save tenant";
+        setFormError(errorMsg);
         toast({
           title: tCommon("error"),
-          description: data.error || "Failed to save tenant",
+          description: errorMsg,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error saving tenant:", error);
+      const errorMsg = "Network error";
+      setFormError(errorMsg);
       toast({
         title: tCommon("error"),
-        description: "Network error",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -315,8 +316,6 @@ export default function TenantsPage() {
       deposit: tenant.deposit?.toString() || "",
       discountPercent: tenant.discountPercent?.toString() || "",
       discountAmount: tenant.discountAmount?.toString() || "",
-      electricMeterNo: tenant.electricMeterNo || "",
-      waterMeterNo: tenant.waterMeterNo || "",
       contractStart: tenant.contractStart ? tenant.contractStart.split("T")[0] : "",
       contractEnd: tenant.contractEnd ? tenant.contractEnd.split("T")[0] : "",
     });
@@ -497,8 +496,6 @@ export default function TenantsPage() {
       deposit: "",
       discountPercent: "",
       discountAmount: "",
-      electricMeterNo: "",
-      waterMeterNo: "",
       contractStart: "",
       contractEnd: "",
     });
@@ -635,6 +632,13 @@ export default function TenantsPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-2">
+              {formError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{formError}</AlertDescription>
+                </Alert>
+              )}
+
               {!editingTenant && (
                 <div className="space-y-1">
                   <Label className="text-xs">Unit</Label>
@@ -795,16 +799,8 @@ export default function TenantsPage() {
                 </div>
               </div>
 
-              {/* Meters & Contract */}
-              <div className="grid grid-cols-4 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("electricMeterNo")}</Label>
-                  <Input className="h-9" value={formData.electricMeterNo} onChange={(e) => setFormData({ ...formData, electricMeterNo: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("waterMeterNo")}</Label>
-                  <Input className="h-9" value={formData.waterMeterNo} onChange={(e) => setFormData({ ...formData, waterMeterNo: e.target.value })} />
-                </div>
+              {/* Contract */}
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(1 มค 2025)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
