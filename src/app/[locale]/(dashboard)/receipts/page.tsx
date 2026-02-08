@@ -697,11 +697,14 @@ export default function ReceiptsPage() {
                       {t("noPaidInvoicesWithoutReceipt") || "ไม่มีใบแจ้งหนี้ที่ยังไม่มีใบเสร็จ"}
                     </SelectItem>
                   ) : (
-                    paidInvoices.map((inv) => (
-                      <SelectItem key={inv.id} value={inv.id}>
-                        {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {inv.type} (฿{inv.totalAmount.toLocaleString()})
-                      </SelectItem>
-                    ))
+                    paidInvoices.map((inv) => {
+                      const typeLabel = inv.type === "RENT" ? "ค่าเช่า" : inv.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
+                      return (
+                        <SelectItem key={inv.id} value={inv.id}>
+                          {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {typeLabel} (฿{inv.totalAmount.toLocaleString()})
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
