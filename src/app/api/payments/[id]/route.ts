@@ -85,10 +85,17 @@ export async function PATCH(
       },
     });
 
-    // Delete receipt if invoice is no longer fully paid
+    // Handle receipt based on invoice status
     if (newStatus !== "PAID") {
+      // Delete receipt if invoice is no longer fully paid
       await prisma.receipt.deleteMany({
         where: { invoiceId: payment.invoice.id },
+      });
+    } else {
+      // Update receipt amount to match actual paid amount if receipt exists
+      await prisma.receipt.updateMany({
+        where: { invoiceId: payment.invoice.id },
+        data: { amount: newPaidAmount },
       });
     }
 
@@ -181,10 +188,17 @@ export async function DELETE(
       },
     });
 
-    // Delete receipt if invoice is no longer fully paid
+    // Handle receipt based on invoice status
     if (newStatus !== "PAID") {
+      // Delete receipt if invoice is no longer fully paid
       await prisma.receipt.deleteMany({
         where: { invoiceId: invoiceId },
+      });
+    } else {
+      // Update receipt amount to match actual paid amount if receipt exists
+      await prisma.receipt.updateMany({
+        where: { invoiceId: invoiceId },
+        data: { amount: newPaidAmount },
       });
     }
 

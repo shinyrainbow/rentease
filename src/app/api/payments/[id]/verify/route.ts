@@ -35,40 +35,65 @@ export async function POST(
       },
     });
 
-    if (approved) {
-      // Update invoice paid amount and status
-      const newPaidAmount = payment.invoice.paidAmount + payment.amount;
-      const newStatus = newPaidAmount >= payment.invoice.totalAmount ? "PAID" : "PARTIAL";
+    // Recalculate invoice based on all VERIFIED payments (including this one)
+    const allPayments = await prisma.payment.findMany({
+      where: {
+        invoiceId: payment.invoiceId,
+        status: "VERIFIED",
+      },
+    });
 
-      await prisma.invoice.update({
-        where: { id: payment.invoiceId },
-        data: {
-          paidAmount: newPaidAmount,
-          status: newStatus,
-        },
+    const newPaidAmount = allPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalAmount = payment.invoice.totalAmount;
+
+    let newStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" = "PENDING";
+    if (newPaidAmount >= totalAmount) {
+      newStatus = "PAID";
+    } else if (newPaidAmount > 0) {
+      newStatus = "PARTIAL";
+    }
+
+    // Update invoice with new paidAmount and status
+    await prisma.invoice.update({
+      where: { id: payment.invoiceId },
+      data: {
+        paidAmount: newPaidAmount,
+        status: newStatus,
+      },
+    });
+
+    // Handle receipt based on invoice status
+    if (newStatus === "PAID") {
+      const existingReceipt = await prisma.receipt.findUnique({
+        where: { invoiceId: payment.invoiceId },
       });
 
-      // Create receipt if fully paid (only if doesn't exist yet)
-      if (newStatus === "PAID") {
-        const existingReceipt = await prisma.receipt.findUnique({
-          where: { invoiceId: payment.invoiceId },
+      if (!existingReceipt) {
+        // Create receipt if doesn't exist yet
+        const receiptNo = generateReceiptNo(
+          payment.invoice.project.name.substring(0, 3).toUpperCase(),
+          new Date()
+        );
+
+        await prisma.receipt.create({
+          data: {
+            receiptNo,
+            invoiceId: payment.invoiceId,
+            amount: newPaidAmount,
+          },
         });
-
-        if (!existingReceipt) {
-          const receiptNo = generateReceiptNo(
-            payment.invoice.project.name.substring(0, 3).toUpperCase(),
-            new Date()
-          );
-
-          await prisma.receipt.create({
-            data: {
-              receiptNo,
-              invoiceId: payment.invoiceId,
-              amount: payment.invoice.totalAmount,
-            },
-          });
-        }
+      } else {
+        // Update existing receipt amount to match actual paid amount
+        await prisma.receipt.update({
+          where: { invoiceId: payment.invoiceId },
+          data: { amount: newPaidAmount },
+        });
       }
+    } else {
+      // Delete receipt if invoice is no longer fully paid
+      await prisma.receipt.deleteMany({
+        where: { invoiceId: payment.invoiceId },
+      });
     }
 
     return NextResponse.json(updatedPayment);
