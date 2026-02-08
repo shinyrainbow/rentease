@@ -89,8 +89,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Use manual previousReading if provided (for first-time entries), otherwise use from history
-    const prevValue = data.previousReading !== undefined
-      ? data.previousReading
+    // Convert to number and validate - empty string or invalid values should use history
+    const manualPrevReading = data.previousReading !== undefined && data.previousReading !== ""
+      ? parseFloat(data.previousReading)
+      : null;
+    const prevValue = (manualPrevReading !== null && !isNaN(manualPrevReading))
+      ? manualPrevReading
       : (previousReading?.currentReading || 0);
     const usage = Math.max(0, data.currentReading - prevValue);
     const rate = data.type === "ELECTRICITY" ? unit.project.electricityRate : unit.project.waterRate;

@@ -130,6 +130,7 @@ export default function InvoicesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
+  const [billingMonthFilter, setBillingMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -567,10 +568,19 @@ export default function InvoicesPage() {
       : <ArrowDown className="ml-1 h-3 w-3" />;
   };
 
-  // Filter invoices by project and search query
+  // Get unique billing months from invoices
+  const uniqueBillingMonths = Array.from(new Set(invoices.map((inv) => inv.billingMonth)))
+    .sort()
+    .reverse();
+
+  // Filter invoices by project, billing month, and search query
   const filteredInvoices = invoices.filter((invoice) => {
     // Project filter
     if (projectFilter && invoice.project.name !== projectFilter) {
+      return false;
+    }
+    // Billing month filter
+    if (billingMonthFilter && invoice.billingMonth !== billingMonthFilter) {
       return false;
     }
     // Search filter
@@ -994,6 +1004,19 @@ export default function InvoicesPage() {
             <SelectItem value="PARTIAL">{t("statuses.PARTIAL")}</SelectItem>
             <SelectItem value="PAID">{t("statuses.PAID")}</SelectItem>
             <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={billingMonthFilter || "__all__"} onValueChange={(v) => setBillingMonthFilter(v === "__all__" ? "" : v)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("billingMonth") || "Billing Month"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("allBillingMonths") || "All Months"}</SelectItem>
+            {uniqueBillingMonths.map((month) => (
+              <SelectItem key={month} value={month}>
+                {month}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={handleExportCSV}>
