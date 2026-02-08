@@ -574,7 +574,7 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setFormError(null); setDateError(null); } }}>
           <DialogTrigger asChild>
             <Button onClick={() => { setEditingTenant(null); resetForm(); }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -812,7 +812,7 @@ export default function TenantsPage() {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => { setIsDialogOpen(false); setDateError(null); }} disabled={saving}>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setIsDialogOpen(false); setDateError(null); setFormError(null); }} disabled={saving}>
                   {tCommon("cancel")}
                 </Button>
                 <Button type="submit" size="sm" disabled={saving}>
