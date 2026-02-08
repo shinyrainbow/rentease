@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
-import { getPresignedUrl, isS3Key } from "@/lib/s3";
 
 export async function GET(
   request: NextRequest,
@@ -19,11 +17,11 @@ export async function GET(
     const invoice = await prisma.invoice.findFirst({
       where: { id, project: { ownerId: session.user.id } },
       include: {
-        project: true,
-        unit: true,
-        tenant: true,
-        payments: true,
+        project: { select: { name: true, nameTh: true, companyName: true, companyNameTh: true, taxId: true } },
+        unit: { select: { unitNumber: true } },
+        tenant: { select: { name: true, nameTh: true, tenantType: true, taxId: true } },
         receipt: true,
+        payments: true,
       },
     });
 
@@ -31,21 +29,18 @@ export async function GET(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    // Convert logo S3 key to presigned URL if needed
-    let logoPresignedUrl = "";
-    if (invoice.project.logoUrl) {
-      logoPresignedUrl = isS3Key(invoice.project.logoUrl)
-        ? await getPresignedUrl(invoice.project.logoUrl, 3600)
-        : invoice.project.logoUrl;
-    }
-
-    return NextResponse.json({
+    // Use snapshot data if available
+    const invoiceWithSnapshot = {
       ...invoice,
-      project: {
-        ...invoice.project,
-        logoPresignedUrl,
-      },
-    });
+      tenant: invoice.tenantName ? {
+        name: invoice.tenantName,
+        nameTh: invoice.tenantNameTh,
+        tenantType: invoice.tenantType,
+        taxId: invoice.tenantTaxId,
+      } : invoice.tenant,
+    };
+
+    return NextResponse.json(invoiceWithSnapshot);
   } catch (error) {
     console.error("Error fetching invoice:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -64,94 +59,33 @@ export async function PUT(
 
     const { id } = await params;
     const data = await request.json();
-    const { type, billingMonth, dueDate, notes } = data;
 
     const existingInvoice = await prisma.invoice.findFirst({
       where: { id, project: { ownerId: session.user.id } },
-      include: {
-        tenant: true,
-        unit: true,
-      },
     });
 
     if (!existingInvoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    const tenant = existingInvoice.tenant;
-    const unit = existingInvoice.unit;
+    // Only allow updating specific fields
+    const updateData: Record<string, unknown> = {};
 
-    // Recalculate amounts based on tenant contract details
-    const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number }[] = [];
-    let subtotal = 0;
-
-    if (type === "RENT" || type === "COMBINED") {
-      const discountAmount = tenant.discountAmount || 0;
-      const discountPercent = tenant.discountPercent || 0;
-      const rentDiscount = tenant.baseRent * (discountPercent / 100);
-      const rentAmount = tenant.baseRent - discountAmount - rentDiscount;
-
-      lineItems.push({
-        description: "ค่าเช่า / Rent",
-        amount: rentAmount,
-        quantity: 1,
-        unitPrice: rentAmount,
-      });
-      subtotal += rentAmount;
-
-      if (tenant.commonFee && tenant.commonFee > 0) {
-        lineItems.push({
-          description: "ค่าส่วนกลาง / Common Fee",
-          amount: tenant.commonFee,
-          quantity: 1,
-          unitPrice: tenant.commonFee,
-        });
-        subtotal += tenant.commonFee;
-      }
+    if (data.invoiceDate !== undefined) {
+      updateData.invoiceDate = new Date(data.invoiceDate);
     }
 
-    if (type === "UTILITY" || type === "COMBINED") {
-      // Get meter readings for the billing month
-      const meterReadings = await prisma.meterReading.findMany({
-        where: { unitId: unit.id, billingMonth: billingMonth || existingInvoice.billingMonth },
-      });
-
-      for (const reading of meterReadings) {
-        const description = reading.type === "ELECTRICITY"
-          ? `ค่าไฟฟ้า / Electricity`
-          : `ค่าน้ำ / Water`;
-
-        lineItems.push({
-          description,
-          amount: reading.amount,
-          quantity: reading.usage,
-          unitPrice: reading.rate,
-          usage: reading.usage,
-          rate: reading.rate,
-        });
-        subtotal += reading.amount;
-      }
+    if (data.dueDate !== undefined) {
+      updateData.dueDate = new Date(data.dueDate);
     }
 
-    // Calculate withholding tax based on tenant type
-    const withholdingTax = tenant.tenantType === "COMPANY"
-      ? subtotal * (tenant.withholdingTax / 100)
-      : 0;
-
-    const totalAmount = subtotal - withholdingTax;
+    if (data.notes !== undefined) {
+      updateData.notes = data.notes;
+    }
 
     const invoice = await prisma.invoice.update({
       where: { id },
-      data: {
-        type: type || existingInvoice.type,
-        billingMonth: billingMonth || existingInvoice.billingMonth,
-        dueDate: dueDate ? new Date(dueDate) : existingInvoice.dueDate,
-        notes: notes !== undefined ? notes : existingInvoice.notes,
-        subtotal,
-        withholdingTax,
-        totalAmount,
-        lineItems: lineItems as Prisma.InputJsonValue,
-      },
+      data: updateData,
       include: {
         project: { select: { name: true, nameTh: true } },
         unit: { select: { unitNumber: true } },
@@ -173,7 +107,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -187,26 +121,21 @@ export async function DELETE(
     });
 
     if (!existingInvoice) {
-      return NextResponse.json({ error: "ไม่พบใบแจ้งหนี้ (Invoice not found)" }, { status: 404 });
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    // Check if invoice has linked payments or receipts
-    if (existingInvoice.payments && existingInvoice.payments.length > 0) {
+    // Check for linked payments
+    if (existingInvoice.payments.length > 0) {
       return NextResponse.json(
-        {
-          error: "ไม่สามารถลบใบแจ้งหนี้ที่มีการชำระเงินแล้ว กรุณาลบการชำระเงินทั้งหมดก่อน (Cannot delete invoice with linked payments)",
-          errorCode: "HAS_PAYMENTS"
-        },
+        { error: "Cannot delete invoice with linked payments. Please remove payments first." },
         { status: 400 }
       );
     }
 
+    // Check for linked receipt
     if (existingInvoice.receipt) {
       return NextResponse.json(
-        {
-          error: "ไม่สามารถลบใบแจ้งหนี้ที่มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน (Cannot delete invoice with linked receipt)",
-          errorCode: "HAS_RECEIPT"
-        },
+        { error: "Cannot delete invoice with linked receipt. Please remove receipt first." },
         { status: 400 }
       );
     }
@@ -216,6 +145,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting invoice:", error);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
