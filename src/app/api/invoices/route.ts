@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { generateInvoiceNo } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -66,7 +68,16 @@ export async function POST(request: NextRequest) {
 
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
-      include: { project: true, tenants: { where: { contractStart: { lte: new Date() }, contractEnd: { gte: new Date() } }, take: 1 } },
+      include: {
+        project: true,
+        tenants: {
+          where: {
+            contractStart: { lte: new Date() },
+            contractEnd: { gte: new Date() },
+          },
+          take: 1,
+        },
+      },
     });
 
     const activeTenant = unit?.tenants[0];

@@ -469,9 +469,10 @@ export default function TenantsPage() {
     }
   };
 
-  const getStatusBadgeColor = (status: "ACTIVE" | "EXPIRED") => {
+  const getStatusBadgeColor = (status: "ACTIVE" | "EXPIRED" | "UPCOMING") => {
     switch (status) {
       case "ACTIVE": return "bg-green-100 text-green-800";
+      case "UPCOMING": return "bg-blue-100 text-blue-800";
       case "EXPIRED": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -548,8 +549,20 @@ export default function TenantsPage() {
     }
   });
 
-  // Client-side status calculation based on contract end date
-  const getDisplayStatus = (tenant: Tenant): "ACTIVE" | "EXPIRED" => {
+  // Client-side status calculation based on contract dates
+  const getDisplayStatus = (tenant: Tenant): "ACTIVE" | "EXPIRED" | "UPCOMING" => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if contract hasn't started yet
+    if (tenant.contractStart) {
+      const startDate = new Date(tenant.contractStart);
+      startDate.setHours(0, 0, 0, 0);
+      if (today < startDate) {
+        return "UPCOMING";
+      }
+    }
+
     // If no contract end date, assume active
     if (!tenant.contractEnd) {
       return "ACTIVE";
@@ -557,11 +570,7 @@ export default function TenantsPage() {
 
     // Compare today with contract end date
     const endDate = new Date(tenant.contractEnd);
-    const today = new Date();
-
-    // Normalize both dates (ignore time)
     endDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
 
     return today <= endDate ? "ACTIVE" : "EXPIRED";
   };
@@ -843,6 +852,14 @@ export default function TenantsPage() {
           {t("statuses.ACTIVE")}
         </Button>
         <Button
+          variant={statusFilter === "UPCOMING" ? "default" : "outline"}
+          size="sm"
+          className={statusFilter === "UPCOMING" ? "bg-blue-600 hover:bg-blue-700" : ""}
+          onClick={() => setStatusFilter(statusFilter === "UPCOMING" ? "" : "UPCOMING")}
+        >
+          {t("statuses.UPCOMING")}
+        </Button>
+        <Button
           variant={statusFilter === "EXPIRED" ? "secondary" : "outline"}
           size="sm"
           onClick={() => setStatusFilter(statusFilter === "EXPIRED" ? "" : "EXPIRED")}
@@ -889,6 +906,7 @@ export default function TenantsPage() {
           <SelectContent>
             <SelectItem value="__all__">{tCommon("all")}</SelectItem>
             <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
+            <SelectItem value="UPCOMING">{t("statuses.UPCOMING")}</SelectItem>
             <SelectItem value="EXPIRED">{t("statuses.EXPIRED")}</SelectItem>
             <SelectItem value="TERMINATED">{t("statuses.TERMINATED")}</SelectItem>
           </SelectContent>
