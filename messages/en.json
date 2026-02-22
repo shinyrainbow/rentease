@@ -214,7 +214,6 @@
     "rate": "Rate",
     "amount": "Amount",
     "readingDate": "Reading Date",
-    "billingMonth": "Billing Month",
     "enterPreviousReading": "Enter previous meter reading",
     "firstTimeReading": "No previous reading found. Enter the starting meter value."
   },
@@ -226,7 +225,6 @@
     "downloadPdf": "Download PDF",
     "invoiceNo": "Invoice No.",
     "type": "Type",
-    "billingMonth": "Billing Month",
     "dueDate": "Due Date",
     "subtotal": "Subtotal",
     "discount": "Discount",
@@ -311,7 +309,8 @@
     "notes": "Notes",
     "searchPlaceholder": "Search invoice, tenant, unit...",
     "allProjects": "All Projects",
-    "allBillingMonths": "All Billing Months",
+
+
     "project": "Project",
     "selectInvoice": "Select Invoice",
     "selectInvoicePlaceholder": "Select invoice to pay",
@@ -384,7 +383,6 @@
     "receiptLanguage": "Language",
     "receiptTitle": "RECEIPT",
     "invoiceRef": "Invoice Ref",
-    "billingMonth": "Billing Month",
     "receivedFrom": "Received From",
     "phone": "Phone",
     "paymentFor": "Payment For",

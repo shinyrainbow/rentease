@@ -40,7 +40,6 @@ const translations = {
     invoiceNo: "Invoice No",
     date: "Date",
     dueDate: "Due Date",
-    billingMonth: "Billing Month",
     taxId: "Tax ID",
     billTo: "Bill To",
     unit: "Unit",
@@ -65,7 +64,6 @@ const translations = {
     invoiceNo: "เลขที่",
     date: "วันที่",
     dueDate: "กำหนดชำระ",
-    billingMonth: "รอบบิล",
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
@@ -214,10 +212,8 @@ export async function POST(
     doc.text(`${t.date}: ${formatDate(invoice.createdAt, lang as "th" | "en")}`, pageWidth - margin, y, { align: "right" });
     y += 6;
 
-    // Left: Billing Month
-    doc.text(`${t.billingMonth}: ${invoice.billingMonth}`, margin, y);
-    // Right: Due Date
-    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, pageWidth - margin, y, { align: "right" });
+    // Left: Due Date
+    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, margin, y);
 
     y += 12;
 

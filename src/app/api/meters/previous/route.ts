@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const unitId = searchParams.get("unitId");
     const type = searchParams.get("type");
-    const billingMonth = searchParams.get("billingMonth");
+    const readingDate = searchParams.get("readingDate");
 
-    if (!unitId || !type || !billingMonth) {
+    if (!unitId || !type || !readingDate) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
@@ -24,20 +24,20 @@ export async function GET(request: NextRequest) {
       where: {
         unitId,
         type: type as MeterType,
-        billingMonth: { lt: billingMonth },
+        readingDate: { lt: new Date(readingDate) },
         project: { ownerId: session.user.id },
       },
-      orderBy: { billingMonth: "desc" },
+      orderBy: { readingDate: "desc" },
       select: {
         currentReading: true,
-        billingMonth: true,
+        readingDate: true,
       },
     });
 
     return NextResponse.json({
       hasPrevious: !!previousReading,
       previousReading: previousReading?.currentReading || null,
-      previousMonth: previousReading?.billingMonth || null,
+      previousDate: previousReading?.readingDate || null,
     });
   } catch (error) {
     console.error("Error fetching previous reading:", error);

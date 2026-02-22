@@ -53,7 +53,7 @@ interface UnpaidInvoice {
   invoiceNo: string;
   totalAmount: number;
   paidAmount: number;
-  billingMonth: string;
+  dueDate: string;
   type: string;
   project: { name: string };
   unit: { unitNumber: string };
@@ -79,7 +79,7 @@ interface Payment {
   paidAt: string;
   invoice: {
     invoiceNo: string;
-    billingMonth: string;
+    dueDate: string;
     project: { name: string };
     unit: { unitNumber: string };
     receipt?: { id: string } | null;
@@ -98,7 +98,6 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
-  const [billingMonthFilter, setBillingMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -169,20 +168,10 @@ export default function PaymentsPage() {
     }
   };
 
-  // Extract unique billing months from payments, sorted descending
-  const billingMonths = useMemo(() => {
-    const months = [...new Set(payments.map((p) => p.invoice.billingMonth))];
-    return months.sort((a, b) => b.localeCompare(a));
-  }, [payments]);
-
-  // Filter payments by project, billing month, and search query
+  // Filter payments by project and search query
   const filteredPayments = payments.filter((payment) => {
     // Project filter
     if (projectFilter && payment.invoice.project.name !== projectFilter) {
-      return false;
-    }
-    // Billing month filter
-    if (billingMonthFilter && payment.invoice.billingMonth !== billingMonthFilter) {
       return false;
     }
     // Search filter
@@ -555,8 +544,8 @@ export default function PaymentsPage() {
     switch (sortColumn) {
       case "invoiceNo":
         return direction * a.invoice.invoiceNo.localeCompare(b.invoice.invoiceNo);
-      case "billingMonth":
-        return direction * a.invoice.billingMonth.localeCompare(b.invoice.billingMonth);
+      case "dueDate":
+        return direction * a.invoice.dueDate.localeCompare(b.invoice.dueDate);
       case "project":
         return direction * a.invoice.project.name.localeCompare(b.invoice.project.name);
       case "unit":
@@ -612,19 +601,6 @@ export default function PaymentsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={billingMonthFilter || "__all__"} onValueChange={(v) => setBillingMonthFilter(v === "__all__" ? "" : v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("allBillingMonths") || "All Billing Months"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{t("allBillingMonths") || "All Billing Months"}</SelectItem>
-            {billingMonths.map((month) => (
-              <SelectItem key={month} value={month}>
-                {month}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select
           value={statusFilter || "__all__"}
           onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}
@@ -649,8 +625,8 @@ export default function PaymentsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
                   {t("invoice")} <SortIcon column="invoiceNo" />
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("billingMonth")}>
-                  {t("billingMonth") || "รอบบิล"} <SortIcon column="billingMonth" />
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("dueDate")}>
+                  {t("dueDate") || "วันครบกำหนด"} <SortIcon column="dueDate" />
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("project")}>
                   {t("project")} <SortIcon column="project" />
@@ -685,7 +661,7 @@ export default function PaymentsPage() {
                 sortedPayments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.invoice.invoiceNo}</TableCell>
-                    <TableCell>{payment.invoice.billingMonth}</TableCell>
+                    <TableCell>{new Date(payment.invoice.dueDate).toLocaleDateString()}</TableCell>
                     <TableCell>{payment.invoice.project.name}</TableCell>
                     <TableCell>{payment.invoice.unit.unitNumber}</TableCell>
                     <TableCell>{payment.tenant.name}</TableCell>
@@ -905,7 +881,7 @@ export default function PaymentsPage() {
                       const typeLabel = inv.type === "RENT" ? "ค่าเช่า" : inv.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
                       return (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {typeLabel} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
+                          {inv.invoiceNo} - {inv.tenant.name} - {new Date(inv.dueDate).toISOString().split("T")[0]} - {typeLabel} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
                         </SelectItem>
                       );
                     })

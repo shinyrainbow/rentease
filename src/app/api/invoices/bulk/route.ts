@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
-    const { projectId, type, billingMonth, dueDate } = data;
+    const { projectId, type, month, dueDate } = data;
+    // month = YYYY-MM string used to find meter readings in that month
 
     // Get all tenants with their units (any contract status)
     const activeTenants = await prisma.tenant.findMany({
@@ -39,42 +40,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No active tenants found", created: 0, skipped: 0 }, { status: 200 });
     }
 
-    // Check for existing invoices to avoid duplicates
-    const existingInvoices = await prisma.invoice.findMany({
-      where: {
-        billingMonth,
-        type,
-        tenantId: { in: activeTenants.map(t => t.id) },
-      },
-      select: { tenantId: true },
-    });
+    const createdInvoices = [];
+    const invoiceDate = new Date();
+    let skipped = 0;
 
-    const existingTenantIds = new Set(existingInvoices.map(i => i.tenantId));
-    const tenantsToProcess = activeTenants.filter(t => !existingTenantIds.has(t.id));
-
-    if (tenantsToProcess.length === 0) {
-      return NextResponse.json({
-        message: "All tenants already have invoices for this period",
-        created: 0,
-        skipped: activeTenants.length,
-      });
+    // Build date range for meter readings in the selected month
+    let monthStart: Date | undefined;
+    let monthEnd: Date | undefined;
+    if (month) {
+      const [year, mon] = month.split("-");
+      monthStart = new Date(parseInt(year), parseInt(mon) - 1, 1);
+      monthEnd = new Date(parseInt(year), parseInt(mon), 1);
     }
 
-    const createdInvoices = [];
-
-    // Use billing month for invoice number generation
-    const [year, month] = billingMonth.split("-");
-    const billingDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-
-    for (const tenant of tenantsToProcess) {
+    for (const tenant of activeTenants) {
       const unit = tenant.unit;
       const project = unit.project;
 
-      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), billingDate);
+      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), invoiceDate);
 
       // Calculate amounts based on type
       const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number }[] = [];
       let subtotal = 0;
+      const meterReadingIds: string[] = [];
 
       if (type === "RENT" || type === "COMBINED") {
         const discountAmount = tenant.discountAmount || 0;
@@ -102,9 +90,15 @@ export async function POST(request: NextRequest) {
       }
 
       if (type === "UTILITY" || type === "COMBINED") {
-        // Get meter readings for the billing month
+        // Get uninvoiced meter readings for this unit in the selected month
         const meterReadings = await prisma.meterReading.findMany({
-          where: { unitId: unit.id, billingMonth },
+          where: {
+            unitId: unit.id,
+            invoiceId: null,
+            ...(monthStart && monthEnd && {
+              readingDate: { gte: monthStart, lt: monthEnd },
+            }),
+          },
         });
 
         for (const reading of meterReadings) {
@@ -121,11 +115,13 @@ export async function POST(request: NextRequest) {
             rate: reading.rate,
           });
           subtotal += reading.amount;
+          meterReadingIds.push(reading.id);
         }
       }
 
       // Skip if no line items (e.g., UTILITY type with no meter readings)
       if (lineItems.length === 0) {
+        skipped++;
         continue;
       }
 
@@ -143,14 +139,13 @@ export async function POST(request: NextRequest) {
           unitId: unit.id,
           tenantId: tenant.id,
           type,
-          billingMonth,
           dueDate: new Date(dueDate),
-          invoiceDate: billingDate,  // Use billing date for bulk invoices
+          invoiceDate,
           subtotal,
           withholdingTax,
           totalAmount,
           lineItems: lineItems as Prisma.InputJsonValue,
-          // Tenant snapshot (preserve data at time of invoice creation)
+          // Tenant snapshot
           tenantName: tenant.name,
           tenantNameTh: tenant.nameTh,
           tenantType: tenant.tenantType,
@@ -161,13 +156,21 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Link meter readings to this invoice
+      if (meterReadingIds.length > 0) {
+        await prisma.meterReading.updateMany({
+          where: { id: { in: meterReadingIds } },
+          data: { invoiceId: invoice.id },
+        });
+      }
+
       createdInvoices.push(invoice);
     }
 
     return NextResponse.json({
       message: `Created ${createdInvoices.length} invoices`,
       created: createdInvoices.length,
-      skipped: existingTenantIds.size,
+      skipped,
       invoices: createdInvoices,
     });
   } catch (error) {

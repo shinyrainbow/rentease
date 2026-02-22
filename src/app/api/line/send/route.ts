@@ -101,7 +101,6 @@ export async function POST(request: NextRequest) {
       const params = new URLSearchParams({
         lang,
         invoiceNo: invoice.invoiceNo,
-        billingMonth: invoice.billingMonth,
         dueDate: invoice.dueDate.toISOString(),
         dateCreated: invoice.createdAt.toISOString(),
         totalAmount: String(invoice.totalAmount),
@@ -160,7 +159,6 @@ export async function POST(request: NextRequest) {
         title: "📄 ใบแจ้งหนี้",
         invoiceNo: "เลขที่",
         unit: "ห้อง",
-        billingMonth: "รอบบิล",
         total: "ยอดชำระ",
         dueDate: "กำหนดชำระ",
         footer: "กรุณาชำระภายในกำหนด",
@@ -168,7 +166,6 @@ export async function POST(request: NextRequest) {
         title: "📄 Invoice",
         invoiceNo: "Invoice No",
         unit: "Unit",
-        billingMonth: "Billing Month",
         total: "Total",
         dueDate: "Due Date",
         footer: "Please pay by the due date.",
@@ -178,7 +175,6 @@ export async function POST(request: NextRequest) {
 ${textLabels.title}
 ${textLabels.invoiceNo}: ${invoice.invoiceNo}
 ${textLabels.unit}: ${invoice.unit.unitNumber}
-${textLabels.billingMonth}: ${invoice.billingMonth}
 ${textLabels.total}: ฿${invoice.totalAmount.toLocaleString()}
 ${textLabels.dueDate}: ${(() => { const d = new Date(invoice.dueDate); const thMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"]; const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return `${d.getDate()} ${lang === "th" ? thMonths[d.getMonth()] : enMonths[d.getMonth()]} ${d.getFullYear()}`; })()}
 
@@ -269,7 +265,6 @@ ${textLabels.footer}
         logoUrl,
         ownerName: receipt.invoice.project.owner?.name || "",
         // Additional details
-        billingMonth: receipt.invoice.billingMonth,
         subtotal: String(receipt.invoice.subtotal),
         withholdingTax: String(receipt.invoice.withholdingTax || 0),
         withholdingTaxPercent: String(receipt.invoice.tenant.withholdingTax || 0),
@@ -429,7 +424,6 @@ async function generateAndUploadInvoicePdf(
     id: string;
     invoiceNo: string;
     type: string;
-    billingMonth: string;
     dueDate: Date;
     subtotal: number;
     discountAmount: number;
@@ -459,7 +453,6 @@ async function generateAndUploadInvoicePdf(
     invoice: "ใบแจ้งหนี้",
     invoiceNo: "เลขที่",
     date: "วันที่",
-    billingMonth: "รอบบิล",
     dueDate: "กำหนดชำระ",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
@@ -479,7 +472,6 @@ async function generateAndUploadInvoicePdf(
     invoice: "INVOICE",
     invoiceNo: "Invoice No",
     date: "Date",
-    billingMonth: "Billing Month",
     dueDate: "Due Date",
     billTo: "Bill To",
     unit: "Unit",
@@ -570,7 +562,6 @@ async function generateAndUploadInvoicePdf(
   doc.text(`${t.invoiceNo}: ${invoice.invoiceNo}`, 20, y);
   doc.text(`${t.date}: ${formatDate(invoice.createdAt)}`, pageWidth - 60, y);
   y += 6;
-  doc.text(`${t.billingMonth}: ${invoice.billingMonth}`, 20, y);
   doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate)}`, pageWidth - 60, y);
   y += 12;
 

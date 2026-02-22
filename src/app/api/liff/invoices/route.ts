@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
         invoiceNo: true,
         totalAmount: true,
         paidAmount: true,
-        billingMonth: true,
         dueDate: true,
         status: true,
         unit: { select: { unitNumber: true } },

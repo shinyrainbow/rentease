@@ -74,7 +74,7 @@ interface PotentialDuplicate {
 }
 
 interface MonthlyData {
-  billingMonth: string;
+  month: string;
   totalInvoiced: number;
   totalPaid: number;
   totalOutstanding: number;
@@ -219,7 +219,7 @@ export default function SummaryPage() {
     if (!summaryData) return;
 
     const dataToExport = summaryData.summaryByMonth.map((data) => ({
-      billingMonth: data.billingMonth,
+      month: data.month,
       totalInvoiced: data.totalInvoiced,
       totalPaid: data.totalPaid,
       totalOutstanding: data.totalOutstanding,
@@ -234,7 +234,7 @@ export default function SummaryPage() {
     exportToCSV(
       dataToExport,
       [
-        { key: "billingMonth", header: "Billing Month" },
+        { key: "month", header: "Month" },
         { key: "totalInvoiced", header: "Invoiced" },
         { key: "totalPaid", header: "Collected" },
         { key: "totalOutstanding", header: "Outstanding" },
@@ -404,7 +404,7 @@ export default function SummaryPage() {
               <BarChart data={summaryByMonth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="billingMonth"
+                  dataKey="month"
                   tickFormatter={(value) => {
                     const [year, month] = value.split("-");
                     return `${month}/${year.slice(2)}`;
@@ -462,7 +462,7 @@ export default function SummaryPage() {
             <LineChart data={summaryByMonth}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
-                dataKey="billingMonth"
+                dataKey="month"
                 tickFormatter={(value) => {
                   const [year, month] = value.split("-");
                   return `${month}/${year.slice(2)}`;
@@ -494,7 +494,7 @@ export default function SummaryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("billingMonth")}</TableHead>
+                <TableHead>{t("month") || "Month"}</TableHead>
                 <TableHead className="text-right">{t("invoiced")}</TableHead>
                 <TableHead className="text-right">{t("collected")}</TableHead>
                 <TableHead className="text-right">{t("outstanding")}</TableHead>
@@ -507,11 +507,11 @@ export default function SummaryPage() {
               {summaryByMonth.map((data) => (
                 <>
                   <TableRow
-                    key={data.billingMonth}
+                    key={data.month}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setExpandedMonth(expandedMonth === data.billingMonth ? null : data.billingMonth)}
+                    onClick={() => setExpandedMonth(expandedMonth === data.month ? null : data.month)}
                   >
-                    <TableCell className="font-medium">{formatMonth(data.billingMonth)}</TableCell>
+                    <TableCell className="font-medium">{formatMonth(data.month)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(data.totalInvoiced)}</TableCell>
                     <TableCell className="text-right text-green-600">{formatCurrency(data.totalPaid)}</TableCell>
                     <TableCell className="text-right text-yellow-600">{formatCurrency(data.totalOutstanding)}</TableCell>
@@ -551,7 +551,7 @@ export default function SummaryPage() {
                   </TableRow>
 
                   {/* Expanded Details */}
-                  {expandedMonth === data.billingMonth && (
+                  {expandedMonth === data.month && (
                     <TableRow>
                       <TableCell colSpan={7} className="bg-muted/30">
                         <div className="p-4 space-y-4">

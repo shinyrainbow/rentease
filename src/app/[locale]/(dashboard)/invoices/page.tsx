@@ -67,8 +67,8 @@ interface Invoice {
   invoiceNo: string;
   type: string;
   status: string;
-  billingMonth: string;
   dueDate: string;
+  invoiceDate: string;
   subtotal: number;
   withholdingTax: number;
   totalAmount: number;
@@ -132,7 +132,7 @@ export default function InvoicesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
-  const [billingMonthFilter, setBillingMonthFilter] = useState<string>("");
+  const [monthFilter, setMonthFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortColumn, setSortColumn] = useState<string>("invoiceNo");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -147,14 +147,12 @@ export default function InvoicesPage() {
     projectId: "",
     unitId: "",
     type: "RENT",
-    billingMonth: new Date().toISOString().slice(0, 7),
     dueDate: "",
   });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editFormData, setEditFormData] = useState({
     type: "RENT",
-    billingMonth: "",
     dueDate: "",
     notes: "",
   });
@@ -166,7 +164,7 @@ export default function InvoicesPage() {
   const [bulkFormData, setBulkFormData] = useState({
     projectId: "",
     type: "RENT",
-    billingMonth: new Date().toISOString().slice(0, 7),
+    month: new Date().toISOString().slice(0, 7),
     dueDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().slice(0, 10),
   });
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
@@ -277,7 +275,6 @@ export default function InvoicesPage() {
       projectId: "",
       unitId: "",
       type: "RENT",
-      billingMonth: new Date().toISOString().slice(0, 7),
       dueDate: nextMonth.toISOString().split("T")[0],
     });
   };
@@ -296,7 +293,6 @@ export default function InvoicesPage() {
         setEditingInvoice(invoice);
         setEditFormData({
           type: data.type,
-          billingMonth: data.billingMonth,
           dueDate: data.dueDate.split("T")[0],
           notes: data.notes || "",
         });
@@ -318,7 +314,6 @@ export default function InvoicesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: editFormData.type,
-          billingMonth: editFormData.billingMonth,
           dueDate: new Date(editFormData.dueDate).toISOString(),
           notes: editFormData.notes || null,
         }),
@@ -461,7 +456,7 @@ export default function InvoicesPage() {
         unit: invoice.unit.unitNumber,
         tenant: invoice.tenant.name,
         type: invoice.type,
-        billingMonth: invoice.billingMonth,
+        invoiceDate: invoice.invoiceDate?.split("T")[0] || "",
         subtotal: invoice.subtotal,
         withholdingTax: invoice.withholdingTax,
         totalAmount: invoice.totalAmount,
@@ -475,7 +470,7 @@ export default function InvoicesPage() {
         { key: "unit", header: "Unit" },
         { key: "tenant", header: "Tenant" },
         { key: "type", header: "Type" },
-        { key: "billingMonth", header: "Billing Month" },
+        { key: "invoiceDate", header: "Invoice Date" },
         { key: "subtotal", header: "Subtotal" },
         { key: "withholdingTax", header: "WHT" },
         { key: "totalAmount", header: "Total Amount" },
@@ -582,8 +577,12 @@ export default function InvoicesPage() {
       : <ArrowDown className="ml-1 h-3 w-3" />;
   };
 
-  // Get unique billing months from invoices
-  const uniqueBillingMonths = Array.from(new Set(invoices.map((inv) => inv.billingMonth)))
+  // Get unique invoice date months from invoices
+  const uniqueMonths = Array.from(new Set(invoices.map((inv) => {
+    if (!inv.invoiceDate) return "";
+    const d = new Date(inv.invoiceDate);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }).filter(Boolean)))
     .sort()
     .reverse();
 
@@ -593,9 +592,11 @@ export default function InvoicesPage() {
     if (projectFilter && invoice.project.name !== projectFilter) {
       return false;
     }
-    // Billing month filter
-    if (billingMonthFilter && invoice.billingMonth !== billingMonthFilter) {
-      return false;
+    // Month filter (by invoiceDate)
+    if (monthFilter && invoice.invoiceDate) {
+      const d = new Date(invoice.invoiceDate);
+      const invMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (invMonth !== monthFilter) return false;
     }
     // Search filter
     if (searchQuery) {
@@ -635,9 +636,9 @@ export default function InvoicesPage() {
         aVal = a.type;
         bVal = b.type;
         break;
-      case "billingMonth":
-        aVal = a.billingMonth;
-        bVal = b.billingMonth;
+      case "invoiceDate":
+        aVal = a.invoiceDate || "";
+        bVal = b.invoiceDate || "";
         break;
       case "totalAmount":
         aVal = a.totalAmount;
@@ -814,15 +815,7 @@ export default function InvoicesPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("billingMonth")}</Label>
-                  <Input
-                    type="month"
-                    value={bulkFormData.billingMonth}
-                    onChange={(e) => setBulkFormData({ ...bulkFormData, billingMonth: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
+                  <Label>{t("dueDate")}</Label>
                   <Input
                     type="date"
                     value={bulkFormData.dueDate}
@@ -919,24 +912,14 @@ export default function InvoicesPage() {
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("billingMonth")}</Label>
-                    <Input
-                      type="month"
-                      value={formData.billingMonth}
-                      onChange={(e) => setFormData({ ...formData, billingMonth: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-                    <Input
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>{t("dueDate")}</Label>
+                  <Input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    required
+                  />
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -1020,19 +1003,13 @@ export default function InvoicesPage() {
             <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={billingMonthFilter || "__all__"} onValueChange={(v) => setBillingMonthFilter(v === "__all__" ? "" : v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("billingMonth") || "Billing Month"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{t("allBillingMonths") || "All Months"}</SelectItem>
-            {uniqueBillingMonths.map((month) => (
-              <SelectItem key={month} value={month}>
-                {month}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input
+          type="month"
+          value={monthFilter}
+          onChange={(e) => setMonthFilter(e.target.value)}
+          className="w-[180px]"
+          placeholder="Filter by month"
+        />
         <Button variant="outline" onClick={handleExportCSV}>
           <Download className="h-4 w-4 mr-2" />
           {tCommon("export")}
@@ -1096,8 +1073,8 @@ export default function InvoicesPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
                   <div className="flex items-center">{t("type")}<SortIcon column="type" /></div>
                 </TableHead>
-                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("billingMonth")}>
-                  <div className="flex items-center">{t("billingMonth")}<SortIcon column="billingMonth" /></div>
+                <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceDate")}>
+                  <div className="flex items-center">{t("dueDate")}<SortIcon column="invoiceDate" /></div>
                 </TableHead>
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("totalAmount")}>
                   <div className="flex items-center">{t("totalAmount")}<SortIcon column="totalAmount" /></div>
@@ -1146,7 +1123,7 @@ export default function InvoicesPage() {
                       </div>
                     </TableCell>
                     <TableCell>{t(`types.${invoice.type}`)}</TableCell>
-                    <TableCell>{invoice.billingMonth}</TableCell>
+                    <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                     <TableCell>฿{invoice.totalAmount.toLocaleString()}</TableCell>
                     <TableCell>฿{invoice.paidAmount.toLocaleString()}</TableCell>
                     <TableCell>
@@ -1233,24 +1210,14 @@ export default function InvoicesPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t("billingMonth")}</Label>
-                <Input
-                  type="month"
-                  value={editFormData.billingMonth}
-                  onChange={(e) => setEditFormData({ ...editFormData, billingMonth: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-                <Input
-                  type="date"
-                  value={editFormData.dueDate}
-                  onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>{t("dueDate")}</Label>
+              <Input
+                type="date"
+                value={editFormData.dueDate}
+                onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
+                required
+              />
             </div>
 
             <div className="space-y-2">
@@ -1396,10 +1363,6 @@ export default function InvoicesPage() {
                       <Badge className={getStatusBadgeColor(selectedInvoice.status)}>
                         {t(`statuses.${selectedInvoice.status}`)}
                       </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("billingMonth")}</p>
-                      <p className="font-medium">{selectedInvoice.billingMonth}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">{t("dueDate")}</p>

@@ -13,13 +13,26 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
-    const billingMonth = searchParams.get("billingMonth");
+    const month = searchParams.get("month"); // YYYY-MM format, filters by readingDate month
+    const unitId = searchParams.get("unitId");
+    const uninvoiced = searchParams.get("uninvoiced"); // "true" to get only uninvoiced readings
+
+    // Build date range filter from month
+    let readingDateFilter: { gte?: Date; lt?: Date } | undefined;
+    if (month) {
+      const [year, mon] = month.split("-");
+      const startDate = new Date(parseInt(year), parseInt(mon) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(mon), 1);
+      readingDateFilter = { gte: startDate, lt: endDate };
+    }
 
     const readings = await prisma.meterReading.findMany({
       where: {
         project: { ownerId: session.user.id },
         ...(projectId && { projectId }),
-        ...(billingMonth && { billingMonth }),
+        ...(unitId && { unitId }),
+        ...(readingDateFilter && { readingDate: readingDateFilter }),
+        ...(uninvoiced === "true" && { invoiceId: null }),
       },
       include: {
         project: { select: { name: true, nameTh: true } },
@@ -34,7 +47,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [{ billingMonth: "desc" }, { unitId: "asc" }],
+      orderBy: [{ readingDate: "desc" }, { unitId: "asc" }],
     });
 
     return NextResponse.json(readings);
@@ -62,18 +75,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
-    // Get previous reading (from earlier billing month)
+    // Get previous reading (by readingDate)
     const previousReading = await prisma.meterReading.findFirst({
       where: {
         unitId: data.unitId,
         type: data.type,
-        billingMonth: { lt: data.billingMonth },
+        readingDate: { lt: new Date(data.readingDate) },
       },
-      orderBy: { billingMonth: "desc" },
+      orderBy: { readingDate: "desc" },
     });
 
     // Use manual previousReading if provided (for first-time entries), otherwise use from history
-    // Convert to number and validate - empty string or invalid values should use history
     const manualPrevReading = data.previousReading !== undefined && data.previousReading !== ""
       ? parseFloat(data.previousReading)
       : null;
@@ -84,24 +96,8 @@ export async function POST(request: NextRequest) {
     const rate = data.type === "ELECTRICITY" ? unit.project.electricityRate : unit.project.waterRate;
     const amount = usage * rate;
 
-    // Upsert: create if not exists, update if exists
-    const reading = await prisma.meterReading.upsert({
-      where: {
-        unitId_type_billingMonth: {
-          unitId: data.unitId,
-          type: data.type,
-          billingMonth: data.billingMonth,
-        },
-      },
-      update: {
-        previousReading: prevValue,
-        currentReading: data.currentReading,
-        usage,
-        rate,
-        amount,
-        readingDate: new Date(data.readingDate),
-      },
-      create: {
+    const reading = await prisma.meterReading.create({
+      data: {
         projectId: unit.projectId,
         unitId: data.unitId,
         type: data.type,
@@ -111,7 +107,6 @@ export async function POST(request: NextRequest) {
         rate,
         amount,
         readingDate: new Date(data.readingDate),
-        billingMonth: data.billingMonth,
       },
       include: {
         project: { select: { name: true, nameTh: true } },

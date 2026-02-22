@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         invoice: {
           select: {
             invoiceNo: true,
-            billingMonth: true,
+            dueDate: true,
             project: { select: { name: true, nameTh: true } },
             unit: { select: { unitNumber: true } },
             receipt: { select: { id: true } },

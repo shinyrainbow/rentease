@@ -24,9 +24,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (startMonth && endMonth) {
-      whereClause.billingMonth = {
-        gte: startMonth,
-        lte: endMonth,
+      // Filter by invoiceDate month range
+      const [startYear, startMon] = startMonth.split("-");
+      const [endYear, endMon] = endMonth.split("-");
+      whereClause.invoiceDate = {
+        gte: new Date(parseInt(startYear), parseInt(startMon) - 1, 1),
+        lt: new Date(parseInt(endYear), parseInt(endMon), 1),
       };
     }
 
@@ -42,18 +45,19 @@ export async function GET(request: NextRequest) {
         },
         receipt: true,
       },
-      orderBy: { billingMonth: "desc" },
+      orderBy: { invoiceDate: "desc" },
     });
 
-    // Group by billing month
+    // Group by invoice date month
     const monthlyData: Record<string, any> = {};
 
     invoices.forEach((invoice) => {
-      const month = invoice.billingMonth;
+      const d = new Date(invoice.invoiceDate);
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
       if (!monthlyData[month]) {
         monthlyData[month] = {
-          billingMonth: month,
+          month: month,
           totalInvoiced: 0,
           totalPaid: 0,
           totalOutstanding: 0,

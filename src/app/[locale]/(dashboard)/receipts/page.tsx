@@ -44,8 +44,8 @@ interface PaidInvoice {
   id: string;
   invoiceNo: string;
   totalAmount: number;
-  billingMonth: string;
   type: string;
+  dueDate: string;
   project: { name: string };
   unit: { unitNumber: string };
   tenant: { name: string };
@@ -86,7 +86,6 @@ interface ReceiptDetail {
   invoice: {
     invoiceNo: string;
     type: string;
-    billingMonth: string;
     subtotal: number;
     withholdingTax: number;
     totalAmount: number;
@@ -825,7 +824,7 @@ export default function ReceiptsPage() {
                       const typeLabel = inv.type === "RENT" ? "ค่าเช่า" : inv.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
                       return (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {inv.invoiceNo} - {inv.tenant.name} - {inv.billingMonth} - {typeLabel} (฿{inv.totalAmount.toLocaleString()})
+                          {inv.invoiceNo} - {inv.tenant.name} - {new Date(inv.dueDate).toISOString().split("T")[0]} - {typeLabel} (฿{inv.totalAmount.toLocaleString()})
                         </SelectItem>
                       );
                     })
@@ -981,10 +980,6 @@ export default function ReceiptsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t("invoiceRef") || "Invoice Ref"}</p>
                       <p className="font-medium">{selectedReceipt.invoice.invoiceNo}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("billingMonth") || "Billing Month"}</p>
-                      <p className="font-medium">{selectedReceipt.invoice.billingMonth}</p>
                     </div>
                   </div>
 

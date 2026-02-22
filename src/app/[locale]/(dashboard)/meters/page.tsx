@@ -57,7 +57,6 @@ interface MeterReading {
   rate: number;
   amount: number;
   readingDate: string;
-  billingMonth: string;
   unit: {
     unitNumber: string;
     tenants: { name: string; nameTh: string | null }[];
@@ -94,12 +93,11 @@ export default function MetersPage() {
     currentReading: "",
     previousReading: "",
     readingDate: new Date().toISOString().split("T")[0],
-    billingMonth: new Date().toISOString().slice(0, 7),
   });
   const [previousInfo, setPreviousInfo] = useState<{
     hasPrevious: boolean;
     previousReading: number | null;
-    previousMonth: string | null;
+    previousDate: string | null;
   } | null>(null);
   const [checkingPrevious, setCheckingPrevious] = useState(false);
 
@@ -107,7 +105,7 @@ export default function MetersPage() {
     try {
       const params = new URLSearchParams();
       if (selectedProject) params.append("projectId", selectedProject);
-      if (selectedMonth) params.append("billingMonth", selectedMonth);
+      if (selectedMonth) params.append("month", selectedMonth);
 
       const [readingsRes, projectsRes, unitsRes] = await Promise.all([
         fetch(`/api/meters?${params.toString()}`),
@@ -134,15 +132,15 @@ export default function MetersPage() {
   }, [selectedProject, selectedMonth]);
 
   // Check for previous reading when unit, type, or billing month changes
-  const checkPreviousReading = async (unitId: string, type: string, billingMonth: string) => {
-    if (!unitId || !type || !billingMonth) {
+  const checkPreviousReading = async (unitId: string, type: string, readingDate: string) => {
+    if (!unitId || !type || !readingDate) {
       setPreviousInfo(null);
       return;
     }
     setCheckingPrevious(true);
     try {
       const res = await fetch(
-        `/api/meters/previous?unitId=${unitId}&type=${type}&billingMonth=${billingMonth}`
+        `/api/meters/previous?unitId=${unitId}&type=${type}&readingDate=${readingDate}`
       );
       const data = await res.json();
       setPreviousInfo(data);
@@ -158,10 +156,10 @@ export default function MetersPage() {
   };
 
   useEffect(() => {
-    if (!editingReading && formData.unitId && formData.type && formData.billingMonth) {
-      checkPreviousReading(formData.unitId, formData.type, formData.billingMonth);
+    if (!editingReading && formData.unitId && formData.type && formData.readingDate) {
+      checkPreviousReading(formData.unitId, formData.type, formData.readingDate);
     }
-  }, [formData.unitId, formData.type, formData.billingMonth, editingReading]);
+  }, [formData.unitId, formData.type, formData.readingDate, editingReading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +220,6 @@ export default function MetersPage() {
       currentReading: reading.currentReading.toString(),
       previousReading: reading.previousReading.toString(),
       readingDate: reading.readingDate.split("T")[0],
-      billingMonth: reading.billingMonth,
     });
     setIsDialogOpen(true);
   };
@@ -272,7 +269,6 @@ export default function MetersPage() {
       currentReading: "",
       previousReading: "",
       readingDate: new Date().toISOString().split("T")[0],
-      billingMonth: new Date().toISOString().slice(0, 7),
     });
     setPreviousInfo(null);
   };
@@ -427,7 +423,7 @@ export default function MetersPage() {
                       <div className="text-sm p-2 bg-muted rounded-md">
                         <span className="font-medium">{previousInfo.previousReading}</span>
                         <span className="text-muted-foreground ml-2">
-                          ({previousInfo.previousMonth})
+                          ({previousInfo.previousDate ? new Date(previousInfo.previousDate).toLocaleDateString() : ""})
                         </span>
                       </div>
                     ) : (
@@ -456,25 +452,13 @@ export default function MetersPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("readingDate")} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-                    <Input
-                      type="date"
-                      value={formData.readingDate}
-                      onChange={(e) => setFormData({ ...formData, readingDate: e.target.value })}
-                    />
-                  </div>
-                  {!editingReading && (
-                    <div className="space-y-2">
-                      <Label>{t("billingMonth")}</Label>
-                      <Input
-                        type="month"
-                        value={formData.billingMonth}
-                        onChange={(e) => setFormData({ ...formData, billingMonth: e.target.value })}
-                      />
-                    </div>
-                  )}
+                <div className="space-y-2">
+                  <Label>{t("readingDate")}</Label>
+                  <Input
+                    type="date"
+                    value={formData.readingDate}
+                    onChange={(e) => setFormData({ ...formData, readingDate: e.target.value })}
+                  />
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -652,7 +636,7 @@ export default function MetersPage() {
             <DialogTitle>{t("deleteReading")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {(locale === "th" ? readingToDelete?.project.nameTh : null) || readingToDelete?.project.name} - {readingToDelete?.unit.unitNumber} ({readingToDelete?.billingMonth})
+            {(locale === "th" ? readingToDelete?.project.nameTh : null) || readingToDelete?.project.name} - {readingToDelete?.unit.unitNumber} ({readingToDelete?.readingDate?.split("T")[0]})
           </p>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>

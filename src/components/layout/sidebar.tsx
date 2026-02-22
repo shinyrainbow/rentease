@@ -21,8 +21,8 @@ import {
   FileSignature,
   BarChart3,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/layout/sidebar-context";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "dashboard" },
@@ -45,7 +45,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const params = useParams();
   const locale = params.locale as string;
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed } = useSidebar();
 
   return (
     <aside

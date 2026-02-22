@@ -38,7 +38,6 @@ const translations = {
     invoiceNo: "Invoice No",
     date: "Date",
     dueDate: "Due Date",
-    billingMonth: "Billing Month",
     taxId: "Tax ID",
     billTo: "Bill To",
     unit: "Unit",
@@ -61,7 +60,7 @@ const translations = {
     invoiceNo: "เลขที่",
     date: "วันที่",
     dueDate: "กำหนดชำระ",
-    billingMonth: "รอบบิล",
+
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
@@ -122,7 +121,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const invoiceNo = searchParams.get("invoiceNo") || "";
-    const billingMonth = searchParams.get("billingMonth") || "";
+
     const dueDate = searchParams.get("dueDate") || "";
     const dateCreated = searchParams.get("dateCreated") || "";
     const totalAmount = Number(searchParams.get("totalAmount") || 0);
@@ -228,7 +227,6 @@ export async function GET(request: NextRequest) {
             <span style={{ fontSize: "18px", color: "#111827" }}>{t.date}: {formatDate(dateCreated)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-            <span style={{ fontSize: "18px", color: "#111827" }}>{t.billingMonth}: {billingMonth}</span>
             <span style={{ fontSize: "18px", color: "#111827" }}>{t.dueDate}: {formatDate(dueDate)}</span>
           </div>
 

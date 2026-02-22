@@ -8,7 +8,6 @@ interface Invoice {
   invoiceNo: string;
   totalAmount: number;
   paidAmount: number;
-  billingMonth: string;
   dueDate: string;
   status: string;
   unit: { unitNumber: string };

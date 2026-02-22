@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         tenant: { select: { name: true, nameTh: true, tenantType: true, taxId: true } },
         receipt: { select: { id: true } },
         payments: { select: { id: true } },
+        meterReadings: { select: { id: true, type: true, usage: true, rate: true, amount: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -83,14 +84,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit or tenant not found" }, { status: 404 });
     }
 
-    // Use billing month for invoice number generation
-    const [year, month] = data.billingMonth.split("-");
-    const billingDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const invoiceNo = generateInvoiceNo(unit.project.name.substring(0, 3).toUpperCase(), billingDate);
+    // Use invoiceDate for invoice number generation
+    const invoiceDate = data.invoiceDate ? new Date(data.invoiceDate) : new Date();
+    const invoiceNo = generateInvoiceNo(unit.project.name.substring(0, 3).toUpperCase(), invoiceDate);
 
     // Calculate amounts based on type
     let lineItems: { description: string; amount: number }[] = [];
     let subtotal = 0;
+    const meterReadingIds: string[] = [];
 
     if (data.type === "RENT" || data.type === "COMBINED") {
       const rentAmount = activeTenant.baseRent - (activeTenant.discountAmount || 0) - (activeTenant.baseRent * (activeTenant.discountPercent || 0) / 100);
@@ -102,17 +103,24 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.type === "UTILITY" || data.type === "COMBINED") {
-      // Get meter readings for the billing month
-      const meterReadings = await prisma.meterReading.findMany({
-        where: { unitId: data.unitId, billingMonth: data.billingMonth },
-      });
+      // Get selected meter readings by IDs
+      if (data.meterReadingIds && data.meterReadingIds.length > 0) {
+        const meterReadings = await prisma.meterReading.findMany({
+          where: {
+            id: { in: data.meterReadingIds },
+            unitId: data.unitId,
+            invoiceId: null, // Only uninvoiced readings
+          },
+        });
 
-      for (const reading of meterReadings) {
-        const description = reading.type === "ELECTRICITY"
-          ? `ค่าไฟฟ้า / Electricity (${reading.usage} units x ฿${reading.rate})`
-          : `ค่าน้ำ / Water (${reading.usage} units x ฿${reading.rate})`;
-        lineItems.push({ description, amount: reading.amount });
-        subtotal += reading.amount;
+        for (const reading of meterReadings) {
+          const description = reading.type === "ELECTRICITY"
+            ? `ค่าไฟฟ้า / Electricity (${reading.usage} units x ฿${reading.rate})`
+            : `ค่าน้ำ / Water (${reading.usage} units x ฿${reading.rate})`;
+          lineItems.push({ description, amount: reading.amount });
+          subtotal += reading.amount;
+          meterReadingIds.push(reading.id);
+        }
       }
     }
 
@@ -130,14 +138,13 @@ export async function POST(request: NextRequest) {
         unitId: unit.id,
         tenantId: activeTenant.id,
         type: data.type,
-        billingMonth: data.billingMonth,
         dueDate: new Date(data.dueDate),
-        invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : new Date(),
+        invoiceDate,
         subtotal,
         withholdingTax,
         totalAmount,
         lineItems,
-        // Tenant snapshot (preserve data at time of invoice creation)
+        // Tenant snapshot
         tenantName: activeTenant.name,
         tenantNameTh: activeTenant.nameTh,
         tenantType: activeTenant.tenantType,
@@ -152,6 +159,14 @@ export async function POST(request: NextRequest) {
         tenant: { select: { name: true, nameTh: true } },
       },
     });
+
+    // Link meter readings to this invoice
+    if (meterReadingIds.length > 0) {
+      await prisma.meterReading.updateMany({
+        where: { id: { in: meterReadingIds } },
+        data: { invoiceId: invoice.id },
+      });
+    }
 
     return NextResponse.json(invoice);
   } catch (error) {

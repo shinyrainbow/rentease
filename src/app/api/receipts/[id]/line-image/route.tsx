@@ -38,7 +38,7 @@ const translations = {
     receiptNo: "Receipt No",
     date: "Date",
     invoiceRef: "Ref. Invoice",
-    billingMonth: "Billing Month",
+
     taxId: "Tax ID",
     unit: "Unit",
     name: "Name",
@@ -60,7 +60,6 @@ const translations = {
     receiptNo: "เลขที่",
     date: "วันที่",
     invoiceRef: "อ้างอิงใบแจ้งหนี้",
-    billingMonth: "รอบบิล",
     taxId: "เลขประจำตัวผู้เสียภาษี",
     unit: "ห้อง",
     name: "ชื่อ",
@@ -121,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     const receiptNo = searchParams.get("receiptNo") || "";
     const invoiceNo = searchParams.get("invoiceNo") || "";
-    const billingMonth = searchParams.get("billingMonth") || "";
+
     const issuedAt = searchParams.get("issuedAt") || "";
     const totalAmount = Number(searchParams.get("amount") || 0);
     const unitNumber = searchParams.get("unitNumber") || "";
@@ -227,7 +226,6 @@ export async function GET(request: NextRequest) {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
             <span style={{ fontSize: "15px", color: "#111827" }}>{t.invoiceRef}: {invoiceNo}</span>
-            <span style={{ fontSize: "15px", color: "#111827" }}>{t.billingMonth}: {billingMonth}</span>
           </div>
 
           {/* Received From Section */}

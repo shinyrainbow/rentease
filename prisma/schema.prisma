@@ -288,6 +288,7 @@ model MeterReading {
   id          String    @id @default(cuid())
   projectId   String
   unitId      String
+  invoiceId   String?
   type        MeterType
 
   previousReading Float
@@ -297,15 +298,13 @@ model MeterReading {
   amount          Float
 
   readingDate DateTime
-  billingMonth String
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   unit        Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
-
-  @@unique([unitId, type, billingMonth])
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 }
 
 enum MeterType {
@@ -324,7 +323,6 @@ model Invoice {
   type         InvoiceType
   status       InvoiceStatus @default(PENDING)
 
-  billingMonth String
   dueDate      DateTime
   invoiceDate  DateTime  @default(now())  // Editable invoice issue date (for accounting)
 
@@ -355,8 +353,9 @@ model Invoice {
   project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   unit         Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
   tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payments     Payment[]
-  receipt      Receipt?
+  payments       Payment[]
+  receipt        Receipt?
+  meterReadings  MeterReading[]
 }
 
 enum InvoiceType {

@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SessionProvider } from "next-auth/react";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Toaster } from "@/components/ui/toaster";
 
 export default async function DashboardLayout({
@@ -22,11 +21,7 @@ export default async function DashboardLayout({
   return (
     <SessionProvider session={session}>
       <div className="min-h-screen bg-muted/30">
-        <Sidebar />
-        <div className="pl-64 transition-all duration-300">
-          <Header />
-          <main className="p-6">{children}</main>
-        </div>
+        <DashboardShell>{children}</DashboardShell>
         <Toaster />
       </div>
     </SessionProvider>

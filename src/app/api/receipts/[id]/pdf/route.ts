@@ -40,7 +40,6 @@ const translations = {
     receiptNo: "Receipt No",
     date: "Date",
     referenceInvoice: "Ref. Invoice",
-    billingMonth: "Billing Month",
     receivedFrom: "Received From",
     unit: "Unit",
     name: "Name",
@@ -66,7 +65,6 @@ const translations = {
     receiptNo: "เลขที่",
     date: "วันที่",
     referenceInvoice: "อ้างอิงใบแจ้งหนี้",
-    billingMonth: "รอบบิล",
     receivedFrom: "รับเงินจาก",
     unit: "ห้อง",
     name: "ชื่อ",
@@ -222,8 +220,6 @@ export async function POST(
 
     // Left: Ref Invoice
     doc.text(`${t.referenceInvoice}: ${receipt.invoice.invoiceNo}`, margin, y);
-    // Right: Billing Month
-    doc.text(`${t.billingMonth}: ${receipt.invoice.billingMonth}`, pageWidth - margin, y, { align: "right" });
 
     y += 12;
 
