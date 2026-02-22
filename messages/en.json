@@ -289,7 +289,15 @@
     "copy": "Copy",
     "invoiceVersion": "Version",
     "originalVersion": "Original",
-    "copyVersion": "Copy"
+    "copyVersion": "Copy",
+    "readingMonth": "Meter Reading Month",
+    "selectMonth": "Select month",
+    "selectMeterReadings": "Select Meter Readings",
+    "noMeterReadings": "No uninvoiced meter readings found for this unit",
+    "electricity": "Electricity",
+    "water": "Water",
+    "selectedTotal": "Total",
+    "bulkMonthHint": "Uninvoiced meter readings from this month will be used"
   },
   "payments": {
     "title": "Payments",

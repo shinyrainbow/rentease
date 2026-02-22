@@ -121,6 +121,18 @@ interface LineItem {
   amount: number;
 }
 
+interface MeterReading {
+  id: string;
+  type: string;
+  previousReading: number;
+  currentReading: number;
+  usage: number;
+  rate: number;
+  amount: number;
+  readingDate: string;
+  unit: { unitNumber: string };
+}
+
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
   const tCommon = useTranslations("common");
@@ -176,6 +188,12 @@ export default function InvoicesPage() {
   const [deleting, setDeleting] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  // Meter reading picker state
+  const [availableReadings, setAvailableReadings] = useState<MeterReading[]>([]);
+  const [selectedReadingIds, setSelectedReadingIds] = useState<Set<string>>(new Set());
+  const [loadingReadings, setLoadingReadings] = useState(false);
+  const [readingMonths, setReadingMonths] = useState<string[]>([]);
+  const [selectedReadingMonth, setSelectedReadingMonth] = useState<string>("");
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -207,14 +225,99 @@ export default function InvoicesPage() {
     fetchData();
   }, [statusFilter]);
 
+  // Fetch all uninvoiced meter readings for a unit, extract months, and show most recent
+  const fetchMeterReadingMonths = async (unitId: string) => {
+    if (!unitId) {
+      setAvailableReadings([]);
+      setSelectedReadingIds(new Set());
+      setReadingMonths([]);
+      setSelectedReadingMonth("");
+      return;
+    }
+    setLoadingReadings(true);
+    try {
+      const res = await fetch(`/api/meters?unitId=${unitId}&uninvoiced=true`);
+      const rawData = await res.json();
+      const data: MeterReading[] = Array.isArray(rawData) ? rawData : [];
+      // Extract unique months from readingDate
+      const months = Array.from(new Set(
+        data.map((r) => {
+          const d = new Date(r.readingDate);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        })
+      )).sort().reverse();
+      setReadingMonths(months);
+      // Auto-select the most recent month
+      const defaultMonth = months[0] || "";
+      setSelectedReadingMonth(defaultMonth);
+      // Filter readings by that month
+      if (defaultMonth) {
+        const filtered = data.filter((r) => {
+          const d = new Date(r.readingDate);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === defaultMonth;
+        });
+        setAvailableReadings(filtered);
+        setSelectedReadingIds(new Set(filtered.map((r) => r.id)));
+      } else {
+        setAvailableReadings([]);
+        setSelectedReadingIds(new Set());
+      }
+    } catch (error) {
+      console.error("Error fetching meter readings:", error);
+      setAvailableReadings([]);
+      setReadingMonths([]);
+    } finally {
+      setLoadingReadings(false);
+    }
+  };
+
+  // When reading month changes, fetch readings for that specific month
+  const handleReadingMonthChange = async (month: string) => {
+    setSelectedReadingMonth(month);
+    if (!month || !formData.unitId) {
+      setAvailableReadings([]);
+      setSelectedReadingIds(new Set());
+      return;
+    }
+    setLoadingReadings(true);
+    try {
+      const res = await fetch(`/api/meters?unitId=${formData.unitId}&uninvoiced=true&month=${month}`);
+      const rawData = await res.json();
+      const data: MeterReading[] = Array.isArray(rawData) ? rawData : [];
+      setAvailableReadings(data);
+      setSelectedReadingIds(new Set(data.map((r) => r.id)));
+    } catch (error) {
+      console.error("Error fetching meter readings:", error);
+      setAvailableReadings([]);
+    } finally {
+      setLoadingReadings(false);
+    }
+  };
+
+  useEffect(() => {
+    if ((formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId) {
+      fetchMeterReadingMonths(formData.unitId);
+    } else {
+      setAvailableReadings([]);
+      setSelectedReadingIds(new Set());
+      setReadingMonths([]);
+      setSelectedReadingMonth("");
+    }
+  }, [formData.unitId, formData.type]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      const payload: Record<string, unknown> = { ...formData };
+      if ((formData.type === "UTILITY" || formData.type === "COMBINED") && selectedReadingIds.size > 0) {
+        payload.meterReadingIds = Array.from(selectedReadingIds);
+      }
+
       const res = await fetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -277,6 +380,10 @@ export default function InvoicesPage() {
       type: "RENT",
       dueDate: nextMonth.toISOString().split("T")[0],
     });
+    setAvailableReadings([]);
+    setSelectedReadingIds(new Set());
+    setReadingMonths([]);
+    setSelectedReadingMonth("");
   };
 
   // Get units filtered by selected project
@@ -814,6 +921,21 @@ export default function InvoicesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Month selector for UTILITY/COMBINED */}
+                {(bulkFormData.type === "UTILITY" || bulkFormData.type === "COMBINED") && (
+                  <div className="space-y-2">
+                    <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
+                    <Input
+                      type="month"
+                      value={bulkFormData.month}
+                      onChange={(e) => setBulkFormData({ ...bulkFormData, month: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t("bulkMonthHint") || "Uninvoiced meter readings from this month will be used"}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>{t("dueDate")}</Label>
                   <Input
@@ -911,6 +1033,102 @@ export default function InvoicesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Meter Reading Picker - shown for UTILITY and COMBINED */}
+                {(formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId && (
+                  <>
+                    {/* Month selector */}
+                    <div className="space-y-2">
+                      <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
+                      {loadingReadings && readingMonths.length === 0 ? (
+                        <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {tCommon("loading") || "Loading..."}
+                        </div>
+                      ) : readingMonths.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">
+                          {t("noMeterReadings") || "No uninvoiced meter readings found for this unit"}
+                        </p>
+                      ) : (
+                        <Select
+                          value={selectedReadingMonth}
+                          onValueChange={handleReadingMonthChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectMonth") || "Select month"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {readingMonths.map((month) => (
+                              <SelectItem key={month} value={month}>
+                                {month}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Meter readings list */}
+                    {selectedReadingMonth && (
+                      <div className="space-y-2">
+                        <Label>{t("selectMeterReadings") || "Select Meter Readings"}</Label>
+                        {loadingReadings ? (
+                          <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          </div>
+                        ) : availableReadings.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2">
+                            {t("noMeterReadings") || "No uninvoiced meter readings found for this unit"}
+                          </p>
+                        ) : (
+                          <div className="border rounded-md max-h-48 overflow-y-auto">
+                            {availableReadings.map((reading) => (
+                              <label
+                                key={reading.id}
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                              >
+                                <Checkbox
+                                  checked={selectedReadingIds.has(reading.id)}
+                                  onCheckedChange={(checked) => {
+                                    const newSet = new Set(selectedReadingIds);
+                                    if (checked) {
+                                      newSet.add(reading.id);
+                                    } else {
+                                      newSet.delete(reading.id);
+                                    }
+                                    setSelectedReadingIds(newSet);
+                                  }}
+                                />
+                                <div className="flex-1 text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                      {reading.type === "ELECTRICITY" ? "⚡ " : "💧 "}
+                                      {reading.type === "ELECTRICITY"
+                                        ? (t("electricity") || "Electricity")
+                                        : (t("water") || "Water")}
+                                    </span>
+                                    <span className="font-semibold">฿{reading.amount.toLocaleString()}</span>
+                                  </div>
+                                  <div className="text-muted-foreground text-xs">
+                                    {reading.usage} units × ฿{reading.rate} | {formatDate(reading.readingDate)}
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        {availableReadings.length > 0 && selectedReadingIds.size > 0 && (
+                          <div className="text-sm text-right font-medium">
+                            {t("selectedTotal") || "Total"}: ฿{availableReadings
+                              .filter((r) => selectedReadingIds.has(r.id))
+                              .reduce((sum, r) => sum + r.amount, 0)
+                              .toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label>{t("dueDate")}</Label>
