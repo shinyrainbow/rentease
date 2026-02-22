@@ -22,6 +22,7 @@ model User {
   accounts Account[]
   sessions Session[]
   projects Project[]
+  lineOAs  LineOA[]
 }
 
 model Account {
@@ -96,16 +97,20 @@ model Project {
   // Company logo
   logoUrl           String?
 
-  // LINE OA Integration
+  // LINE OA Integration (legacy per-project fields, prefer LineOA model)
   lineChannelId     String?
   lineChannelSecret String?
   lineAccessToken   String?
   liffId            String?
 
+  // Shared LINE OA reference
+  lineOaId          String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lineOa             LineOA?             @relation(fields: [lineOaId], references: [id], onDelete: SetNull)
   units              Unit[]
   meterReadings      MeterReading[]
   invoices           Invoice[]
@@ -218,11 +223,29 @@ enum TenantType {
 
 // ============ LINE Integration Models ============
 
+model LineOA {
+  id                String    @id @default(cuid())
+  name              String
+  lineChannelId     String?
+  lineChannelSecret String?
+  lineAccessToken   String?
+  liffId            String?
+  ownerId           String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner             User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projects          Project[]
+  contacts          LineContact[]
+}
+
 model LineContact {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   projectId   String
-  tenantId    String?  @unique
-  lineUserId  String
+  lineOaId    String?
+  tenantId    String?         @unique
+  lineUserId  String          // userId for USER, groupId for GROUP
+  contactType LineContactType @default(USER)
   displayName String?
   pictureUrl  String?
   statusMessage String?
@@ -231,8 +254,14 @@ model LineContact {
   updatedAt   DateTime @updatedAt
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lineOa      LineOA?  @relation(fields: [lineOaId], references: [id], onDelete: SetNull)
   tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   messages    LineMessage[]
+}
+
+enum LineContactType {
+  USER
+  GROUP
 }
 
 model LineMessage {

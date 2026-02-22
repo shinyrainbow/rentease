@@ -71,10 +71,7 @@ export async function POST(request: NextRequest) {
       include: {
         project: true,
         tenants: {
-          where: {
-            contractStart: { lte: new Date() },
-            contractEnd: { gte: new Date() },
-          },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
       },

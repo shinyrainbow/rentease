@@ -36,6 +36,16 @@ interface Unit {
   height: number | null;
 }
 
+interface Decoration {
+  id: string;
+  label: string;
+  positionX: number;
+  positionY: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -49,6 +59,7 @@ interface Project {
     units: number;
   };
   units?: Unit[];
+  decorations?: Decoration[];
 }
 
 const THUMBNAIL_WIDTH = 200;
@@ -57,7 +68,7 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
 // Mini floor plan component for thumbnails
-function FloorPlanThumbnail({ units }: { units: Unit[] }) {
+function FloorPlanThumbnail({ units, decorations = [] }: { units: Unit[]; decorations?: Decoration[] }) {
   const scale = Math.min(THUMBNAIL_WIDTH / CANVAS_WIDTH, THUMBNAIL_HEIGHT / CANVAS_HEIGHT);
 
   const getStatusColor = (status: string) => {
@@ -70,7 +81,7 @@ function FloorPlanThumbnail({ units }: { units: Unit[] }) {
     }
   };
 
-  if (units.length === 0) {
+  if (units.length === 0 && decorations.length === 0) {
     return (
       <div
         className="flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg text-xs text-muted-foreground border border-dashed border-slate-200"
@@ -88,6 +99,19 @@ function FloorPlanThumbnail({ units }: { units: Unit[] }) {
     >
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative" style={{ width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT }}>
+          {decorations.map((dec) => (
+            <div
+              key={dec.id}
+              className="absolute rounded-sm opacity-70"
+              style={{
+                left: dec.positionX * scale,
+                top: dec.positionY * scale,
+                width: dec.width * scale,
+                height: dec.height * scale,
+                backgroundColor: dec.color,
+              }}
+            />
+          ))}
           {units.map((unit, index) => {
             const x = unit.positionX ?? (index % 5) * 120 + 20;
             const y = unit.positionY ?? Math.floor(index / 5) * 100 + 20;
@@ -141,15 +165,24 @@ export default function ProjectsPage() {
       const res = await fetch("/api/projects");
       const projectsData = await res.json();
 
-      // Fetch units for each project to show thumbnails
+      // Fetch units and floor plans for each project to show thumbnails
       const projectsWithUnits = await Promise.all(
         projectsData.map(async (project: Project) => {
           try {
-            const unitsRes = await fetch(`/api/units?projectId=${project.id}`);
+            const [unitsRes, floorPlanRes] = await Promise.all([
+              fetch(`/api/units?projectId=${project.id}`),
+              fetch(`/api/floor-plans?projectId=${project.id}`),
+            ]);
             const units = await unitsRes.json();
-            return { ...project, units };
+            let decorations: Decoration[] = [];
+            if (floorPlanRes.ok) {
+              const fp = await floorPlanRes.json();
+              const layout = fp.layoutData as { decorations?: Decoration[] } | null;
+              decorations = layout?.decorations || [];
+            }
+            return { ...project, units, decorations };
           } catch {
-            return { ...project, units: [] };
+            return { ...project, units: [], decorations: [] };
           }
         })
       );
@@ -352,7 +385,7 @@ export default function ProjectsPage() {
                 <Card className="group hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer h-full overflow-hidden">
                   {/* Floor Plan Thumbnail */}
                   <div className="p-4 pb-0">
-                    <FloorPlanThumbnail units={units} />
+                    <FloorPlanThumbnail units={units} decorations={project.decorations} />
                   </div>
 
                   <CardHeader className="pb-3 pt-4">

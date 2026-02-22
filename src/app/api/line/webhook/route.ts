@@ -26,6 +26,22 @@ async function getLineProfile(userId: string, accessToken: string) {
   }
 }
 
+async function getGroupSummary(groupId: string, accessToken: string) {
+  try {
+    const res = await fetch(`https://api.line.me/v2/bot/group/${groupId}/summary`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (res.ok) {
+      return res.json();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
@@ -40,13 +56,16 @@ export async function POST(request: NextRequest) {
 
     for (const event of events) {
       const { replyToken, source, message, type } = event;
-      const lineUserId = source?.userId;
 
-      if (!lineUserId) continue;
+      // Determine if this is a group or user event
+      const isGroup = source?.type === "group";
+      const contactId = isGroup ? source?.groupId : source?.userId;
+
+      if (!contactId) continue;
 
       // Find existing LINE contact
       let lineContact = await prisma.lineContact.findFirst({
-        where: { lineUserId },
+        where: { lineUserId: contactId },
         include: { project: true },
       });
 
@@ -80,16 +99,62 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Handle follow event - user added the LINE OA
-      if (type === "follow") {
-        const profile = await getLineProfile(lineUserId, project.lineAccessToken || "");
+      // Handle join event - bot added to a group
+      if (type === "join" && isGroup) {
+        const groupSummary = await getGroupSummary(contactId, project.lineAccessToken || "");
+
+        if (!lineContact) {
+          lineContact = await prisma.lineContact.create({
+            data: {
+              projectId: project.id,
+              lineUserId: contactId,
+              contactType: "GROUP",
+              displayName: groupSummary?.groupName || "LINE Group",
+              pictureUrl: groupSummary?.pictureUrl,
+            },
+            include: { project: true },
+          });
+
+          // Send welcome message to group
+          await fetch("https://api.line.me/v2/bot/message/reply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${project.lineAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken,
+              messages: [{
+                type: "text",
+                text: `สวัสดีค่ะ ยินดีต้อนรับสู่ ${project.name}\nHello! Welcome to ${project.name}`,
+              }],
+            }),
+          });
+        } else {
+          // Update existing group contact
+          await prisma.lineContact.update({
+            where: { id: lineContact.id },
+            data: {
+              displayName: groupSummary?.groupName,
+              pictureUrl: groupSummary?.pictureUrl,
+              contactType: "GROUP",
+            },
+          });
+        }
+        continue;
+      }
+
+      // Handle follow event - user added the LINE OA (1-to-1 only)
+      if (type === "follow" && !isGroup) {
+        const profile = await getLineProfile(contactId, project.lineAccessToken || "");
 
         if (!lineContact) {
           // Create new LINE contact
           lineContact = await prisma.lineContact.create({
             data: {
               projectId: project.id,
-              lineUserId,
+              lineUserId: contactId,
+              contactType: "USER",
               displayName: profile?.displayName || "Unknown User",
               pictureUrl: profile?.pictureUrl,
               statusMessage: profile?.statusMessage,
@@ -128,17 +193,32 @@ export async function POST(request: NextRequest) {
 
       // For message events, auto-create contact if doesn't exist
       if (!lineContact) {
-        const profile = await getLineProfile(lineUserId, project.lineAccessToken || "");
-        lineContact = await prisma.lineContact.create({
-          data: {
-            projectId: project.id,
-            lineUserId,
-            displayName: profile?.displayName || "Unknown User",
-            pictureUrl: profile?.pictureUrl,
-            statusMessage: profile?.statusMessage,
-          },
-          include: { project: true },
-        });
+        if (isGroup) {
+          const groupSummary = await getGroupSummary(contactId, project.lineAccessToken || "");
+          lineContact = await prisma.lineContact.create({
+            data: {
+              projectId: project.id,
+              lineUserId: contactId,
+              contactType: "GROUP",
+              displayName: groupSummary?.groupName || "LINE Group",
+              pictureUrl: groupSummary?.pictureUrl,
+            },
+            include: { project: true },
+          });
+        } else {
+          const profile = await getLineProfile(contactId, project.lineAccessToken || "");
+          lineContact = await prisma.lineContact.create({
+            data: {
+              projectId: project.id,
+              lineUserId: contactId,
+              contactType: "USER",
+              displayName: profile?.displayName || "Unknown User",
+              pictureUrl: profile?.pictureUrl,
+              statusMessage: profile?.statusMessage,
+            },
+            include: { project: true },
+          });
+        }
       }
 
       // Handle message event

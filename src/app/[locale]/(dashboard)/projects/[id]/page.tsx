@@ -106,6 +106,16 @@ interface Unit {
   tenant: { name: string } | null;
 }
 
+interface Decoration {
+  id: string;
+  label: string;
+  positionX: number;
+  positionY: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
 const DEFAULT_WIDTH = 100;
 const DEFAULT_HEIGHT = 80;
 const MIN_CANVAS_WIDTH = 800;
@@ -181,11 +191,22 @@ export default function ProjectDetailPage() {
     type: "WAREHOUSE",
   });
 
+  // Decoration state
+  const [decorations, setDecorations] = useState<Decoration[]>([]);
+  const [floorPlanId, setFloorPlanId] = useState<string | null>(null);
+  const [selectedDecoration, setSelectedDecoration] = useState<string | null>(null);
+  const [draggingDecoration, setDraggingDecoration] = useState<string | null>(null);
+  const [resizingDecoration, setResizingDecoration] = useState<string | null>(null);
+  const [editingDecoration, setEditingDecoration] = useState<Decoration | null>(null);
+  const [isDecorationDialogOpen, setIsDecorationDialogOpen] = useState(false);
+  const [decorationFormData, setDecorationFormData] = useState({ label: "", color: "#1a1a1a" });
+
   const fetchData = useCallback(async () => {
     try {
-      const [projectRes, unitsRes] = await Promise.all([
+      const [projectRes, unitsRes, floorPlanRes] = await Promise.all([
         fetch(`/api/projects/${projectId}`),
         fetch(`/api/units?projectId=${projectId}`),
+        fetch(`/api/floor-plans?projectId=${projectId}`),
       ]);
 
       if (!projectRes.ok) {
@@ -195,6 +216,14 @@ export default function ProjectDetailPage() {
 
       const projectData = await projectRes.json();
       const unitsData = await unitsRes.json();
+
+      // Load decorations from floor plan
+      if (floorPlanRes.ok) {
+        const floorPlanData = await floorPlanRes.json();
+        setFloorPlanId(floorPlanData.id);
+        const layout = floorPlanData.layoutData as { decorations?: Decoration[] } | null;
+        setDecorations(layout?.decorations || []);
+      }
 
       setProject(projectData);
       setFormData({
@@ -388,6 +417,46 @@ export default function ProjectDetailPage() {
       y: y - (unit.positionY || 0),
     });
     setSelectedUnit(unitId);
+    setSelectedDecoration(null);
+  };
+
+  const handleDecorationMouseDown = (e: React.MouseEvent, decId: string) => {
+    if (!editMode) return;
+    e.preventDefault();
+
+    const dec = decorations.find(d => d.id === decId);
+    if (!dec) return;
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    setDraggingDecoration(decId);
+    setDragOffset({ x: x - dec.positionX, y: y - dec.positionY });
+    setSelectedDecoration(decId);
+    setSelectedUnit(null);
+  };
+
+  const handleDecorationResizeStart = (e: React.MouseEvent, decId: string) => {
+    if (!editMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const dec = decorations.find(d => d.id === decId);
+    if (!dec) return;
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    setResizingDecoration(decId);
+    setResizeStart({ x, y, w: dec.width, h: dec.height });
+    setSelectedDecoration(decId);
+    setSelectedUnit(null);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -423,11 +492,37 @@ export default function ProjectDetailPage() {
         return u;
       }));
     }
+
+    if (draggingDecoration) {
+      setDecorations(prev => prev.map(dec => {
+        if (dec.id === draggingDecoration) {
+          const newX = Math.max(0, x - dragOffset.x);
+          const newY = Math.max(0, y - dragOffset.y);
+          const snapX = showGrid ? Math.round(newX / 10) * 10 : newX;
+          const snapY = showGrid ? Math.round(newY / 10) * 10 : newY;
+          return { ...dec, positionX: snapX, positionY: snapY };
+        }
+        return dec;
+      }));
+    }
+
+    if (resizingDecoration) {
+      const deltaX = x - resizeStart.x;
+      const deltaY = y - resizeStart.y;
+      setDecorations(prev => prev.map(dec => {
+        if (dec.id === resizingDecoration) {
+          return { ...dec, width: Math.max(40, resizeStart.w + deltaX), height: Math.max(30, resizeStart.h + deltaY) };
+        }
+        return dec;
+      }));
+    }
   };
 
   const handleMouseUp = () => {
     setDragging(null);
     setResizing(null);
+    setDraggingDecoration(null);
+    setResizingDecoration(null);
   };
 
   const handleResizeStart = (e: React.MouseEvent, unitId: string) => {
@@ -457,20 +552,31 @@ export default function ProjectDetailPage() {
   const savePositions = async () => {
     setSaving(true);
     try {
-      await Promise.all(
-        units.map(unit =>
-          fetch(`/api/units/${unit.id}`, {
+      const promises = units.map(unit =>
+        fetch(`/api/units/${unit.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            positionX: unit.positionX,
+            positionY: unit.positionY,
+            width: unit.width,
+            height: unit.height,
+          }),
+        })
+      );
+
+      // Save decorations to floor plan
+      if (floorPlanId) {
+        promises.push(
+          fetch(`/api/floor-plans/${floorPlanId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              positionX: unit.positionX,
-              positionY: unit.positionY,
-              width: unit.width,
-              height: unit.height,
-            }),
+            body: JSON.stringify({ layoutData: { decorations } }),
           })
-        )
-      );
+        );
+      }
+
+      await Promise.all(promises);
       toast({
         title: tCommon("success"),
         description: "Floor plan layout saved",
@@ -653,6 +759,45 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleAddDecoration = () => {
+    setEditingDecoration(null);
+    setDecorationFormData({ label: "", color: "#1a1a1a" });
+    setIsDecorationDialogOpen(true);
+  };
+
+  const handleEditDecoration = (dec: Decoration) => {
+    setEditingDecoration(dec);
+    setDecorationFormData({ label: dec.label, color: dec.color });
+    setIsDecorationDialogOpen(true);
+  };
+
+  const handleSaveDecoration = () => {
+    if (editingDecoration) {
+      setDecorations(prev => prev.map(d =>
+        d.id === editingDecoration.id
+          ? { ...d, label: decorationFormData.label, color: decorationFormData.color }
+          : d
+      ));
+    } else {
+      const newDec: Decoration = {
+        id: `dec-${Date.now()}`,
+        label: decorationFormData.label || "Area",
+        positionX: 20,
+        positionY: 20,
+        width: 120,
+        height: 80,
+        color: decorationFormData.color,
+      };
+      setDecorations(prev => [...prev, newDec]);
+    }
+    setIsDecorationDialogOpen(false);
+  };
+
+  const handleDeleteDecoration = (decId: string) => {
+    setDecorations(prev => prev.filter(d => d.id !== decId));
+    if (selectedDecoration === decId) setSelectedDecoration(null);
+  };
+
   if (loading) {
     return <PageSkeleton columns={5} rows={6} />;
   }
@@ -663,15 +808,19 @@ export default function ProjectDetailPage() {
 
   const selectedUnitData = selectedUnit ? units.find(u => u.id === selectedUnit) : null;
 
-  // Calculate dynamic canvas size based on unit positions
+  // Calculate dynamic canvas size based on unit and decoration positions
   const canvasWidth = Math.max(
     MIN_CANVAS_WIDTH,
-    ...units.map(u => (u.positionX || 0) + (u.width || DEFAULT_WIDTH) + 50)
+    ...units.map(u => (u.positionX || 0) + (u.width || DEFAULT_WIDTH) + 50),
+    ...decorations.map(d => d.positionX + d.width + 50)
   );
   const canvasHeight = Math.max(
     MIN_CANVAS_HEIGHT,
-    ...units.map(u => (u.positionY || 0) + (u.height || DEFAULT_HEIGHT) + 50)
+    ...units.map(u => (u.positionY || 0) + (u.height || DEFAULT_HEIGHT) + 50),
+    ...decorations.map(d => d.positionY + d.height + 50)
   );
+
+  const selectedDecorationData = selectedDecoration ? decorations.find(d => d.id === selectedDecoration) : null;
 
   return (
     <div className="space-y-6">
@@ -721,10 +870,16 @@ export default function ProjectDetailPage() {
                       <Map className="h-5 w-5" />
                       {tFloorPlans("title")}
                     </CardTitle>
-                    <Button onClick={handleOpenCreateUnit}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {tUnits("addUnit") || "เพิ่มห้อง"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={handleOpenCreateUnit}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {tUnits("addUnit") || "เพิ่มห้อง"}
+                      </Button>
+                      <Button variant="outline" onClick={handleAddDecoration}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Area
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button
@@ -834,7 +989,47 @@ export default function ProjectDetailPage() {
                         )}
                       </div>
                     ))}
-                    {units.length === 0 && (
+                    {/* Decoration boxes */}
+                    {decorations.map((dec) => (
+                      <div
+                        key={dec.id}
+                        className={`absolute rounded border-2 border-dashed ${
+                          editMode ? "cursor-move" : ""
+                        } ${selectedDecoration === dec.id ? "ring-2 ring-offset-2 ring-primary" : ""}`}
+                        style={{
+                          left: dec.positionX * zoom,
+                          top: dec.positionY * zoom,
+                          width: dec.width * zoom,
+                          height: dec.height * zoom,
+                          backgroundColor: dec.color,
+                          borderColor: "rgba(255,255,255,0.3)",
+                        }}
+                        onMouseDown={(e) => handleDecorationMouseDown(e, dec.id)}
+                        onClick={() => {
+                          if (!editMode) {
+                            setSelectedDecoration(dec.id);
+                            setSelectedUnit(null);
+                          }
+                        }}
+                      >
+                        <div className="p-1 text-white h-full flex items-center justify-center text-center">
+                          <span className="text-xs font-medium opacity-80 truncate" style={{ fontSize: 10 * zoom }}>
+                            {dec.label}
+                          </span>
+                        </div>
+                        {editMode && (
+                          <div
+                            className="absolute bottom-0 right-0 w-4 h-4 bg-white border border-gray-400 cursor-se-resize rounded-tl"
+                            style={{
+                              width: Math.max(12, 16 * zoom),
+                              height: Math.max(12, 16 * zoom),
+                            }}
+                            onMouseDown={(e) => handleDecorationResizeStart(e, dec.id)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {units.length === 0 && decorations.length === 0 && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                         <p className="mb-4">{tUnits("noUnits") || "ยังไม่มีห้องในโครงการนี้"}</p>
                         <Button onClick={handleOpenCreateUnit}>
@@ -872,6 +1067,12 @@ export default function ProjectDetailPage() {
                     <div className="w-4 h-4 rounded bg-red-500 border border-red-600"></div>
                     <span className="text-sm">{tUnits("statuses.MAINTENANCE")}</span>
                   </div>
+                  {decorations.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded border-2 border-dashed border-gray-400" style={{ backgroundColor: "#1a1a1a" }}></div>
+                      <span className="text-sm">Area</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -993,6 +1194,35 @@ export default function ProjectDetailPage() {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Decoration Details */}
+              {selectedDecorationData && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-base">{selectedDecorationData.label}</CardTitle>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditDecoration(selectedDecorationData)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteDecoration(selectedDecorationData.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Color:</span>
+                      <div className="w-6 h-6 rounded border" style={{ backgroundColor: selectedDecorationData.color }} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Size: {Math.round(selectedDecorationData.width)} x {Math.round(selectedDecorationData.height)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Position: ({Math.round(selectedDecorationData.positionX)}, {Math.round(selectedDecorationData.positionY)})
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1339,6 +1569,49 @@ export default function ProjectDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Decoration Create/Edit Dialog */}
+      <Dialog open={isDecorationDialogOpen} onOpenChange={setIsDecorationDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editingDecoration ? "Edit Area" : "Add Area"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Label</Label>
+              <Input
+                value={decorationFormData.label}
+                onChange={(e) => setDecorationFormData({ ...decorationFormData, label: e.target.value })}
+                placeholder="e.g., Stairwell, Elevator"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={decorationFormData.color}
+                  onChange={(e) => setDecorationFormData({ ...decorationFormData, color: e.target.value })}
+                  className="h-10 w-14 rounded border cursor-pointer"
+                />
+                <Input
+                  value={decorationFormData.color}
+                  onChange={(e) => setDecorationFormData({ ...decorationFormData, color: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsDecorationDialogOpen(false)}>
+                {tCommon("cancel")}
+              </Button>
+              <Button onClick={handleSaveDecoration}>
+                {tCommon("save")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Unit AlertDialog */}
       <AlertDialog open={deleteUnitDialogOpen} onOpenChange={setDeleteUnitDialogOpen}>

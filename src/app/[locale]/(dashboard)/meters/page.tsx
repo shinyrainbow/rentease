@@ -112,7 +112,7 @@ export default function MetersPage() {
       const [readingsRes, projectsRes, unitsRes] = await Promise.all([
         fetch(`/api/meters?${params.toString()}`),
         fetch("/api/projects"),
-        fetch("/api/units?activeOnly=true"),
+        fetch("/api/units"),
       ]);
       const [readingsData, projectsData, unitsData] = await Promise.all([
         readingsRes.json(),

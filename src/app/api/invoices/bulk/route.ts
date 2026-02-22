@@ -16,11 +16,9 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { projectId, type, billingMonth, dueDate } = data;
 
-    // Get all active tenants with their units (active = contract started and not ended)
+    // Get all tenants with their units (any contract status)
     const activeTenants = await prisma.tenant.findMany({
       where: {
-        contractStart: { lte: new Date() },
-        contractEnd: { gte: new Date() },
         unit: {
           project: {
             ownerId: session.user.id,

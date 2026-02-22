@@ -65,6 +65,7 @@ interface LineMessage {
 interface LineContact {
   id: string;
   lineUserId: string;
+  contactType: "USER" | "GROUP";
   displayName: string | null;
   pictureUrl: string | null;
   statusMessage: string | null;
@@ -423,6 +424,11 @@ export default function LineOAPage() {
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
                                         <p className="font-medium truncate">{contact.displayName}</p>
+                                        {contact.contactType === "GROUP" && (
+                                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                            Group
+                                          </Badge>
+                                        )}
                                         {contact.tenant && (
                                           <Badge variant="secondary" className="text-xs">
                                             {contact.tenant.name}
@@ -462,7 +468,14 @@ export default function LineOAPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-base">{selectedContact.displayName}</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          {selectedContact.displayName}
+                          {selectedContact.contactType === "GROUP" && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Group
+                            </Badge>
+                          )}
+                        </CardTitle>
                         <CardDescription className="text-xs">
                           {selectedContact.tenant ? (
                             <span className="text-green-600">
