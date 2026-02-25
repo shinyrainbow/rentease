@@ -11,14 +11,17 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
+    const lineOaId = searchParams.get("lineOaId");
 
     const contacts = await prisma.lineContact.findMany({
       where: {
-        project: { ownerId: session.user.id },
+        lineOa: { ownerId: session.user.id },
+        ...(lineOaId && { lineOaId }),
         ...(projectId && { projectId }),
       },
       include: {
-        project: { select: { name: true, nameTh: true } },
+        lineOa: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, nameTh: true } },
         tenant: { select: { id: true, name: true, nameTh: true } },
         messages: {
           orderBy: { createdAt: "desc" },
@@ -45,36 +48,67 @@ export async function PUT(request: NextRequest) {
 
     const { contactId, tenantId } = await request.json();
 
-    // Verify contact belongs to user's project
+    // Verify contact belongs to user's LineOA
     const contact = await prisma.lineContact.findFirst({
-      where: { id: contactId, project: { ownerId: session.user.id } },
+      where: { id: contactId, lineOa: { ownerId: session.user.id } },
+      include: { lineOa: true },
     });
 
     if (!contact) {
       return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
-    // If linking to a tenant, verify tenant belongs to same project
+    // If linking to a tenant, verify tenant's project uses the same LineOA
     if (tenantId) {
       const tenant = await prisma.tenant.findFirst({
-        where: { id: tenantId, unit: { projectId: contact.projectId } },
+        where: {
+          id: tenantId,
+          unit: {
+            project: {
+              ownerId: session.user.id,
+              lineOaId: contact.lineOaId,
+            },
+          },
+        },
+        include: { unit: true },
       });
 
       if (!tenant) {
-        return NextResponse.json({ error: "Tenant not found in this project" }, { status: 404 });
+        return NextResponse.json({ error: "Tenant not found or not linked to this LINE OA" }, { status: 404 });
       }
+
+      // Set both tenantId and projectId (derived from tenant)
+      const updatedContact = await prisma.lineContact.update({
+        where: { id: contactId },
+        data: {
+          tenantId,
+          projectId: tenant.unit.projectId,
+        },
+        include: {
+          lineOa: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true, nameTh: true } },
+          tenant: { select: { id: true, name: true, nameTh: true } },
+        },
+      });
+
+      return NextResponse.json(updatedContact);
+    } else {
+      // Unlinking — clear both tenantId and projectId
+      const updatedContact = await prisma.lineContact.update({
+        where: { id: contactId },
+        data: {
+          tenantId: null,
+          projectId: null,
+        },
+        include: {
+          lineOa: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true, nameTh: true } },
+          tenant: { select: { id: true, name: true, nameTh: true } },
+        },
+      });
+
+      return NextResponse.json(updatedContact);
     }
-
-    const updatedContact = await prisma.lineContact.update({
-      where: { id: contactId },
-      data: { tenantId: tenantId || null },
-      include: {
-        project: { select: { name: true, nameTh: true } },
-        tenant: { select: { id: true, name: true, nameTh: true } },
-      },
-    });
-
-    return NextResponse.json(updatedContact);
   } catch (error) {
     console.error("Error linking LINE contact:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

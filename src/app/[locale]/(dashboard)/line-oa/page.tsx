@@ -69,8 +69,10 @@ interface LineContact {
   displayName: string | null;
   pictureUrl: string | null;
   statusMessage: string | null;
-  projectId: string;
-  project: { name: string; nameTh: string | null };
+  projectId: string | null;
+  lineOaId: string;
+  lineOa: { id: string; name: string } | null;
+  project: { id: string; name: string; nameTh: string | null } | null;
   tenant: { id: string; name: string; nameTh: string | null } | null;
   messages: LineMessage[];
   updatedAt: string;
@@ -113,36 +115,36 @@ export default function LineOAPage() {
   // Track expanded/collapsed state for each project in chat list
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
 
-  // Group contacts by project
-  const contactsByProject = contacts.reduce((acc, contact) => {
-    const projectId = contact.projectId;
-    if (!acc[projectId]) {
-      acc[projectId] = {
-        project: contact.project,
+  // Group contacts by LINE OA
+  const contactsByOa = contacts.reduce((acc, contact) => {
+    const oaId = contact.lineOaId;
+    if (!acc[oaId]) {
+      acc[oaId] = {
+        lineOa: contact.lineOa,
         contacts: [],
       };
     }
-    acc[projectId].contacts.push(contact);
+    acc[oaId].contacts.push(contact);
     return acc;
-  }, {} as Record<string, { project: { name: string; nameTh: string | null }; contacts: LineContact[] }>);
+  }, {} as Record<string, { lineOa: { id: string; name: string } | null; contacts: LineContact[] }>);
 
-  const toggleProjectExpanded = (projectId: string) => {
+  const toggleOaExpanded = (oaId: string) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev);
-      if (next.has(projectId)) {
-        next.delete(projectId);
+      if (next.has(oaId)) {
+        next.delete(oaId);
       } else {
-        next.add(projectId);
+        next.add(oaId);
       }
       return next;
     });
   };
 
-  // Initialize all projects as expanded on first load
+  // Initialize all OAs as expanded on first load
   useEffect(() => {
     if (contacts.length > 0 && expandedProjects.size === 0) {
-      const allProjectIds = new Set(contacts.map((c) => c.projectId));
-      setExpandedProjects(allProjectIds);
+      const allOaIds = new Set(contacts.map((c) => c.lineOaId));
+      setExpandedProjects(allOaIds);
     }
   }, [contacts]);
 
@@ -340,10 +342,8 @@ export default function LineOAPage() {
     }
   };
 
-  // Filter tenants for the selected contact's project
-  const projectTenants = selectedContact
-    ? tenants.filter((t) => t.unit.projectId === selectedContact.projectId)
-    : [];
+  // Show all tenants — backend validates that tenant's project uses the same LINE OA
+  const linkableTenants = tenants;
 
   if (loading) {
     return <PageSkeleton columns={4} rows={5} />;
@@ -383,30 +383,30 @@ export default function LineOAPage() {
                     </div>
                   ) : (
                     <div>
-                      {Object.entries(contactsByProject).map(([projectId, { project, contacts: projectContacts }]) => (
-                        <div key={projectId} className="border-b last:border-b-0">
-                          {/* Project Header - Collapsible */}
+                      {Object.entries(contactsByOa).map(([oaId, { lineOa, contacts: oaContacts }]) => (
+                        <div key={oaId} className="border-b last:border-b-0">
+                          {/* LINE OA Header - Collapsible */}
                           <div
                             className="flex items-center gap-2 px-3 py-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors sticky top-0 z-10"
-                            onClick={() => toggleProjectExpanded(projectId)}
+                            onClick={() => toggleOaExpanded(oaId)}
                           >
-                            {expandedProjects.has(projectId) ? (
+                            {expandedProjects.has(oaId) ? (
                               <ChevronDown className="h-4 w-4 text-muted-foreground" />
                             ) : (
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             )}
                             <div className="flex-1 flex items-center justify-between">
-                              <span className="font-medium text-sm">{project.name}</span>
+                              <span className="font-medium text-sm">{lineOa?.name || "LINE OA"}</span>
                               <Badge variant="outline" className="text-xs">
-                                {projectContacts.length}
+                                {oaContacts.length}
                               </Badge>
                             </div>
                           </div>
 
-                          {/* Project Contacts */}
-                          {expandedProjects.has(projectId) && (
+                          {/* OA Contacts */}
+                          {expandedProjects.has(oaId) && (
                             <div className="divide-y">
-                              {projectContacts.map((contact) => (
+                              {oaContacts.map((contact) => (
                                 <div
                                   key={contact.id}
                                   className={`p-3 cursor-pointer hover:bg-accent transition-colors ${
@@ -432,6 +432,11 @@ export default function LineOAPage() {
                                         {contact.tenant && (
                                           <Badge variant="secondary" className="text-xs">
                                             {contact.tenant.name}
+                                          </Badge>
+                                        )}
+                                        {contact.project && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {contact.project.name}
                                           </Badge>
                                         )}
                                       </div>
@@ -480,6 +485,7 @@ export default function LineOAPage() {
                           {selectedContact.tenant ? (
                             <span className="text-green-600">
                               Linked: {selectedContact.tenant.name}
+                              {selectedContact.project && ` (${selectedContact.project.name})`}
                             </span>
                           ) : (
                             <span className="text-orange-500">Not linked to tenant</span>
@@ -531,14 +537,14 @@ export default function LineOAPage() {
                                     <img
                                       src={msg.direction === "OUTGOING"
                                         ? msg.mediaUrl
-                                        : `/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`}
+                                        : `/api/line/image/${msg.mediaUrl}?lineOaId=${selectedContact.lineOaId}${selectedContact.projectId ? `&projectId=${selectedContact.projectId}` : ''}`}
                                       alt="LINE Image"
                                       className="max-w-48 max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover bg-muted"
                                       loading="lazy"
                                       onClick={() => window.open(
                                         msg.direction === "OUTGOING"
                                           ? msg.mediaUrl!
-                                          : `/api/line/image/${msg.mediaUrl}?projectId=${selectedContact.projectId}`,
+                                          : `/api/line/image/${msg.mediaUrl}?lineOaId=${selectedContact.lineOaId}${selectedContact.projectId ? `&projectId=${selectedContact.projectId}` : ''}`,
                                         "_blank"
                                       )}
                                     />
@@ -754,12 +760,12 @@ export default function LineOAPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">-- No Link --</SelectItem>
-                  {projectTenants.length === 0 ? (
+                  {linkableTenants.length === 0 ? (
                     <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                      No active tenants in {selectedContact?.project.name}
+                      No active tenants found
                     </div>
                   ) : (
-                    projectTenants.map((tenant) => (
+                    linkableTenants.map((tenant) => (
                       <SelectItem key={tenant.id} value={tenant.id}>
                         {tenant.name} - {tenant.unit.unitNumber}
                       </SelectItem>
@@ -798,7 +804,7 @@ export default function LineOAPage() {
             {slipMessageId && selectedContact && (
               <div className="flex justify-center">
                 <img
-                  src={`/api/line/image/${slipMessageId}?projectId=${selectedContact.projectId}`}
+                  src={`/api/line/image/${slipMessageId}?lineOaId=${selectedContact.lineOaId}${selectedContact.projectId ? `&projectId=${selectedContact.projectId}` : ''}`}
                   alt="Payment Slip"
                   className="max-h-48 rounded-lg"
                 />

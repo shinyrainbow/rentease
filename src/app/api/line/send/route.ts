@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
       lineContact = await prisma.lineContact.findFirst({
         where: {
           tenantId: invoice.tenantId,
-          project: { ownerId: session.user.id }
+          lineOa: { ownerId: session.user.id }
         },
-        include: { project: true },
+        include: { project: true, lineOa: true },
       });
 
       if (!lineContact) {
@@ -212,9 +212,9 @@ ${textLabels.footer}
       lineContact = await prisma.lineContact.findFirst({
         where: {
           tenantId: receipt.invoice.tenantId,
-          project: { ownerId: session.user.id }
+          lineOa: { ownerId: session.user.id }
         },
-        include: { project: true },
+        include: { project: true, lineOa: true },
       });
 
       if (!lineContact) {
@@ -337,12 +337,14 @@ ${textLabels.footer}
     } else if (lineContactId) {
       // Use provided lineContactId for direct messages
       lineContact = await prisma.lineContact.findFirst({
-        where: { id: lineContactId, project: { ownerId: session.user.id } },
-        include: { project: true },
+        where: { id: lineContactId, lineOa: { ownerId: session.user.id } },
+        include: { project: true, lineOa: true },
       });
     }
 
-    if (!lineContact || !lineContact.project.lineAccessToken) {
+    // Get access token from LineOA (preferred) or project (legacy fallback)
+    const accessToken = lineContact?.lineOa?.lineAccessToken || lineContact?.project?.lineAccessToken;
+    if (!lineContact || !accessToken) {
       return NextResponse.json({ error: "LINE contact or access token not found" }, { status: 404 });
     }
 
@@ -379,7 +381,7 @@ ${textLabels.footer}
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${lineContact.project.lineAccessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         to: lineContact.lineUserId,

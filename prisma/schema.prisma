@@ -241,8 +241,8 @@ model LineOA {
 
 model LineContact {
   id          String          @id @default(cuid())
-  projectId   String
-  lineOaId    String?
+  projectId   String?         // Optional — derived from tenant link
+  lineOaId    String          // Required — always belongs to a LINE OA
   tenantId    String?         @unique
   lineUserId  String          // userId for USER, groupId for GROUP
   contactType LineContactType @default(USER)
@@ -253,9 +253,9 @@ model LineContact {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  lineOa      LineOA?  @relation(fields: [lineOaId], references: [id], onDelete: SetNull)
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  lineOa      LineOA    @relation(fields: [lineOaId], references: [id], onDelete: Cascade)
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   messages    LineMessage[]
 }
 

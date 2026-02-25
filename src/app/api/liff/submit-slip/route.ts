@@ -10,12 +10,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Find LINE contact and linked tenant
+    // Find LINE contact linked to a tenant
     const lineContact = await prisma.lineContact.findFirst({
-      where: { lineUserId },
+      where: { lineUserId, tenantId: { not: null } },
       include: {
         tenant: true,
-        project: true,
       },
     });
 

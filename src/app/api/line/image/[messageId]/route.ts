@@ -15,21 +15,32 @@ export async function GET(
     const { messageId } = await params;
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
+    const lineOaId = searchParams.get("lineOaId");
 
-    if (!projectId) {
-      return NextResponse.json({ error: "Project ID required" }, { status: 400 });
+    if (!projectId && !lineOaId) {
+      return NextResponse.json({ error: "Project ID or LineOA ID required" }, { status: 400 });
     }
 
-    // Verify user owns this project
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        ownerId: session.user.id,
-      },
-    });
+    // Get access token from LineOA (preferred) or project (legacy fallback)
+    let accessToken: string | null = null;
 
-    if (!project || !project.lineAccessToken) {
-      return NextResponse.json({ error: "Project not found or LINE not configured" }, { status: 404 });
+    if (lineOaId) {
+      const lineOa = await prisma.lineOA.findFirst({
+        where: { id: lineOaId, ownerId: session.user.id },
+      });
+      accessToken = lineOa?.lineAccessToken || null;
+    }
+
+    if (!accessToken && projectId) {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, ownerId: session.user.id },
+        include: { lineOa: true },
+      });
+      accessToken = project?.lineOa?.lineAccessToken || project?.lineAccessToken || null;
+    }
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "LINE not configured" }, { status: 404 });
     }
 
     // Fetch image content from LINE Content API
@@ -37,7 +48,7 @@ export async function GET(
       `https://api-data.line.me/v2/bot/message/${messageId}/content`,
       {
         headers: {
-          Authorization: `Bearer ${project.lineAccessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );

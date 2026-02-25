@@ -12,30 +12,20 @@ export async function POST(request: NextRequest) {
 
     const { messageId, projectId, invoiceId } = await request.json();
 
-    if (!messageId || !projectId || !invoiceId) {
+    if (!messageId || !invoiceId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify user owns this project
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        ownerId: session.user.id,
-      },
-    });
-
-    if (!project || !project.lineAccessToken) {
-      return NextResponse.json({ error: "Project not found or LINE not configured" }, { status: 404 });
-    }
-
-    // Verify invoice belongs to this project
+    // Find invoice first (to get projectId if not provided)
     const invoice = await prisma.invoice.findFirst({
       where: {
         id: invoiceId,
-        projectId: projectId,
+        ...(projectId && { projectId }),
+        project: { ownerId: session.user.id },
       },
       include: {
         tenant: true,
+        project: { include: { lineOa: true } },
       },
     });
 
@@ -43,12 +33,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
+    const project = invoice.project;
+    const lineAccessToken = project.lineOa?.lineAccessToken || project.lineAccessToken;
+    if (!lineAccessToken) {
+      return NextResponse.json({ error: "LINE not configured for this project" }, { status: 404 });
+    }
+
     // Fetch image from LINE Content API
     const lineResponse = await fetch(
       `https://api-data.line.me/v2/bot/message/${messageId}/content`,
       {
         headers: {
-          Authorization: `Bearer ${project.lineAccessToken}`,
+          Authorization: `Bearer ${lineAccessToken}`,
         },
       }
     );

@@ -10,12 +10,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "LINE user ID required" }, { status: 400 });
     }
 
-    // Find LINE contact and linked tenant
+    // Find LINE contact linked to a tenant
     const lineContact = await prisma.lineContact.findFirst({
-      where: { lineUserId },
+      where: { lineUserId, tenantId: { not: null } },
       include: {
-        tenant: true,
-        project: true,
+        tenant: {
+          include: {
+            unit: {
+              include: {
+                project: { select: { id: true, name: true, nameTh: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -41,6 +48,8 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    const project = lineContact.tenant.unit.project;
+
     return NextResponse.json({
       tenant: {
         id: lineContact.tenant.id,
@@ -48,9 +57,9 @@ export async function GET(request: NextRequest) {
         nameTh: lineContact.tenant.nameTh,
       },
       project: {
-        id: lineContact.project.id,
-        name: lineContact.project.name,
-        nameTh: lineContact.project.nameTh,
+        id: project.id,
+        name: project.name,
+        nameTh: project.nameTh,
       },
       invoices,
     });

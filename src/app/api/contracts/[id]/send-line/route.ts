@@ -24,6 +24,7 @@ export async function POST(
           select: {
             ownerId: true,
             lineAccessToken: true,
+            lineOa: { select: { lineAccessToken: true } },
             name: true,
             nameTh: true,
           },
@@ -53,7 +54,9 @@ export async function POST(
       return NextResponse.json({ error: "Tenant has no LINE contact linked" }, { status: 400 });
     }
 
-    if (!contract.project.lineAccessToken) {
+    // Get access token from LineOA (preferred) or project (legacy fallback)
+    const accessToken = contract.project.lineOa?.lineAccessToken || contract.project.lineAccessToken;
+    if (!accessToken) {
       return NextResponse.json({ error: "LINE OA not configured for this project" }, { status: 400 });
     }
 
@@ -151,7 +154,7 @@ export async function POST(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${contract.project.lineAccessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         to: contract.tenant.lineContact.lineUserId,

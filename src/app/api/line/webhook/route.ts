@@ -42,6 +42,11 @@ async function getGroupSummary(groupId: string, accessToken: string) {
   }
 }
 
+// Helper: get access token from LineOA, with fallback to project legacy fields
+function getAccessToken(lineOa: { lineAccessToken: string | null } | null, project: { lineAccessToken: string | null } | null): string {
+  return lineOa?.lineAccessToken || project?.lineAccessToken || "";
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
@@ -63,75 +68,106 @@ export async function POST(request: NextRequest) {
 
       if (!contactId) continue;
 
-      // Find existing LINE contact
-      let lineContact = await prisma.lineContact.findFirst({
-        where: { lineUserId: contactId },
-        include: { project: true },
+      // Find the LineOA by matching signature against all LineOA records
+      let lineOa = null;
+      const lineOAs = await prisma.lineOA.findMany({
+        where: {
+          lineChannelSecret: { not: null },
+          lineAccessToken: { not: null },
+        },
       });
 
-      let project = lineContact?.project;
+      for (const oa of lineOAs) {
+        if (oa.lineChannelSecret && verifySignature(body, signature, oa.lineChannelSecret)) {
+          lineOa = oa;
+          break;
+        }
+      }
 
-      // If no existing contact, find project by verifying signature with all configured projects
-      if (!project) {
+      // Fallback: check legacy per-project credentials
+      if (!lineOa) {
         const projects = await prisma.project.findMany({
           where: {
             lineAccessToken: { not: null },
             lineChannelSecret: { not: null },
+            lineOaId: null, // Only check projects NOT linked to a LineOA
           },
         });
 
         for (const p of projects) {
           if (p.lineChannelSecret && verifySignature(body, signature, p.lineChannelSecret)) {
-            project = p;
+            // Create a LineOA from legacy project fields for future use
+            lineOa = await prisma.lineOA.create({
+              data: {
+                name: `${p.name} LINE OA`,
+                lineChannelId: p.lineChannelId,
+                lineChannelSecret: p.lineChannelSecret,
+                lineAccessToken: p.lineAccessToken,
+                liffId: p.liffId,
+                ownerId: p.ownerId,
+              },
+            });
+            // Link the project to this new LineOA
+            await prisma.project.update({
+              where: { id: p.id },
+              data: { lineOaId: lineOa.id },
+            });
             break;
           }
         }
       }
 
-      if (!project) {
-        console.log("Could not identify project for LINE webhook");
+      if (!lineOa) {
+        console.log("Could not identify LINE OA for webhook");
         continue;
       }
 
-      // Verify signature
-      if (!verifySignature(body, signature, project.lineChannelSecret || "")) {
-        console.log("Invalid signature");
-        continue;
-      }
+      const accessToken = getAccessToken(lineOa, null);
+
+      // Find existing LINE contact under this OA
+      let lineContact = await prisma.lineContact.findFirst({
+        where: { lineUserId: contactId, lineOaId: lineOa.id },
+        include: {
+          project: true,
+          tenant: { include: { unit: true } },
+        },
+      });
 
       // Handle join event - bot added to a group
       if (type === "join" && isGroup) {
-        const groupSummary = await getGroupSummary(contactId, project.lineAccessToken || "");
+        const groupSummary = await getGroupSummary(contactId, accessToken);
 
         if (!lineContact) {
           lineContact = await prisma.lineContact.create({
             data: {
-              projectId: project.id,
+              lineOaId: lineOa.id,
               lineUserId: contactId,
               contactType: "GROUP",
               displayName: groupSummary?.groupName || "LINE Group",
               pictureUrl: groupSummary?.pictureUrl,
             },
-            include: { project: true },
+            include: {
+              project: true,
+              tenant: { include: { unit: true } },
+            },
           });
 
-          // Send welcome message to group
+          // Send welcome message
           await fetch("https://api.line.me/v2/bot/message/reply", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${project.lineAccessToken}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
               replyToken,
               messages: [{
                 type: "text",
-                text: `สวัสดีค่ะ ยินดีต้อนรับสู่ ${project.name}\nHello! Welcome to ${project.name}`,
+                text: `สวัสดีค่ะ ยินดีต้อนรับ\nHello! Welcome!`,
               }],
             }),
           });
         } else {
-          // Update existing group contact
           await prisma.lineContact.update({
             where: { id: lineContact.id },
             data: {
@@ -146,20 +182,22 @@ export async function POST(request: NextRequest) {
 
       // Handle follow event - user added the LINE OA (1-to-1 only)
       if (type === "follow" && !isGroup) {
-        const profile = await getLineProfile(contactId, project.lineAccessToken || "");
+        const profile = await getLineProfile(contactId, accessToken);
 
         if (!lineContact) {
-          // Create new LINE contact
           lineContact = await prisma.lineContact.create({
             data: {
-              projectId: project.id,
+              lineOaId: lineOa.id,
               lineUserId: contactId,
               contactType: "USER",
               displayName: profile?.displayName || "Unknown User",
               pictureUrl: profile?.pictureUrl,
               statusMessage: profile?.statusMessage,
             },
-            include: { project: true },
+            include: {
+              project: true,
+              tenant: { include: { unit: true } },
+            },
           });
 
           // Send welcome message
@@ -167,18 +205,17 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${project.lineAccessToken}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
               replyToken,
               messages: [{
                 type: "text",
-                text: `สวัสดีค่ะ ${profile?.displayName || ""} ยินดีต้อนรับสู่ ${project.name}\nHello! Welcome to ${project.name}`,
+                text: `สวัสดีค่ะ ${profile?.displayName || ""} ยินดีต้อนรับ\nHello ${profile?.displayName || ""}! Welcome!`,
               }],
             }),
           });
         } else {
-          // Update existing contact profile
           await prisma.lineContact.update({
             where: { id: lineContact.id },
             data: {
@@ -194,29 +231,35 @@ export async function POST(request: NextRequest) {
       // For message events, auto-create contact if doesn't exist
       if (!lineContact) {
         if (isGroup) {
-          const groupSummary = await getGroupSummary(contactId, project.lineAccessToken || "");
+          const groupSummary = await getGroupSummary(contactId, accessToken);
           lineContact = await prisma.lineContact.create({
             data: {
-              projectId: project.id,
+              lineOaId: lineOa.id,
               lineUserId: contactId,
               contactType: "GROUP",
               displayName: groupSummary?.groupName || "LINE Group",
               pictureUrl: groupSummary?.pictureUrl,
             },
-            include: { project: true },
+            include: {
+              project: true,
+              tenant: { include: { unit: true } },
+            },
           });
         } else {
-          const profile = await getLineProfile(contactId, project.lineAccessToken || "");
+          const profile = await getLineProfile(contactId, accessToken);
           lineContact = await prisma.lineContact.create({
             data: {
-              projectId: project.id,
+              lineOaId: lineOa.id,
               lineUserId: contactId,
               contactType: "USER",
               displayName: profile?.displayName || "Unknown User",
               pictureUrl: profile?.pictureUrl,
               statusMessage: profile?.statusMessage,
             },
-            include: { project: true },
+            include: {
+              project: true,
+              tenant: { include: { unit: true } },
+            },
           });
         }
       }
@@ -245,48 +288,42 @@ export async function POST(request: NextRequest) {
             text.includes("ซ่อม")
           ) {
             // Create maintenance request if tenant is linked
-            if (lineContact.tenantId) {
-              const tenant = await prisma.tenant.findUnique({
-                where: { id: lineContact.tenantId },
-                include: { unit: true },
+            if (lineContact.tenantId && lineContact.tenant) {
+              const tenant = lineContact.tenant;
+
+              await prisma.maintenanceRequest.create({
+                data: {
+                  projectId: tenant.unit.projectId,
+                  unitId: tenant.unitId,
+                  title: "แจ้งซ่อมจาก LINE / Maintenance from LINE",
+                  description: message.text,
+                  category: "GENERAL",
+                  priority: "MEDIUM",
+                  lineMessageId: message.id,
+                },
               });
 
-              if (tenant) {
-                await prisma.maintenanceRequest.create({
-                  data: {
-                    projectId: lineContact.projectId,
-                    unitId: tenant.unitId,
-                    title: "แจ้งซ่อมจาก LINE / Maintenance from LINE",
-                    description: message.text,
-                    category: "GENERAL",
-                    priority: "MEDIUM",
-                    lineMessageId: message.id,
-                  },
-                });
-
-                // Send confirmation reply
-                await fetch("https://api.line.me/v2/bot/message/reply", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${project.lineAccessToken}`,
-                  },
-                  body: JSON.stringify({
-                    replyToken,
-                    messages: [{
-                      type: "text",
-                      text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit.unitNumber}\nMaintenance request received for unit ${tenant.unit.unitNumber}. Thank you!`,
-                    }],
-                  }),
-                });
-              }
-            } else {
-              // Contact not linked to tenant yet
+              // Send confirmation reply
               await fetch("https://api.line.me/v2/bot/message/reply", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${project.lineAccessToken}`,
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                  replyToken,
+                  messages: [{
+                    type: "text",
+                    text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit.unitNumber}\nMaintenance request received for unit ${tenant.unit.unitNumber}. Thank you!`,
+                  }],
+                }),
+              });
+            } else {
+              await fetch("https://api.line.me/v2/bot/message/reply", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${accessToken}`,
                 },
                 body: JSON.stringify({
                   replyToken,
@@ -307,7 +344,7 @@ export async function POST(request: NextRequest) {
             text.includes("payment") ||
             text.includes("slip")
           ) {
-            if (lineContact.tenantId) {
+            if (lineContact.tenantId && lineContact.tenant) {
               // Check if tenant has unpaid invoices
               const unpaidInvoices = await prisma.invoice.findMany({
                 where: {
@@ -316,14 +353,16 @@ export async function POST(request: NextRequest) {
                 },
               });
 
-              if (unpaidInvoices.length > 0 && project.liffId) {
+              const liffId = lineOa.liffId;
+
+              if (unpaidInvoices.length > 0 && liffId) {
                 // Send Flex Message with LIFF button
-                const liffUrl = `https://liff.line.me/${project.liffId}`;
+                const liffUrl = `https://liff.line.me/${liffId}`;
                 await fetch("https://api.line.me/v2/bot/message/reply", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${project.lineAccessToken}`,
+                    Authorization: `Bearer ${accessToken}`,
                   },
                   body: JSON.stringify({
                     replyToken,
@@ -379,12 +418,11 @@ export async function POST(request: NextRequest) {
                   }),
                 });
               } else if (unpaidInvoices.length > 0) {
-                // No LIFF configured, send text message
                 await fetch("https://api.line.me/v2/bot/message/reply", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${project.lineAccessToken}`,
+                    Authorization: `Bearer ${accessToken}`,
                   },
                   body: JSON.stringify({
                     replyToken,
@@ -399,7 +437,7 @@ export async function POST(request: NextRequest) {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${project.lineAccessToken}`,
+                    Authorization: `Bearer ${accessToken}`,
                   },
                   body: JSON.stringify({
                     replyToken,
@@ -415,7 +453,7 @@ export async function POST(request: NextRequest) {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${project.lineAccessToken}`,
+                  Authorization: `Bearer ${accessToken}`,
                 },
                 body: JSON.stringify({
                   replyToken,
