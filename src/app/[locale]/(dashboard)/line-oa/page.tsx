@@ -98,6 +98,7 @@ export default function LineOAPage() {
   const [isSaveSlipOpen, setIsSaveSlipOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedTenant, setSelectedTenant] = useState<string>("");
+  const [selectedLinkProject, setSelectedLinkProject] = useState<string>("");
   const [slipMessageId, setSlipMessageId] = useState<string>("");
   const [selectedInvoice, setSelectedInvoice] = useState<string>("");
   const [savingSlip, setSavingSlip] = useState(false);
@@ -342,8 +343,10 @@ export default function LineOAPage() {
     }
   };
 
-  // Show all tenants — backend validates that tenant's project uses the same LINE OA
-  const linkableTenants = tenants;
+  // Filter tenants by selected project in the link dialog
+  const linkableTenants = selectedLinkProject
+    ? tenants.filter((t) => t.unit.projectId === selectedLinkProject)
+    : tenants;
 
   if (loading) {
     return <PageSkeleton columns={4} rows={5} />;
@@ -498,6 +501,7 @@ export default function LineOAPage() {
                       size="sm"
                       onClick={() => {
                         setSelectedTenant(selectedContact.tenant?.id || "");
+                        setSelectedLinkProject(selectedContact.project?.id || "");
                         setIsLinkOpen(true);
                       }}
                     >
@@ -750,6 +754,29 @@ export default function LineOAPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
+              <Label>Select Project</Label>
+              <Select
+                value={selectedLinkProject || "__all__"}
+                onValueChange={(v) => {
+                  setSelectedLinkProject(v === "__all__" ? "" : v);
+                  setSelectedTenant(""); // Reset tenant when project changes
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All projects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">-- All Projects --</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Select Tenant</Label>
               <Select
                 value={selectedTenant || "__none__"}
@@ -762,7 +789,7 @@ export default function LineOAPage() {
                   <SelectItem value="__none__">-- No Link --</SelectItem>
                   {linkableTenants.length === 0 ? (
                     <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                      No active tenants found
+                      {selectedLinkProject ? "No active tenants in this project" : "No active tenants found"}
                     </div>
                   ) : (
                     linkableTenants.map((tenant) => (
