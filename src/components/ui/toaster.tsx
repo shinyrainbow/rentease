@@ -1,21 +1,28 @@
 "use client";
 
+import ReactDOM from "react-dom";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { X, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Toaster() {
   const { toasts, dismiss } = useToast();
+  const [mounted, setMounted] = useState(false);
 
-  if (toasts.length === 0) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
+  if (!mounted || toasts.length === 0) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed top-4 right-4 z-99999 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            "flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all",
+            "pointer-events-auto flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all",
             "bg-background animate-in slide-in-from-top-2",
             toast.variant === "destructive"
               ? "border-red-200 bg-red-50 text-red-900"
@@ -43,6 +50,7 @@ export function Toaster() {
           </button>
         </div>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }
