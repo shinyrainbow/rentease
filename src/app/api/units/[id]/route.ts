@@ -41,8 +41,21 @@ export async function GET(
       return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
+    // Compute status dynamically
+    const today = new Date();
+    let computedStatus = unit.status;
+    if (unit.status !== "MAINTENANCE" && unit.status !== "RESERVED") {
+      const hasActiveTenant = unit.tenants.some((t) => {
+        const started = !t.contractStart || new Date(t.contractStart) <= today;
+        const notEnded = !t.contractEnd || new Date(t.contractEnd) >= today;
+        return started && notEnded;
+      });
+      computedStatus = hasActiveTenant ? "OCCUPIED" : "VACANT";
+    }
+
     return NextResponse.json({
       ...unit,
+      status: computedStatus,
       tenant: unit.tenants[0] || null,
       tenants: undefined,
     });

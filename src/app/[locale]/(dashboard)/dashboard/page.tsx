@@ -27,10 +27,22 @@ async function getDashboardData(userId: string) {
     recentPayments,
   ] = await Promise.all([
     prisma.project.count({ where: { ownerId: userId } }),
-    prisma.unit.groupBy({
-      by: ["status"],
+    prisma.unit.findMany({
       where: { project: { ownerId: userId } },
-      _count: true,
+      select: {
+        status: true,
+        tenants: {
+          where: {
+            OR: [
+              { contractEnd: null },
+              { contractEnd: { gte: today } },
+            ],
+            contractStart: { lte: today },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
     }),
     prisma.invoice.count({
       where: {
@@ -120,9 +132,16 @@ async function getDashboardData(userId: string) {
     }),
   ]);
 
-  const totalUnits = unitStats.reduce((acc: number, stat) => acc + stat._count, 0);
-  const occupiedUnits = unitStats.find((s) => s.status === "OCCUPIED")?._count || 0;
-  const vacantUnits = unitStats.find((s) => s.status === "VACANT")?._count || 0;
+  // Compute unit status dynamically from tenant data
+  const totalUnits = unitStats.length;
+  const occupiedUnits = unitStats.filter((u) => {
+    if (u.status === "MAINTENANCE" || u.status === "RESERVED") return false;
+    return u.tenants.length > 0;
+  }).length;
+  const vacantUnits = unitStats.filter((u) => {
+    if (u.status === "MAINTENANCE" || u.status === "RESERVED") return false;
+    return u.tenants.length === 0;
+  }).length;
   const occupancyRate = totalUnits > 0 ? ((occupiedUnits / totalUnits) * 100).toFixed(1) : 0;
   const monthlyRevenue = monthlyReceipts._sum.amount || 0;
 

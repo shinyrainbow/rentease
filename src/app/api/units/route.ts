@@ -47,12 +47,28 @@ export async function GET(request: NextRequest) {
       orderBy: [{ projectId: "asc" }, { unitNumber: "asc" }],
     });
 
-    // Transform to include single active tenant for backward compatibility
-    const unitsWithTenant = units.map((unit) => ({
-      ...unit,
-      tenant: unit.tenants[0] || null,
-      tenants: undefined,
-    }));
+    // Transform to include single active tenant and compute status dynamically
+    const today = new Date();
+    const unitsWithTenant = units.map((unit) => {
+      const tenant = unit.tenants[0] || null;
+      // Compute status dynamically: MAINTENANCE/RESERVED are manual overrides, keep as-is
+      // Otherwise, check if any active tenant exists
+      let computedStatus = unit.status;
+      if (unit.status !== "MAINTENANCE" && unit.status !== "RESERVED") {
+        const hasActiveTenant = unit.tenants.some((t) => {
+          const started = !t.contractStart || new Date(t.contractStart) <= today;
+          const notEnded = !t.contractEnd || new Date(t.contractEnd) >= today;
+          return started && notEnded;
+        });
+        computedStatus = hasActiveTenant ? "OCCUPIED" : "VACANT";
+      }
+      return {
+        ...unit,
+        status: computedStatus,
+        tenant,
+        tenants: undefined,
+      };
+    });
 
     return NextResponse.json(unitsWithTenant);
   } catch (error) {

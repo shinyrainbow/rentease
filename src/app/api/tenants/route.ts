@@ -137,14 +137,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update unit status to occupied (only if currently vacant or reserved)
-    if (unit.status === "VACANT" || unit.status === "RESERVED") {
-      await prisma.unit.update({
-        where: { id: data.unitId },
-        data: { status: "OCCUPIED" },
-      });
-    }
-
     return NextResponse.json(tenant);
   } catch (error) {
     console.error("Error creating tenant:", error);

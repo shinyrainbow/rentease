@@ -480,6 +480,20 @@ export default function TenantsPage() {
     }
   };
 
+  // Format number with commas for display, store raw value
+  const fmtNum = (val: string) => {
+    const raw = val.replace(/,/g, "");
+    if (raw === "" || raw === "-") return raw;
+    const parts = raw.split(".");
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.length > 1 ? `${intPart}.${parts[1]}` : intPart;
+  };
+
+  const onNumChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9.,]/g, "").replace(/,/g, "");
+    setFormData((prev) => ({ ...prev, [field]: raw }));
+  };
+
   const resetForm = () => {
     setFormData({
       unitId: "",
@@ -748,10 +762,9 @@ export default function TenantsPage() {
                   <Label className="text-xs">{t("withholdingTax")} %</Label>
                   <Input
                     className="h-9"
-                    type="number"
-                    step="0.01"
+                    inputMode="decimal"
                     value={formData.withholdingTax}
-                    onChange={(e) => setFormData({ ...formData, withholdingTax: e.target.value })}
+                    onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ""); setFormData({ ...formData, withholdingTax: v }); }}
                   />
                 </div>
               </div>
@@ -818,24 +831,24 @@ export default function TenantsPage() {
                 <div className="grid grid-cols-5 gap-2">
                   <div className="space-y-1">
                     <Label className="text-xs">{t("baseRent")} *</Label>
-                    <Input className="h-9" type="number" value={formData.baseRent} onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })} required />
+                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.baseRent)} onChange={onNumChange("baseRent")} required />
                     <p className="text-xs text-muted-foreground">{t("baseRentHint")}</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("commonFee")}</Label>
-                    <Input className="h-9" type="number" value={formData.commonFee} onChange={(e) => setFormData({ ...formData, commonFee: e.target.value })} />
+                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.commonFee)} onChange={onNumChange("commonFee")} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("deposit")}</Label>
-                    <Input className="h-9" type="number" value={formData.deposit} onChange={(e) => setFormData({ ...formData, deposit: e.target.value })} />
+                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.deposit)} onChange={onNumChange("deposit")} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("discountPercent")}</Label>
-                    <Input className="h-9" type="number" step="0.01" value={formData.discountPercent} onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })} />
+                    <Input className="h-9" inputMode="decimal" value={formData.discountPercent} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ""); setFormData({ ...formData, discountPercent: v }); }} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("discountAmount")}</Label>
-                    <Input className="h-9" type="number" step="0.01" value={formData.discountAmount} onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })} />
+                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.discountAmount)} onChange={onNumChange("discountAmount")} />
                   </div>
                 </div>
               </div>
