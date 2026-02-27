@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
 
               await prisma.maintenanceRequest.create({
                 data: {
-                  projectId: tenant.unit.projectId,
+                  projectId: tenant.unit?.projectId ?? "",
                   unitId: tenant.unitId,
                   title: "แจ้งซ่อมจาก LINE / Maintenance from LINE",
                   description: message.text,
@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
                   replyToken,
                   messages: [{
                     type: "text",
-                    text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit.unitNumber}\nMaintenance request received for unit ${tenant.unit.unitNumber}. Thank you!`,
+                    text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit?.unitNumber ?? ""}\nMaintenance request received for unit ${tenant.unit?.unitNumber ?? ""}. Thank you!`,
                   }],
                 }),
               });

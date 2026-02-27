@@ -261,7 +261,7 @@ export default function ContractsPage() {
                   ) : (
                     tenants.map((tenant) => (
                       <SelectItem key={tenant.id} value={tenant.id}>
-                        {tenant.name} - {tenant.unit.unitNumber} ({tenant.unit.project.name})
+                        {tenant.name} - {tenant.unit?.unitNumber} ({tenant.unit?.project.name})
                       </SelectItem>
                     ))
                   )}

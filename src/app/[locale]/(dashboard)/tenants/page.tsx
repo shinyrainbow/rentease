@@ -160,7 +160,7 @@ export default function TenantsPage() {
   // Filter tenants by project and search query (client-side filtering)
   const filteredTenants = tenants.filter((tenant) => {
     // Project filter
-    if (projectFilter && tenant.unit.project.name !== projectFilter) {
+    if (projectFilter && tenant.unit?.project.name !== projectFilter) {
       return false;
     }
     // Search filter
@@ -171,7 +171,7 @@ export default function TenantsPage() {
         (tenant.nameTh && tenant.nameTh.toLowerCase().includes(query)) ||
         (tenant.phone && tenant.phone.includes(query)) ||
         (tenant.email && tenant.email.toLowerCase().includes(query)) ||
-        tenant.unit.unitNumber.toLowerCase().includes(query)
+        (tenant.unit?.unitNumber?.toLowerCase().includes(query) ?? false)
       );
     }
     return true;
@@ -930,7 +930,7 @@ export default function TenantsPage() {
                 title: tenant.name,
                 date: new Date(tenant.contractEnd),
                 type: "expiring" as const,
-                details: `${tenant.unit.project.name} - ${tenant.unit.unitNumber}`,
+                details: `${tenant.unit?.project.name ?? ""} - ${tenant.unit?.unitNumber ?? ""}`,
               });
             }
             if (tenant.contractStart) {
@@ -939,7 +939,7 @@ export default function TenantsPage() {
                 title: tenant.name,
                 date: new Date(tenant.contractStart),
                 type: "starting" as const,
-                details: `${tenant.unit.project.name} - ${tenant.unit.unitNumber}`,
+                details: `${tenant.unit?.project.name ?? ""} - ${tenant.unit?.unitNumber ?? ""}`,
               });
             }
             return events;
@@ -1025,8 +1025,8 @@ export default function TenantsPage() {
                       </label>
                     </TableCell>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
-                    <TableCell>{tenant.unit.unitNumber}</TableCell>
-                    <TableCell>{tenant.unit.project.name}</TableCell>
+                    <TableCell>{tenant.unit?.unitNumber}</TableCell>
+                    <TableCell>{tenant.unit?.project.name}</TableCell>
                     <TableCell>
                       <Badge variant={tenant.tenantType === "COMPANY" ? "default" : "secondary"}>
                         {t(`types.${tenant.tenantType}`)}

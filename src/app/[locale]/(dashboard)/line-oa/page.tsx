@@ -1024,7 +1024,7 @@ export default function LineOAPage() {
                   ) : (
                     linkableTenants.map((tenant) => (
                       <SelectItem key={tenant.id} value={tenant.id}>
-                        {tenant.name} - {tenant.unit.unitNumber}
+                        {tenant.name} - {tenant.unit?.unitNumber}
                       </SelectItem>
                     ))
                   )}
