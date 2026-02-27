@@ -176,6 +176,7 @@
     "withholdingTax": "หักภาษี ณ ที่จ่าย (%)",
     "contractPricing": "ข้อมูลสัญญาเช่า",
     "baseRent": "ค่าเช่า",
+    "baseRentHint": "ราคาเต็มก่อนหักภาษี (ระบบจะหักภาษีอัตโนมัติในใบแจ้งหนี้)",
     "commonFee": "ค่าส่วนกลาง",
     "deposit": "เงินมัดจำ",
     "discountPercent": "ส่วนลด (%)",

@@ -820,6 +820,7 @@ export default function TenantsPage() {
                   <div className="space-y-1">
                     <Label className="text-xs">{t("baseRent")} *</Label>
                     <Input className="h-9" type="number" value={formData.baseRent} onChange={(e) => setFormData({ ...formData, baseRent: e.target.value })} required />
+                    <p className="text-xs text-muted-foreground">{t("baseRentHint")}</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t("commonFee")}</Label>

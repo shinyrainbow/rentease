@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   MessageCircle,
   Settings,
@@ -34,6 +35,11 @@ import {
   ChevronDown,
   ChevronRight,
   Receipt,
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  FolderOpen,
 } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { formatDateTime } from "@/lib/utils";
@@ -60,6 +66,17 @@ interface LineMessage {
   content: string | null;
   mediaUrl: string | null;
   createdAt: string;
+}
+
+interface LineOAAccount {
+  id: string;
+  name: string;
+  lineChannelId: string | null;
+  lineChannelSecret: string | null;
+  lineAccessToken: string | null;
+  liffId: string | null;
+  projects: { id: string; name: string; nameTh: string | null }[];
+  _count: { contacts: number };
 }
 
 interface LineContact {
@@ -96,7 +113,15 @@ export default function LineOAPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [isSaveSlipOpen, setIsSaveSlipOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [lineOaAccounts, setLineOaAccounts] = useState<LineOAAccount[]>([]);
+  const [editingLineOa, setEditingLineOa] = useState<LineOAAccount | null>(null);
+  const [isAssignProjectsOpen, setIsAssignProjectsOpen] = useState(false);
+  const [assigningLineOa, setAssigningLineOa] = useState<LineOAAccount | null>(null);
+  const [assignedProjectIds, setAssignedProjectIds] = useState<Set<string>>(new Set());
+  const [savingProjects, setSavingProjects] = useState(false);
+  const [deleteLineOaOpen, setDeleteLineOaOpen] = useState(false);
+  const [deletingLineOa, setDeletingLineOa] = useState<LineOAAccount | null>(null);
+  const [deletingOa, setDeletingOa] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<string>("");
   const [selectedLinkProject, setSelectedLinkProject] = useState<string>("");
   const [slipMessageId, setSlipMessageId] = useState<string>("");
@@ -108,9 +133,11 @@ export default function LineOAPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
+    name: "",
     lineChannelId: "",
     lineChannelSecret: "",
     lineAccessToken: "",
+    liffId: "",
   });
 
   // Track expanded/collapsed state for each project in chat list
@@ -151,19 +178,22 @@ export default function LineOAPage() {
 
   const fetchData = async () => {
     try {
-      const [projectsRes, contactsRes, tenantsRes] = await Promise.all([
+      const [projectsRes, contactsRes, tenantsRes, lineOaRes] = await Promise.all([
         fetch("/api/projects"),
         fetch("/api/line/contacts"),
-        fetch("/api/tenants?status=ACTIVE"),  // Filter by contract end date
+        fetch("/api/tenants?status=ACTIVE"),
+        fetch("/api/line-oa"),
       ]);
-      const [projectsData, contactsData, tenantsData] = await Promise.all([
+      const [projectsData, contactsData, tenantsData, lineOaData] = await Promise.all([
         projectsRes.json(),
         contactsRes.json(),
         tenantsRes.json(),
+        lineOaRes.json(),
       ]);
       setProjects(Array.isArray(projectsData) ? projectsData : []);
       setContacts(Array.isArray(contactsData) ? contactsData : []);
       setTenants(Array.isArray(tenantsData) ? tenantsData : []);
+      setLineOaAccounts(Array.isArray(lineOaData) ? lineOaData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -227,36 +257,86 @@ export default function LineOAPage() {
     }
   };
 
-  const handleEditSettings = (project: Project) => {
-    setEditingProject(project);
+  const handleAddLineOa = () => {
+    setEditingLineOa(null);
+    setFormData({ name: "", lineChannelId: "", lineChannelSecret: "", lineAccessToken: "", liffId: "" });
+    setIsSettingsOpen(true);
+  };
+
+  const handleEditLineOa = (oa: LineOAAccount) => {
+    setEditingLineOa(oa);
     setFormData({
-      lineChannelId: project.lineChannelId || "",
-      lineChannelSecret: project.lineChannelSecret || "",
-      lineAccessToken: project.lineAccessToken || "",
+      name: oa.name,
+      lineChannelId: oa.lineChannelId || "",
+      lineChannelSecret: oa.lineChannelSecret || "",
+      lineAccessToken: oa.lineAccessToken || "",
+      liffId: oa.liffId || "",
     });
     setIsSettingsOpen(true);
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
+  const handleSaveLineOa = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProject) return;
-
     setSavingSettings(true);
     try {
-      const res = await fetch(`/api/projects/${editingProject.id}`, {
-        method: "PUT",
+      const url = editingLineOa ? `/api/line-oa/${editingLineOa.id}` : "/api/line-oa";
+      const method = editingLineOa ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       if (res.ok) {
         setIsSettingsOpen(false);
         fetchData();
       }
     } catch (error) {
-      console.error("Error updating LINE settings:", error);
+      console.error("Error saving LINE OA:", error);
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleOpenAssignProjects = (oa: LineOAAccount) => {
+    setAssigningLineOa(oa);
+    setAssignedProjectIds(new Set(oa.projects.map((p) => p.id)));
+    setIsAssignProjectsOpen(true);
+  };
+
+  const handleSaveAssignProjects = async () => {
+    if (!assigningLineOa) return;
+    setSavingProjects(true);
+    try {
+      const res = await fetch(`/api/line-oa/${assigningLineOa.id}/projects`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectIds: Array.from(assignedProjectIds) }),
+      });
+      if (res.ok) {
+        setIsAssignProjectsOpen(false);
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error assigning projects:", error);
+    } finally {
+      setSavingProjects(false);
+    }
+  };
+
+  const handleDeleteLineOa = async () => {
+    if (!deletingLineOa) return;
+    setDeletingOa(true);
+    try {
+      const res = await fetch(`/api/line-oa/${deletingLineOa.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeleteLineOaOpen(false);
+        setDeletingLineOa(null);
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Error deleting LINE OA:", error);
+    } finally {
+      setDeletingOa(false);
     }
   };
 
@@ -288,8 +368,8 @@ export default function LineOAPage() {
     }
   };
 
-  const isConnected = (project: Project) => {
-    return project.lineChannelId && project.lineChannelSecret && project.lineAccessToken;
+  const isOaConnected = (oa: LineOAAccount) => {
+    return oa.lineChannelId && oa.lineChannelSecret && oa.lineAccessToken;
   };
 
   const handleOpenSaveSlip = async (messageId: string) => {
@@ -622,49 +702,90 @@ export default function LineOAPage() {
           <div className="grid gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-green-500" />
-                  LINE Official Account Integration
-                </CardTitle>
-                <CardDescription>
-                  Configure LINE OA settings for each project to enable automated messaging
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageCircle className="h-5 w-5 text-green-500" />
+                      LINE Official Accounts
+                    </CardTitle>
+                    <CardDescription>
+                      จัดการบัญชี LINE OA และเชื่อมต่อกับโครงการ / Manage LINE OA accounts and link to projects
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleAddLineOa}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    เพิ่ม LINE OA
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="font-medium">{project.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {project.lineChannelId || "Not configured"}
-                          </p>
+                {lineOaAccounts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">ยังไม่มีบัญชี LINE OA</p>
+                    <p className="text-xs mt-1">กดปุ่ม &quot;เพิ่ม LINE OA&quot; เพื่อเริ่มต้น</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {lineOaAccounts.map((oa) => (
+                      <div key={oa.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="font-medium">{oa.name}</p>
+                              <p className="text-sm text-muted-foreground font-mono">
+                                {oa.lineChannelId || "ยังไม่ได้ตั้งค่า"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isOaConnected(oa) ? (
+                              <Badge className="bg-green-100 text-green-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {t("connected")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                {t("notConnected")}
+                              </Badge>
+                            )}
+                            <Button variant="outline" size="sm" onClick={() => handleEditLineOa(oa)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              แก้ไข
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleOpenAssignProjects(oa)}>
+                              <FolderOpen className="h-4 w-4 mr-1" />
+                              โครงการ
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setDeletingLineOa(oa); setDeleteLineOaOpen(true); }}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{oa._count.contacts} contacts</span>
+                          <span className="text-muted-foreground">·</span>
+                          {oa.projects.length === 0 ? (
+                            <span className="text-xs text-orange-500">ยังไม่ได้เชื่อมโครงการ</span>
+                          ) : (
+                            oa.projects.map((p) => (
+                              <Badge key={p.id} variant="outline" className="text-xs">
+                                {p.name}
+                              </Badge>
+                            ))
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        {isConnected(project) ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            {t("connected")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            {t("notConnected")}
-                          </Badge>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => handleEditSettings(project)}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          Configure
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -697,15 +818,25 @@ export default function LineOAPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Settings Dialog */}
+      {/* LINE OA Edit Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t("settings")} - {editingProject?.name}
+              {editingLineOa ? `แก้ไข LINE OA - ${editingLineOa.name}` : "เพิ่ม LINE OA"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSaveSettings} className="space-y-4">
+          <form onSubmit={handleSaveLineOa} className="space-y-4">
+            <div className="space-y-2">
+              <Label>ชื่อ LINE OA *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="เช่น BizSpace LINE OA"
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>{t("channelId")}</Label>
               <Input
@@ -735,6 +866,15 @@ export default function LineOAPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>LIFF ID</Label>
+              <Input
+                value={formData.liffId}
+                onChange={(e) => setFormData({ ...formData, liffId: e.target.value })}
+                placeholder="LIFF ID (optional)"
+              />
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsSettingsOpen(false)} disabled={savingSettings}>
                 {tCommon("cancel")}
@@ -745,6 +885,83 @@ export default function LineOAPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Projects Dialog */}
+      <Dialog open={isAssignProjectsOpen} onOpenChange={setIsAssignProjectsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              เชื่อมโครงการ - {assigningLineOa?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              เลือกโครงการที่จะใช้ LINE OA นี้ / Select projects to link with this LINE OA
+            </p>
+            <div className="space-y-3">
+              {projects.map((project) => (
+                <label key={project.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors">
+                  <Checkbox
+                    checked={assignedProjectIds.has(project.id)}
+                    onCheckedChange={(checked) => {
+                      setAssignedProjectIds((prev) => {
+                        const next = new Set(prev);
+                        if (checked) {
+                          next.add(project.id);
+                        } else {
+                          next.delete(project.id);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                  <span className="font-medium">{project.name}</span>
+                </label>
+              ))}
+              {projects.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">ไม่มีโครงการ</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAssignProjectsOpen(false)} disabled={savingProjects}>
+                {tCommon("cancel")}
+              </Button>
+              <Button onClick={handleSaveAssignProjects} disabled={savingProjects}>
+                {savingProjects && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("save")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete LINE OA Confirmation */}
+      <Dialog open={deleteLineOaOpen} onOpenChange={setDeleteLineOaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">ลบ LINE OA</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              ต้องการลบ <strong>{deletingLineOa?.name}</strong> หรือไม่?
+            </p>
+            {deletingLineOa && deletingLineOa._count.contacts > 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
+                LINE OA นี้มี {deletingLineOa._count.contacts} contacts — จะถูกลบทั้งหมดรวมถึงประวัติแชท
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteLineOaOpen(false)} disabled={deletingOa}>
+                {tCommon("cancel")}
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteLineOa} disabled={deletingOa}>
+                {deletingOa && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                ลบ
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

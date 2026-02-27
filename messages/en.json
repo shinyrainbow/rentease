@@ -175,6 +175,7 @@
     "withholdingTax": "Withholding Tax (%)",
     "contractPricing": "Contract Details",
     "baseRent": "Base Rent",
+    "baseRentHint": "Full price before tax (tax will be auto deducted in invoice)",
     "commonFee": "Common Fee",
     "deposit": "Deposit",
     "discountPercent": "Discount (%)",
