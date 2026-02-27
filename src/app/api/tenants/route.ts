@@ -32,10 +32,16 @@ export async function GET(request: NextRequest) {
 
     const tenants = await prisma.tenant.findMany({
       where: {
-        unit: {
-          project: { ownerId: session.user.id },
-          ...(projectId && { projectId }),
-        },
+        OR: [
+          {
+            unit: {
+              project: { ownerId: session.user.id },
+              ...(projectId && { projectId }),
+            },
+          },
+          // Include orphaned tenants (unit was deleted) — but not when filtering by project
+          ...(!projectId ? [{ unitId: null }] : []),
+        ],
         ...contractEndFilter,
       },
       include: {
@@ -51,14 +57,26 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Generate presigned URLs for tenant images
+    // Generate presigned URLs + snapshot fallbacks for nullable unit
     const tenantsWithImageUrls = await Promise.all(
       tenants.map(async (tenant) => {
+        let result = { ...tenant };
         if (tenant.imageUrl && isS3Key(tenant.imageUrl)) {
           const presignedUrl = await getPresignedUrl(tenant.imageUrl, 3600);
-          return { ...tenant, imageUrl: presignedUrl };
+          result = { ...result, imageUrl: presignedUrl };
         }
-        return tenant;
+        // Provide snapshot fallback when unit relation is null
+        if (!tenant.unit) {
+          result = {
+            ...result,
+            unit: {
+              unitNumber: tenant.unitNumber || "-",
+              projectId: "",
+              project: { name: tenant.projectName || "Unknown", nameTh: null },
+            },
+          } as typeof result;
+        }
+        return result;
       })
     );
 
@@ -97,6 +115,7 @@ export async function POST(request: NextRequest) {
 
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
+      include: { project: { select: { name: true } } },
     });
 
     if (!unit) {
@@ -137,6 +156,9 @@ export async function POST(request: NextRequest) {
       electricMeterNo: data.electricMeterNo || null,
       waterMeterNo: data.waterMeterNo || null,
       lineUserId: data.lineUserId || null,
+      // Snapshot fields
+      projectName: unit.project.name,
+      unitNumber: unit.unitNumber,
       contractStart: new Date(data.contractStart),
       contractEnd: new Date(data.contractEnd),
     };

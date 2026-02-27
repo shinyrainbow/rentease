@@ -18,7 +18,13 @@ export async function GET(
     const { id } = await params;
 
     const tenant = await prisma.tenant.findFirst({
-      where: { id, unit: { project: { ownerId: session.user.id } } },
+      where: {
+        id,
+        OR: [
+          { unit: { project: { ownerId: session.user.id } } },
+          { unitId: null },
+        ],
+      },
       include: {
         unit: { include: { project: true } },
         invoices: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -68,7 +74,14 @@ export async function PUT(
     }
 
     const existingTenant = await prisma.tenant.findFirst({
-      where: { id, unit: { project: { ownerId: session.user.id } } },
+      where: {
+        id,
+        OR: [
+          { unit: { project: { ownerId: session.user.id } } },
+          { unitId: null }, // Orphaned tenants (unit was deleted)
+        ],
+      },
+      include: { unit: { include: { project: { select: { name: true } } } } },
     });
 
     if (!existingTenant) {
@@ -76,20 +89,22 @@ export async function PUT(
     }
 
     // Check for overlapping contracts on the same unit (exclude self)
-    const overlapping = await prisma.tenant.findFirst({
-      where: {
-        unitId: existingTenant.unitId,
-        id: { not: id },
-        contractStart: { lt: endDate },
-        contractEnd: { gt: startDate },
-      },
-    });
+    if (existingTenant.unitId) {
+      const overlapping = await prisma.tenant.findFirst({
+        where: {
+          unitId: existingTenant.unitId,
+          id: { not: id },
+          contractStart: { lt: endDate },
+          contractEnd: { gt: startDate },
+        },
+      });
 
-    if (overlapping) {
-      return NextResponse.json(
-        { error: "contractOverlap", overlappingTenant: overlapping.name },
-        { status: 400 }
-      );
+      if (overlapping) {
+        return NextResponse.json(
+          { error: "contractOverlap", overlappingTenant: overlapping.name },
+          { status: 400 }
+        );
+      }
     }
 
     // Properly map and sanitize the data for Prisma
@@ -109,6 +124,9 @@ export async function PUT(
       electricMeterNo: data.electricMeterNo || null,
       waterMeterNo: data.waterMeterNo || null,
       lineUserId: data.lineUserId || null,
+      // Snapshot fields
+      projectName: existingTenant.unit?.project.name || existingTenant.projectName,
+      unitNumber: existingTenant.unit?.unitNumber || existingTenant.unitNumber,
       contractStart: new Date(data.contractStart),
       contractEnd: new Date(data.contractEnd),
     };
@@ -139,7 +157,13 @@ export async function DELETE(
     const { id } = await params;
 
     const existingTenant = await prisma.tenant.findFirst({
-      where: { id, unit: { project: { ownerId: session.user.id } } },
+      where: {
+        id,
+        OR: [
+          { unit: { project: { ownerId: session.user.id } } },
+          { unitId: null },
+        ],
+      },
       include: {
         unit: true,
         invoices: true,
