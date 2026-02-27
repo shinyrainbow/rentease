@@ -89,8 +89,6 @@ export async function POST(request: NextRequest) {
         title: title || null,
         titleTh: titleTh || null,
         baseRent: tenant.baseRent,
-        commonFee: tenant.commonFee,
-        deposit: tenant.deposit,
         contractStart: tenant.contractStart,
         contractEnd: tenant.contractEnd,
         clauses: clauses || null,

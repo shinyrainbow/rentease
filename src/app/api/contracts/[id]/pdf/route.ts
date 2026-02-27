@@ -29,8 +29,6 @@ const translations = {
     period: "Lease Period",
     to: "to",
     monthlyRent: "Monthly Rent",
-    commonFee: "Common Area Fee",
-    deposit: "Security Deposit",
     signatures: "Signatures",
     signedOn: "Signed on",
     notSigned: "Not signed",
@@ -53,8 +51,6 @@ const translations = {
     period: "ระยะเวลาเช่า",
     to: "ถึง",
     monthlyRent: "ค่าเช่ารายเดือน",
-    commonFee: "ค่าส่วนกลาง",
-    deposit: "เงินประกัน",
     signatures: "ลายเซ็น",
     signedOn: "เซ็นเมื่อ",
     notSigned: "ยังไม่ได้เซ็น",
@@ -254,15 +250,6 @@ export async function POST(
     y += 6;
     doc.text(`${t.monthlyRent}: ${formatCurrency(contract.baseRent)} ${t.baht}`, margin, y);
 
-    if (contract.commonFee) {
-      y += 6;
-      doc.text(`${t.commonFee}: ${formatCurrency(contract.commonFee)} ${t.baht}`, margin, y);
-    }
-
-    if (contract.deposit) {
-      y += 6;
-      doc.text(`${t.deposit}: ${formatCurrency(contract.deposit)} ${t.baht}`, margin, y);
-    }
 
     // Terms and conditions (clauses)
     const clauses = contract.clauses as Clause[] | null;

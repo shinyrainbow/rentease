@@ -63,10 +63,7 @@ export async function POST(request: NextRequest) {
       const meterReadingIds: string[] = [];
 
       if (type === "RENT" || type === "COMBINED") {
-        const discountAmount = tenant.discountAmount || 0;
-        const discountPercent = tenant.discountPercent || 0;
-        const rentDiscount = tenant.baseRent * (discountPercent / 100);
-        const rentAmount = tenant.baseRent - discountAmount - rentDiscount;
+        const rentAmount = tenant.baseRent;
 
         lineItems.push({
           description: "ค่าเช่า / Rent",
@@ -75,16 +72,6 @@ export async function POST(request: NextRequest) {
           unitPrice: rentAmount,
         });
         subtotal += rentAmount;
-
-        if (tenant.commonFee && tenant.commonFee > 0) {
-          lineItems.push({
-            description: "ค่าส่วนกลาง / Common Fee",
-            amount: tenant.commonFee,
-            quantity: 1,
-            unitPrice: tenant.commonFee,
-          });
-          subtotal += tenant.commonFee;
-        }
       }
 
       if (type === "UTILITY" || type === "COMBINED") {

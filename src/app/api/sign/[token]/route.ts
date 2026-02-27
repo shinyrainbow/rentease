@@ -69,8 +69,6 @@ export async function GET(
       title: contract.title,
       titleTh: contract.titleTh,
       baseRent: contract.baseRent,
-      commonFee: contract.commonFee,
-      deposit: contract.deposit,
       contractStart: contract.contractStart,
       contractEnd: contract.contractEnd,
       clauses: contract.clauses,

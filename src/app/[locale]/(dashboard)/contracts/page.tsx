@@ -50,8 +50,6 @@ interface Tenant {
   email: string | null;
   phone: string | null;
   baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
   contractStart: string | null;
   contractEnd: string | null;
   unit: {
@@ -66,8 +64,6 @@ interface Contract {
   contractNo: string;
   status: "DRAFT" | "PENDING_TENANT" | "SIGNED" | "CANCELLED";
   baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
   contractStart: string;
   contractEnd: string;
   signingToken: string;

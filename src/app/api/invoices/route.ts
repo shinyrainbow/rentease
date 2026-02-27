@@ -98,12 +98,9 @@ export async function POST(request: NextRequest) {
     const meterReadingIds: string[] = [];
 
     if (data.type === "RENT" || data.type === "COMBINED") {
-      const rentAmount = activeTenant.baseRent - (activeTenant.discountAmount || 0) - (activeTenant.baseRent * (activeTenant.discountPercent || 0) / 100);
+      const rentAmount = activeTenant.baseRent;
       lineItems.push({ description: "ค่าเช่า / Rent", amount: rentAmount });
-      if (activeTenant.commonFee) {
-        lineItems.push({ description: "ค่าส่วนกลาง / Common Fee", amount: activeTenant.commonFee });
-      }
-      subtotal += rentAmount + (activeTenant.commonFee || 0);
+      subtotal += rentAmount;
     }
 
     if (data.type === "UTILITY" || data.type === "COMBINED") {

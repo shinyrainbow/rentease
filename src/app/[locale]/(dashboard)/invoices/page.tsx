@@ -167,6 +167,7 @@ export default function InvoicesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editFormData, setEditFormData] = useState({
+    invoiceNo: "",
     type: "RENT",
     dueDate: "",
     notes: "",
@@ -403,6 +404,7 @@ export default function InvoicesPage() {
         const data = await res.json();
         setEditingInvoice(invoice);
         setEditFormData({
+          invoiceNo: data.invoiceNo || "",
           type: data.type,
           dueDate: data.dueDate.split("T")[0],
           notes: data.notes || "",
@@ -424,6 +426,7 @@ export default function InvoicesPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          invoiceNo: editFormData.invoiceNo || undefined,
           type: editFormData.type,
           dueDate: new Date(editFormData.dueDate).toISOString(),
           notes: editFormData.notes || null,
@@ -1447,6 +1450,14 @@ export default function InvoicesPage() {
               <DialogTitle>{t("editInvoice") || "Edit Invoice"} - {editingInvoice?.invoiceNo}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("invoiceNo") || "เลขที่ใบแจ้งหนี้ / Invoice No."}</Label>
+                <Input
+                  value={editFormData.invoiceNo}
+                  onChange={(e) => setEditFormData({ ...editFormData, invoiceNo: e.target.value })}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label>{t("type")}</Label>
                 <Select

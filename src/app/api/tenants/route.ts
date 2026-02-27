@@ -120,10 +120,6 @@ export async function POST(request: NextRequest) {
       withholdingTax: typeof data.withholdingTax === "number" ? data.withholdingTax : parseFloat(data.withholdingTax) || 0,
       // Contract pricing
       baseRent: typeof data.baseRent === "number" ? data.baseRent : parseFloat(data.baseRent) || 0,
-      commonFee: data.commonFee ? parseFloat(data.commonFee) : null,
-      deposit: data.deposit ? parseFloat(data.deposit) : null,
-      discountPercent: data.discountPercent ? parseFloat(data.discountPercent) : 0,
-      discountAmount: data.discountAmount ? parseFloat(data.discountAmount) : 0,
       // Meter info
       electricMeterNo: data.electricMeterNo || null,
       waterMeterNo: data.waterMeterNo || null,

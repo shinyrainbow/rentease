@@ -217,7 +217,12 @@
     "amount": "Amount",
     "readingDate": "Reading Date",
     "enterPreviousReading": "Enter previous meter reading",
-    "firstTimeReading": "No previous reading found. Enter the starting meter value."
+    "firstTimeReading": "No previous reading found. Enter the starting meter value.",
+    "project": "Project",
+    "unit": "Unit",
+    "selectUnit": "Select unit",
+    "allProjects": "All Projects",
+    "type": "Type"
   },
   "invoices": {
     "title": "Invoices",

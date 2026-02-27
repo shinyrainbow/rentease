@@ -108,8 +108,6 @@ export async function PUT(
         titleTh: data.titleTh,
         clauses: data.clauses,
         baseRent: data.baseRent ? parseFloat(data.baseRent) : existingContract.baseRent,
-        commonFee: data.commonFee ? parseFloat(data.commonFee) : existingContract.commonFee,
-        deposit: data.deposit ? parseFloat(data.deposit) : existingContract.deposit,
         contractStart: data.contractStart ? new Date(data.contractStart) : existingContract.contractStart,
         contractEnd: data.contractEnd ? new Date(data.contractEnd) : existingContract.contractEnd,
       },

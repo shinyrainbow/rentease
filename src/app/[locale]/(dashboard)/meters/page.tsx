@@ -176,8 +176,8 @@ export default function MetersPage() {
         ...formData,
         currentReading: parseFloat(formData.currentReading),
       };
-      // Include previousReading only if manually entered (first-time entry)
-      if (formData.previousReading && !previousInfo?.hasPrevious) {
+      // Include previousReading when editing or when first-time entry
+      if (formData.previousReading && (editingReading || !previousInfo?.hasPrevious)) {
         payload.previousReading = parseFloat(formData.previousReading);
       }
       const res = await fetch(url, {
@@ -378,7 +378,7 @@ export default function MetersPage() {
                   <>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-2">
-                        <Label className="text-xs">โครงการ / Project</Label>
+                        <Label className="text-xs">{t("project")}</Label>
                         <Select
                           value={formProjectFilter || "__all__"}
                           onValueChange={(v) => {
@@ -387,10 +387,10 @@ export default function MetersPage() {
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="ทุกโครงการ" />
+                            <SelectValue placeholder={t("allProjects")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__all__">-- ทุกโครงการ --</SelectItem>
+                            <SelectItem value="__all__">-- {t("allProjects")} --</SelectItem>
                             {projects.map((project) => (
                               <SelectItem key={project.id} value={project.id}>
                                 {(locale === "th" ? project.nameTh : null) || project.name}
@@ -400,13 +400,13 @@ export default function MetersPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">Unit</Label>
+                        <Label className="text-xs">{t("unit")}</Label>
                         <Select
                           value={formData.unitId || undefined}
                           onValueChange={(value) => setFormData({ ...formData, unitId: value })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select unit" />
+                            <SelectValue placeholder={t("selectUnit")} />
                           </SelectTrigger>
                           <SelectContent>
                             {units
@@ -422,7 +422,7 @@ export default function MetersPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Type</Label>
+                      <Label>{t("type")}</Label>
                       <Select
                         value={formData.type}
                         onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -442,6 +442,19 @@ export default function MetersPage() {
                 {editingReading && (
                   <div className="text-sm text-muted-foreground">
                     {(locale === "th" ? editingReading.project.nameTh : null) || editingReading.project.name} - {editingReading.unit.unitNumber} ({t(editingReading.type.toLowerCase())})
+                  </div>
+                )}
+
+                {/* Previous reading - editable when editing */}
+                {editingReading && (
+                  <div className="space-y-2">
+                    <Label>{t("previousReading")}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.previousReading}
+                      onChange={(e) => setFormData({ ...formData, previousReading: e.target.value })}
+                    />
                   </div>
                 )}
 

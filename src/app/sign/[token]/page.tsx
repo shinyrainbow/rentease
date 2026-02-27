@@ -22,8 +22,6 @@ interface ContractData {
   title: string | null;
   titleTh: string | null;
   baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
   contractStart: string;
   contractEnd: string;
   clauses: Clause[] | null;
@@ -139,8 +137,6 @@ export default function PublicSigningPage() {
       tenant: "Tenant",
       period: "Contract Period",
       rent: "Monthly Rent",
-      commonFee: "Common Fee",
-      deposit: "Security Deposit",
       terms: "Terms & Conditions",
       signBelow: "Sign in the box below",
       agree: "I have read and agree to the terms and conditions of this lease agreement",
@@ -163,8 +159,6 @@ export default function PublicSigningPage() {
       tenant: "ผู้เช่า",
       period: "ระยะเวลาสัญญา",
       rent: "ค่าเช่ารายเดือน",
-      commonFee: "ค่าส่วนกลาง",
-      deposit: "เงินประกัน",
       terms: "ข้อกำหนดและเงื่อนไข",
       signBelow: "เซ็นในกล่องด้านล่าง",
       agree: "ข้าพเจ้าได้อ่านและยอมรับข้อกำหนดและเงื่อนไขของสัญญาเช่าฉบับนี้",
@@ -309,18 +303,6 @@ export default function PublicSigningPage() {
                 <span className="text-muted-foreground">{text.rent}</span>
                 <p className="font-medium text-primary">{formatCurrency(contract.baseRent)}</p>
               </div>
-              {contract.commonFee && (
-                <div>
-                  <span className="text-muted-foreground">{text.commonFee}</span>
-                  <p className="font-medium">{formatCurrency(contract.commonFee)}</p>
-                </div>
-              )}
-              {contract.deposit && (
-                <div>
-                  <span className="text-muted-foreground">{text.deposit}</span>
-                  <p className="font-medium">{formatCurrency(contract.deposit)}</p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

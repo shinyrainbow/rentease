@@ -122,10 +122,6 @@ export default function TenantsPage() {
     withholdingTax: "0",
     // Contract pricing
     baseRent: "",
-    commonFee: "",
-    deposit: "",
-    discountPercent: "",
-    discountAmount: "",
     contractStart: "",
     contractEnd: "",
   });
@@ -260,10 +256,6 @@ export default function TenantsPage() {
           nameTh,
           withholdingTax: parseFloat(formData.withholdingTax),
           baseRent: formData.baseRent ? parseFloat(formData.baseRent) : 0,
-          commonFee: formData.commonFee ? parseFloat(formData.commonFee) : null,
-          deposit: formData.deposit ? parseFloat(formData.deposit) : null,
-          discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : 0,
-          discountAmount: formData.discountAmount ? parseFloat(formData.discountAmount) : 0,
           contractStart: formData.contractStart,
           contractEnd: formData.contractEnd,
         }),
@@ -511,10 +503,6 @@ export default function TenantsPage() {
       tenantType: "INDIVIDUAL",
       withholdingTax: "0",
       baseRent: "",
-      commonFee: "",
-      deposit: "",
-      discountPercent: "",
-      discountAmount: "",
       contractStart: "",
       contractEnd: "",
     });
@@ -801,28 +789,10 @@ export default function TenantsPage() {
               {/* Contract Pricing */}
               <div className="border-t pt-2">
                 <h4 className="text-xs font-medium mb-2 text-muted-foreground">{t("contractPricing")}</h4>
-                <div className="grid grid-cols-5 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("baseRent")} *</Label>
-                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.baseRent)} onChange={onNumChange("baseRent")} required />
-                    <p className="text-xs text-muted-foreground">{t("baseRentHint")}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("commonFee")}</Label>
-                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.commonFee)} onChange={onNumChange("commonFee")} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("deposit")}</Label>
-                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.deposit)} onChange={onNumChange("deposit")} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("discountPercent")}</Label>
-                    <Input className="h-9" inputMode="decimal" value={formData.discountPercent} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ""); setFormData({ ...formData, discountPercent: v }); }} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("discountAmount")}</Label>
-                    <Input className="h-9" inputMode="decimal" value={fmtNum(formData.discountAmount)} onChange={onNumChange("discountAmount")} />
-                  </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("baseRent")} *</Label>
+                  <Input className="h-9" inputMode="decimal" value={fmtNum(formData.baseRent)} onChange={onNumChange("baseRent")} required />
+                  <p className="text-xs text-muted-foreground">{t("baseRentHint")}</p>
                 </div>
               </div>
 

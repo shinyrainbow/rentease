@@ -50,8 +50,6 @@ interface Contract {
   title: string | null;
   titleTh: string | null;
   baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
   contractStart: string;
   contractEnd: string;
   clauses: Clause[] | null;
@@ -455,18 +453,6 @@ export default function ContractDetailPage() {
                   <span className="text-muted-foreground">{t("baseRent")}</span>
                   <span className="font-medium">{formatCurrency(contract.baseRent)}</span>
                 </div>
-                {contract.commonFee && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t("commonFee")}</span>
-                    <span>{formatCurrency(contract.commonFee)}</span>
-                  </div>
-                )}
-                {contract.deposit && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t("deposit")}</span>
-                    <span>{formatCurrency(contract.deposit)}</span>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

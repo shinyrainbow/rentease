@@ -63,8 +63,13 @@ export async function PUT(
       return NextResponse.json({ error: "Reading not found" }, { status: 404 });
     }
 
-    // Recalculate usage and amount if currentReading changed
-    const usage = Math.max(0, data.currentReading - existingReading.previousReading);
+    // Use new previousReading if provided, otherwise keep existing
+    const previousReading = data.previousReading !== undefined
+      ? data.previousReading
+      : existingReading.previousReading;
+
+    // Recalculate usage and amount
+    const usage = Math.max(0, data.currentReading - previousReading);
     const rate = existingReading.type === "ELECTRICITY"
       ? existingReading.project.electricityRate
       : existingReading.project.waterRate;
@@ -73,6 +78,7 @@ export async function PUT(
     const reading = await prisma.meterReading.update({
       where: { id },
       data: {
+        previousReading,
         currentReading: data.currentReading,
         usage,
         rate,
