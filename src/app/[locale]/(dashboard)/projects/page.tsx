@@ -205,6 +205,7 @@ export default function ProjectsPage() {
       setProjects(projectsWithUnits);
     } catch (error) {
       console.error("Error fetching projects:", error);
+      toast({ title: tCommon("error"), description: "Failed to load projects", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -228,9 +229,14 @@ export default function ProjectsPage() {
         setIsDialogOpen(false);
         resetForm();
         fetchProjects();
+        toast({ title: tCommon("success"), description: tCommon("created") || "Created" });
+      } else {
+        const data = await res.json();
+        toast({ title: tCommon("error"), description: data.error || "Failed to create project", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving project:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     }
   };
 

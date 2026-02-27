@@ -101,6 +101,7 @@ export default function UnitsPage() {
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: tCommon("error"), description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }

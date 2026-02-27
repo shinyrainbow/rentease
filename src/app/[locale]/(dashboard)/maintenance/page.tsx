@@ -94,6 +94,7 @@ export default function MaintenancePage() {
       setUnits(Array.isArray(unitsData) ? unitsData.filter((u: Unit) => u.tenant !== null) : []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: tCommon("error"), description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -133,9 +134,14 @@ export default function MaintenancePage() {
         setEditingRequest(null);
         resetForm();
         fetchData();
+        toast({ title: tCommon("success"), description: editingRequest ? tCommon("updated") : tCommon("created") });
+      } else {
+        const data = await res.json();
+        toast({ title: tCommon("error"), description: data.error || "Failed to save", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving request:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     }
   };
 

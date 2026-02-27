@@ -42,11 +42,12 @@ export function formatDateTime(date: Date | string | null | undefined, lang: "th
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
-export function generateInvoiceNo(projectCode: string, date: Date, unitNumber?: string): string {
+export function generateInvoiceNo(projectCode: string, date: Date, unitNumber?: string, invoiceType?: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const suffix = unitNumber || Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-  return `INV-${projectCode}-${month}-${year}-${suffix}`;
+  const unitSuffix = unitNumber || Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  const typeSuffix = invoiceType === "RENT" ? "-rental" : "-bills";
+  return `INV-${projectCode}-${month}-${year}-${unitSuffix}${typeSuffix}`;
 }
 
 export function generateReceiptNo(projectCode: string, date: Date, unitNumber?: string): string {

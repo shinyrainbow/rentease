@@ -177,6 +177,7 @@ export default function ReceiptsPage() {
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching receipts:", error);
+      toast({ title: tCommon("error"), description: "Failed to load receipts", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -287,6 +288,7 @@ export default function ReceiptsPage() {
       }
     } catch (error) {
       console.error("Error fetching paid invoices:", error);
+      toast({ title: tCommon("error"), description: "Failed to load invoices", variant: "destructive" });
     }
   };
 

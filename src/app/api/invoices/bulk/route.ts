@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), invoiceDate, unit.unitNumber);
+      const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), invoiceDate, unit.unitNumber, type);
 
       // Calculate amounts based on type
       const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number; previousReading?: number; currentReading?: number; readingDate?: string; meterType?: string }[] = [];

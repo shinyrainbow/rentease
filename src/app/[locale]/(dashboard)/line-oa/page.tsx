@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +132,7 @@ export default function LineOAPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -196,6 +198,7 @@ export default function LineOAPage() {
       setLineOaAccounts(Array.isArray(lineOaData) ? lineOaData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: tCommon("error"), description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -218,6 +221,7 @@ export default function LineOAPage() {
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
+      toast({ title: tCommon("error"), description: "Failed to load messages", variant: "destructive" });
     }
   };
 
@@ -249,9 +253,12 @@ export default function LineOAPage() {
       if (res.ok) {
         setNewMessage("");
         await fetchMessages(selectedContact.id);
+      } else {
+        toast({ title: tCommon("error"), description: "Failed to send message", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -289,9 +296,14 @@ export default function LineOAPage() {
       if (res.ok) {
         setIsSettingsOpen(false);
         fetchData();
+        toast({ title: tCommon("success"), description: tCommon("saved") || "Saved" });
+      } else {
+        const data = await res.json();
+        toast({ title: tCommon("error"), description: data.error || "Failed to save", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving LINE OA:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     } finally {
       setSavingSettings(false);
     }
@@ -315,9 +327,13 @@ export default function LineOAPage() {
       if (res.ok) {
         setIsAssignProjectsOpen(false);
         fetchData();
+        toast({ title: tCommon("success"), description: tCommon("saved") || "Saved" });
+      } else {
+        toast({ title: tCommon("error"), description: "Failed to assign projects", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error assigning projects:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     } finally {
       setSavingProjects(false);
     }
@@ -332,9 +348,13 @@ export default function LineOAPage() {
         setDeleteLineOaOpen(false);
         setDeletingLineOa(null);
         fetchData();
+        toast({ title: tCommon("success"), description: tCommon("deleted") || "Deleted" });
+      } else {
+        toast({ title: tCommon("error"), description: "Failed to delete", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting LINE OA:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     } finally {
       setDeletingOa(false);
     }
@@ -360,9 +380,13 @@ export default function LineOAPage() {
         fetchData();
         const updatedContact = await res.json();
         setSelectedContact(updatedContact);
+        toast({ title: tCommon("success"), description: tCommon("saved") || "Saved" });
+      } else {
+        toast({ title: tCommon("error"), description: "Failed to link tenant", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error linking tenant:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     } finally {
       setLinkingTenant(false);
     }

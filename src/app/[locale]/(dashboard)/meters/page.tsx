@@ -126,6 +126,7 @@ export default function MetersPage() {
       setUnits(Array.isArray(unitsData) ? unitsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: tCommon("error"), description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }

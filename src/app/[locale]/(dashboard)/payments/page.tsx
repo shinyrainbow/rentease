@@ -166,6 +166,7 @@ export default function PaymentsPage() {
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching payments:", error);
+      toast({ title: tCommon("error"), description: "Failed to load payments", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -206,6 +207,7 @@ export default function PaymentsPage() {
       }
     } catch (error) {
       console.error("Error fetching unpaid invoices:", error);
+      toast({ title: tCommon("error"), description: "Failed to load invoices", variant: "destructive" });
     }
   };
 
@@ -302,9 +304,14 @@ export default function PaymentsPage() {
 
       if (res.ok) {
         fetchData();
+        toast({ title: tCommon("success"), description: approved ? "Payment verified" : "Payment rejected" });
+      } else {
+        const data = await res.json();
+        toast({ title: tCommon("error"), description: data.error || "Failed to verify", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error verifying payment:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     }
   };
 
@@ -353,6 +360,7 @@ export default function PaymentsPage() {
       reader.readAsDataURL(file);
     } catch (error) {
       console.error("Error uploading slip:", error);
+      toast({ title: tCommon("error"), description: "Failed to upload slip", variant: "destructive" });
       setUploadingSlip(false);
     }
 
@@ -380,6 +388,7 @@ export default function PaymentsPage() {
       }
     } catch (error) {
       console.error("Error deleting slip:", error);
+      toast({ title: tCommon("error"), description: "Failed to delete slip", variant: "destructive" });
     } finally {
       setDeletingSlipId(null);
     }

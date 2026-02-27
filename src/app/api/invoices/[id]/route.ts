@@ -99,8 +99,14 @@ export async function PUT(
     });
 
     return NextResponse.json(invoice);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error updating invoice:", error);
+    if (error && typeof error === "object" && "code" in error && (error as { code: string }).code === "P2002") {
+      return NextResponse.json(
+        { error: "เลขที่ใบแจ้งหนี้ซ้ำ กรุณาใช้เลขที่อื่น (Duplicate invoice number. Please use a different number.)" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

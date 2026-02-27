@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -129,6 +130,7 @@ const COLORS = {
 export default function SummaryPage() {
   const t = useTranslations("summary");
   const tCommon = useTranslations("common");
+  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
@@ -182,6 +184,7 @@ export default function SummaryPage() {
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching summary:", error);
+      toast({ title: tCommon("error"), description: "Failed to load summary data", variant: "destructive" });
     } finally {
       setLoading(false);
     }

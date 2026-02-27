@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
     const invoiceNo = data.invoiceNo || generateInvoiceNo(
       unit.project.name.substring(0, 3).toUpperCase(),
       invoiceDate,
-      unit.unitNumber
+      unit.unitNumber,
+      data.type
     );
 
     // Calculate amounts based on type
@@ -188,8 +189,15 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(invoice);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error creating invoice:", error);
+    // Handle unique constraint violation on invoiceNo
+    if (error && typeof error === "object" && "code" in error && (error as { code: string }).code === "P2002") {
+      return NextResponse.json(
+        { error: "เลขที่ใบแจ้งหนี้ซ้ำ กรุณาใช้เลขที่อื่น (Duplicate invoice number. Please use a different number.)" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -222,6 +222,7 @@ export default function InvoicesPage() {
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: tCommon("error"), description: "Failed to load invoices", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -344,6 +345,7 @@ export default function InvoicesPage() {
       }
     } catch (error) {
       console.error("Error creating invoice:", error);
+      toast({ title: tCommon("error"), description: "Network error", variant: "destructive" });
     }
   };
 
@@ -402,6 +404,18 @@ export default function InvoicesPage() {
     setSelectedReadingIds(new Set());
     setReadingMonths([]);
     setSelectedReadingMonth("");
+  };
+
+  // Generate default invoice number based on unit and type
+  const generateDefaultInvoiceNo = (unitId: string, type: string) => {
+    const selectedUnit = units.find((u) => u.id === unitId);
+    if (!selectedUnit) return "";
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const projCode = selectedUnit.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
+    const suffix = type === "RENT" ? "-rental" : "-bills";
+    return `INV-${projCode}-${mm}-${yyyy}-${selectedUnit.unitNumber}${suffix}`;
   };
 
   // Get units filtered by selected project
@@ -1023,12 +1037,7 @@ export default function InvoicesPage() {
                     <Select
                       value={formData.unitId || undefined}
                       onValueChange={(value) => {
-                        const selectedUnit = units.find((u) => u.id === value);
-                        const now = new Date();
-                        const mm = String(now.getMonth() + 1).padStart(2, "0");
-                        const yyyy = now.getFullYear();
-                        const projCode = selectedUnit?.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
-                        const defaultNo = `INV-${projCode}-${mm}-${yyyy}-${selectedUnit?.unitNumber || ""}`;
+                        const defaultNo = generateDefaultInvoiceNo(value, formData.type);
                         setFormData({ ...formData, unitId: value, invoiceNo: defaultNo });
                       }}
                       disabled={!formData.projectId}
@@ -1056,7 +1065,10 @@ export default function InvoicesPage() {
                     <Label>{t("type")}</Label>
                     <Select
                       value={formData.type}
-                      onValueChange={(value) => setFormData({ ...formData, type: value })}
+                      onValueChange={(value) => {
+                        const newInvoiceNo = formData.unitId ? generateDefaultInvoiceNo(formData.unitId, value) : formData.invoiceNo;
+                        setFormData({ ...formData, type: value, invoiceNo: newInvoiceNo });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
