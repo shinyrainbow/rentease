@@ -209,6 +209,27 @@ export default function TenantsPage() {
       return;
     }
 
+    // Check for overlapping contracts on the same unit
+    if (formData.unitId) {
+      const overlapping = tenants.find((t) => {
+        if (t.unitId !== formData.unitId) return false;
+        if (editingTenant && t.id === editingTenant.id) return false;
+        const tStart = new Date(t.contractStart);
+        const tEnd = new Date(t.contractEnd);
+        return startDate < tEnd && tStart < endDate;
+      });
+      if (overlapping) {
+        const errorMsg = t("contractOverlap", {
+          name: overlapping.name,
+          start: formatDate(overlapping.contractStart),
+          end: formatDate(overlapping.contractEnd),
+        });
+        setDateError(errorMsg);
+        toast({ title: tCommon("error"), description: errorMsg, variant: "destructive" });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const url = editingTenant ? `/api/tenants/${editingTenant.id}` : "/api/tenants";
@@ -245,13 +266,15 @@ export default function TenantsPage() {
         fetchData();
       } else {
         const data = await res.json();
-        const errorMsg = data.error || "Failed to save tenant";
-        setFormError(errorMsg);
-        toast({
-          title: tCommon("error"),
-          description: errorMsg,
-          variant: "destructive",
-        });
+        if (data.error === "contractOverlap") {
+          const errorMsg = t("contractOverlapSimple", { name: data.overlappingTenant });
+          setDateError(errorMsg);
+          toast({ title: tCommon("error"), description: errorMsg, variant: "destructive" });
+        } else {
+          const errorMsg = data.error || "Failed to save tenant";
+          setFormError(errorMsg);
+          toast({ title: tCommon("error"), description: errorMsg, variant: "destructive" });
+        }
       }
     } catch (error) {
       console.error("Error saving tenant:", error);
@@ -750,20 +773,37 @@ export default function TenantsPage() {
                 </div>
               </div>
               {dateError && <p className="text-xs text-red-600">{dateError}</p>}
-              {(formData.contractStart || formData.contractEnd) && formData.unitId && (() => {
-                const selectedUnit = allUnits.find(u => u.id === formData.unitId);
-                if (selectedUnit?.tenant) {
-                  return (
-                    <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-xs">
-                      <AlertTriangle className="h-3 w-3 text-yellow-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="font-medium text-yellow-800">Unit has active tenant: {selectedUnit.tenant.name}</p>
-                        <p className="text-yellow-600">Ends {formatDate(selectedUnit.tenant.contractEnd)}</p>
-                      </div>
+              {formData.unitId && (() => {
+                const unitTenants = tenants.filter((t) => {
+                  if (t.unitId !== formData.unitId) return false;
+                  if (editingTenant && t.id === editingTenant.id) return false;
+                  return true;
+                });
+                if (unitTenants.length === 0) return null;
+
+                const newStart = formData.contractStart ? new Date(formData.contractStart) : null;
+                const newEnd = formData.contractEnd ? new Date(formData.contractEnd) : null;
+                const hasOverlap = newStart && newEnd && unitTenants.some((t) => {
+                  const tStart = new Date(t.contractStart);
+                  const tEnd = new Date(t.contractEnd);
+                  return newStart < tEnd && tStart < newEnd;
+                });
+
+                return (
+                  <div className={`flex items-start gap-2 p-2 border rounded-md text-xs ${hasOverlap ? "bg-red-50 border-red-300" : "bg-yellow-50 border-yellow-200"}`}>
+                    <AlertTriangle className={`h-3 w-3 mt-0.5 shrink-0 ${hasOverlap ? "text-red-600" : "text-yellow-600"}`} />
+                    <div className="space-y-0.5">
+                      {hasOverlap && (
+                        <p className="font-medium text-red-700">{t("contractOverlapWarning")}</p>
+                      )}
+                      {unitTenants.map((ut) => (
+                        <p key={ut.id} className={hasOverlap ? "text-red-600" : "text-yellow-700"}>
+                          {ut.name}: {formatDate(ut.contractStart)} - {formatDate(ut.contractEnd)}
+                        </p>
+                      ))}
                     </div>
-                  );
-                }
-                return null;
+                  </div>
+                );
               })()}
 
               <div className="flex justify-end gap-2 pt-2">

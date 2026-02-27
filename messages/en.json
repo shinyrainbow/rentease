@@ -200,6 +200,9 @@
     "clickToUploadImage": "Click to upload photo",
     "contractDatesRequired": "Contract start and end dates are required",
     "contractStartMustBeLessThanEnd": "Contract start date must be less than contract end date",
+    "contractOverlap": "Contract dates overlap with {name} ({start} - {end})",
+    "contractOverlapSimple": "Contract dates overlap with {name}",
+    "contractOverlapWarning": "Contract dates overlap with existing tenant!",
     "cannotDeleteTenantTitle": "Cannot Delete Tenant",
     "cannotDeleteTenantMessage": "This tenant has {count} invoice(s) linked. Historical data must be preserved and cannot be deleted."
   },

@@ -200,6 +200,9 @@
     "clickToUploadImage": "คลิกเพื่ออัปโหลดรูปภาพ",
     "contractDatesRequired": "กรุณาระบุวันเริ่มสัญญาและวันสิ้นสุดสัญญา",
     "contractStartMustBeLessThanEnd": "วันเริ่มสัญญาต้องน้อยกว่าวันสิ้นสุดสัญญา",
+    "contractOverlap": "วันที่สัญญาซ้อนทับกับ {name} ({start} - {end})",
+    "contractOverlapSimple": "วันที่สัญญาซ้อนทับกับ {name}",
+    "contractOverlapWarning": "วันที่สัญญาซ้อนทับกับผู้เช่าที่มีอยู่!",
     "cannotDeleteTenantTitle": "ไม่สามารถลบผู้เช่า",
     "cannotDeleteTenantMessage": "ผู้เช่ารายนี้มีใบแจ้งหนี้ {count} ใบที่เชื่อมโยง ข้อมูลประวัติต้องถูกเก็บรักษาไว้และไม่สามารถลบได้"
   },
