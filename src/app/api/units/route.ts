@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
 
     // Sanitize and map data for Prisma (only physical unit properties)
     const unitData = {
-      projectId: data.projectId,
+      project: { connect: { id: data.projectId } },
       unitNumber: data.unitNumber,
       floor: typeof data.floor === "number" ? data.floor : parseInt(data.floor) || 1,
       size: data.size ? parseFloat(data.size) : null,
       type: data.type || "WAREHOUSE",
-      status: "VACANT", // Status is computed dynamically from tenant contracts
+      status: "VACANT" as const, // Status is computed dynamically from tenant contracts
       positionX: data.positionX ? parseFloat(data.positionX) : null,
       positionY: data.positionY ? parseFloat(data.positionY) : null,
       width: data.width ? parseFloat(data.width) : null,

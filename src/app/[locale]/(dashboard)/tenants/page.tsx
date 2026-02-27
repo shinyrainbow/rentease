@@ -69,10 +69,6 @@ interface Tenant {
   withholdingTax: number;
   // Contract pricing
   baseRent: number;
-  commonFee: number | null;
-  deposit: number | null;
-  discountPercent: number | null;
-  discountAmount: number | null;
   contractStart: string;
   contractEnd: string;
   imageUrl: string | null;
@@ -324,10 +320,6 @@ export default function TenantsPage() {
       tenantType: tenant.tenantType,
       withholdingTax: tenant.withholdingTax.toString(),
       baseRent: tenant.baseRent?.toString() || "",
-      commonFee: tenant.commonFee?.toString() || "",
-      deposit: tenant.deposit?.toString() || "",
-      discountPercent: tenant.discountPercent?.toString() || "",
-      discountAmount: tenant.discountAmount?.toString() || "",
       contractStart: tenant.contractStart ? tenant.contractStart.split("T")[0] : "",
       contractEnd: tenant.contractEnd ? tenant.contractEnd.split("T")[0] : "",
     });
@@ -707,7 +699,7 @@ export default function TenantsPage() {
                             .filter((unit) => !formProjectFilter || unit.projectId === formProjectFilter)
                             .map((unit) => (
                               <SelectItem key={unit.id} value={unit.id}>
-                                {!formProjectFilter && `${unit.project.name} - `}{unit.unitNumber}
+                                {unit.unitNumber}
                               </SelectItem>
                             ))}
                         </SelectContent>
