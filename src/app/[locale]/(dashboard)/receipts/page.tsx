@@ -429,6 +429,7 @@ export default function ReceiptsPage() {
           description: t("receiptDeletedDesc") || "Receipt has been deleted successfully",
         });
         setDeleteDialogOpen(false);
+        setReceiptToDelete(null);
         fetchData();
       } else {
         const data = await res.json();
@@ -950,7 +951,7 @@ export default function ReceiptsPage() {
                         fetchPdfPreview(selectedReceipt.id, previewLang, false);
                       }}
                     >
-                      ต้นฉบับ
+                      {t("originalVersion")}
                     </Button>
                     <Button
                       variant={isCopy ? "default" : "ghost"}
@@ -961,7 +962,7 @@ export default function ReceiptsPage() {
                         fetchPdfPreview(selectedReceipt.id, previewLang, true);
                       }}
                     >
-                      สำเนา
+                      {t("copyVersion")}
                     </Button>
                   </div>
                 </div>

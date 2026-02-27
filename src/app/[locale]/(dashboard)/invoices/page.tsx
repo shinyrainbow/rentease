@@ -897,7 +897,10 @@ export default function InvoicesPage() {
         <div className="flex gap-2">
           {/* Bulk Generate Button */}
           {canMutate && (
-            <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+            <Dialog open={isBulkDialogOpen} onOpenChange={(open) => {
+              setIsBulkDialogOpen(open);
+              if (!open) setBulkFormData({ projectId: "", type: "RENT", month: new Date().toISOString().slice(0, 7), dueDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().slice(0, 10) });
+            }}>
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
@@ -1459,7 +1462,7 @@ export default function InvoicesPage() {
 
       {/* Edit Invoice Dialog */}
       {canMutate && (
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditingInvoice(null); }}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{t("editInvoice") || "Edit Invoice"} - {editingInvoice?.invoiceNo}</DialogTitle>

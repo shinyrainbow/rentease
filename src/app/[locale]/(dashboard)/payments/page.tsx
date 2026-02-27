@@ -990,7 +990,7 @@ export default function PaymentsPage() {
                     <Input
                       value={createFormData.transferRef}
                       onChange={(e) => setCreateFormData((prev) => ({ ...prev, transferRef: e.target.value }))}
-                      placeholder="เลขอ้างอิงการโอน"
+                      placeholder={t("transferRefPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
@@ -998,7 +998,7 @@ export default function PaymentsPage() {
                     <Input
                       value={createFormData.transferBank}
                       onChange={(e) => setCreateFormData((prev) => ({ ...prev, transferBank: e.target.value }))}
-                      placeholder="ชื่อธนาคาร"
+                      placeholder={t("bankPlaceholder")}
                     />
                   </div>
                 </div>
