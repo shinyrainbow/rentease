@@ -224,7 +224,15 @@ export async function POST(
     y += 12;
 
     // ============ RECEIVED FROM SECTION ============
-    const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
+    // Use snapshot fields with relation fallback (relations may be null if unit/tenant deleted)
+    const inv = receipt.invoice;
+    const resolvedTenantName = receipt.tenantName || inv.tenantName || inv.tenant?.name || "-";
+    const resolvedTenantNameTh = receipt.tenantNameTh || inv.tenantNameTh || inv.tenant?.nameTh;
+    const resolvedUnitNumber = receipt.unitNumber || inv.unitNumber || inv.unit?.unitNumber || "-";
+    const resolvedTenantAddress = inv.tenant?.address || "";
+    const resolvedTenantTaxId = receipt.tenantTaxId || inv.tenantTaxId || inv.tenant?.taxId || "";
+
+    const tenantName = lang === "th" && resolvedTenantNameTh ? resolvedTenantNameTh : resolvedTenantName;
     const labelWidth = 40;
 
     doc.setFontSize(11);
@@ -234,7 +242,7 @@ export async function POST(
     doc.setTextColor(107, 114, 128);
     doc.text(`${t.unit}:`, margin, y);
     doc.setTextColor(0, 0, 0);
-    doc.text(receipt.invoice.unit.unitNumber, margin + labelWidth, y);
+    doc.text(resolvedUnitNumber, margin + labelWidth, y);
     y += 5;
 
     // Name
@@ -245,20 +253,20 @@ export async function POST(
     y += 5;
 
     // Address
-    if (receipt.invoice.tenant.address) {
+    if (resolvedTenantAddress) {
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.address}:`, margin, y);
       doc.setTextColor(0, 0, 0);
-      doc.text(receipt.invoice.tenant.address, margin + labelWidth, y);
+      doc.text(resolvedTenantAddress, margin + labelWidth, y);
       y += 5;
     }
 
     // Tax ID
-    if (receipt.invoice.tenant.taxId) {
+    if (resolvedTenantTaxId) {
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.taxId}:`, margin, y);
       doc.setTextColor(0, 0, 0);
-      doc.text(receipt.invoice.tenant.taxId, margin + labelWidth, y);
+      doc.text(resolvedTenantTaxId, margin + labelWidth, y);
       y += 5;
     }
 
@@ -333,7 +341,7 @@ export async function POST(
 
     // Withholding Tax
     if (receipt.invoice.withholdingTax > 0) {
-      const withholdingTaxPercent = receipt.invoice.tenant.withholdingTax || 0;
+      const withholdingTaxPercent = receipt.invoice.tenant?.withholdingTax || 0;
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
       doc.setTextColor(220, 38, 38); // Red

@@ -18,10 +18,10 @@ export async function POST(
 
     const payment = await prisma.payment.findFirst({
       where: { id, invoice: { project: { ownerId: session.user.id } } },
-      include: { invoice: { include: { project: true } } },
+      include: { invoice: { include: { project: true, unit: true, tenant: true } } },
     });
 
-    if (!payment) {
+    if (!payment || !payment.invoice) {
       return NextResponse.json({ error: "ไม่พบข้อมูลการชำระเงิน (Payment not found)" }, { status: 404 });
     }
 
@@ -55,7 +55,7 @@ export async function POST(
 
     // Update invoice with new paidAmount and status
     await prisma.invoice.update({
-      where: { id: payment.invoiceId },
+      where: { id: payment.invoiceId! },
       data: {
         paidAmount: newPaidAmount,
         status: newStatus,
@@ -65,7 +65,7 @@ export async function POST(
     // Handle receipt based on invoice status
     if (newStatus === "PAID") {
       const existingReceipt = await prisma.receipt.findUnique({
-        where: { invoiceId: payment.invoiceId },
+        where: { invoiceId: payment.invoiceId! },
       });
 
       if (!existingReceipt) {
@@ -78,21 +78,31 @@ export async function POST(
         await prisma.receipt.create({
           data: {
             receiptNo,
-            invoiceId: payment.invoiceId,
+            invoiceId: payment.invoiceId!,
             amount: newPaidAmount,
+            // Snapshot fields
+            projectName: payment.invoice.projectName || payment.invoice.project.name,
+            unitNumber: payment.invoice.unitNumber || payment.invoice.unit?.unitNumber,
+            invoiceNo: payment.invoice.invoiceNo,
+            invoiceDate: payment.invoice.invoiceDate,
+            invoiceTotalAmount: payment.invoice.totalAmount,
+            tenantName: payment.invoice.tenantName || payment.invoice.tenant?.name,
+            tenantNameTh: payment.invoice.tenantNameTh || payment.invoice.tenant?.nameTh,
+            tenantType: payment.invoice.tenantType || payment.invoice.tenant?.tenantType,
+            tenantTaxId: payment.invoice.tenantTaxId || payment.invoice.tenant?.taxId,
           },
         });
       } else {
         // Update existing receipt amount to match actual paid amount
         await prisma.receipt.update({
-          where: { invoiceId: payment.invoiceId },
+          where: { invoiceId: payment.invoiceId! },
           data: { amount: newPaidAmount },
         });
       }
     } else {
       // Delete receipt if invoice is no longer fully paid
       await prisma.receipt.deleteMany({
-        where: { invoiceId: payment.invoiceId },
+        where: { invoiceId: payment.invoiceId! },
       });
     }
 

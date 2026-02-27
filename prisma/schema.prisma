@@ -287,7 +287,7 @@ enum MessageDirection {
 model MeterReading {
   id          String    @id @default(cuid())
   projectId   String
-  unitId      String
+  unitId      String?
   invoiceId   String?
   type        MeterType
 
@@ -299,11 +299,15 @@ model MeterReading {
 
   readingDate DateTime
 
+  // Snapshot fields (preserved even if unit is deleted)
+  projectName  String?
+  unitNumber   String?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  unit        Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  unit        Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
   invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 }
 
@@ -318,8 +322,8 @@ model Invoice {
   id           String        @id @default(cuid())
   invoiceNo    String        @unique
   projectId    String
-  unitId       String
-  tenantId     String
+  unitId       String?
+  tenantId     String?
   type         InvoiceType
   status       InvoiceStatus @default(PENDING)
 
@@ -331,6 +335,10 @@ model Invoice {
   withholdingTax   Float     @default(0)
   totalAmount      Float
   paidAmount       Float     @default(0)
+
+  // Snapshot fields (preserved even if unit/tenant is deleted)
+  projectName      String?
+  unitNumber       String?
 
   // Tenant snapshot (data at time of invoice creation)
   tenantName       String?
@@ -351,8 +359,8 @@ model Invoice {
   updatedAt    DateTime  @updatedAt
 
   project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  unit         Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  unit         Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   payments       Payment[]
   receipt        Receipt?
   meterReadings  MeterReading[]
@@ -376,8 +384,8 @@ enum InvoiceStatus {
 
 model Payment {
   id          String        @id @default(cuid())
-  invoiceId   String
-  tenantId    String
+  invoiceId   String?
+  tenantId    String?
 
   amount      Float
   method      PaymentMethod
@@ -398,6 +406,10 @@ model Payment {
   notes       String?
   paidAt      DateTime?
 
+  // Snapshot fields (preserved even if invoice/tenant is deleted)
+  projectName        String?
+  unitNumber         String?
+
   // Invoice snapshot (data at time of payment)
   invoiceNo          String?
   invoiceDate        DateTime?
@@ -411,8 +423,8 @@ model Payment {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice     Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  tenant      Tenant?       @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   slips       PaymentSlip[]
 }
 
@@ -452,7 +464,7 @@ enum PaymentStatus {
 model Receipt {
   id          String   @id @default(cuid())
   receiptNo   String   @unique
-  invoiceId   String   @unique
+  invoiceId   String?  @unique
 
   amount      Float
   issuedAt    DateTime @default(now())
@@ -461,6 +473,10 @@ model Receipt {
   sentAt      DateTime?
 
   pdfUrl      String?
+
+  // Snapshot fields (preserved even if invoice is deleted)
+  projectName        String?
+  unitNumber         String?
 
   // Invoice snapshot (data at time of receipt)
   invoiceNo          String?
@@ -476,7 +492,7 @@ model Receipt {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 }
 
 // ============ Maintenance Request Models ============

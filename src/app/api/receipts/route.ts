@@ -30,7 +30,23 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(receipts);
+    // Use snapshot fallback when invoice relations are null
+    const receiptsWithSnapshot = receipts.map(receipt => ({
+      ...receipt,
+      invoice: receipt.invoice || {
+        invoiceNo: receipt.invoiceNo || "-",
+        tenantId: null,
+        project: { name: receipt.projectName || "Unknown", companyName: null, companyNameTh: null, taxId: null },
+        unit: { unitNumber: receipt.unitNumber || "-" },
+        tenant: receipt.tenantName ? {
+          name: receipt.tenantName,
+          tenantType: receipt.tenantType,
+          taxId: receipt.tenantTaxId,
+        } : null,
+      },
+    }));
+
+    return NextResponse.json(receiptsWithSnapshot);
   } catch (error) {
     console.error("Error fetching receipts:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -49,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Verify the invoice belongs to the user
     const invoice = await prisma.invoice.findFirst({
       where: { id: data.invoiceId, project: { ownerId: session.user.id } },
-      include: { project: true, receipt: true, tenant: true },
+      include: { project: true, unit: true, receipt: true, tenant: true },
     });
 
     if (!invoice) {
@@ -77,6 +93,9 @@ export async function POST(request: NextRequest) {
         invoiceId: invoice.id,
         amount: data.amount || invoice.totalAmount,
         issuedAt: data.issuedAt ? new Date(data.issuedAt) : new Date(),
+        // Project/Unit snapshot (preserve data at time of receipt)
+        projectName: invoice.projectName || invoice.project.name,
+        unitNumber: invoice.unitNumber,
         // Invoice snapshot (preserve data at time of receipt)
         invoiceNo: invoice.invoiceNo,
         invoiceDate: invoice.invoiceDate,

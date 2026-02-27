@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
         tenantId: lineContact.tenant.id,
         status: { in: ["PENDING", "PARTIAL", "OVERDUE"] },
       },
+      include: { project: true, unit: true },
     });
 
     if (!invoice) {
@@ -70,6 +71,15 @@ export async function POST(request: NextRequest) {
           method: "TRANSFER",
           status: "PENDING",
           paidAt: new Date(),
+          // Snapshot fields
+          projectName: invoice.projectName || invoice.project?.name,
+          unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
+          invoiceNo: invoice.invoiceNo,
+          invoiceDate: invoice.invoiceDate,
+          invoiceTotalAmount: invoice.totalAmount,
+          tenantName: invoice.tenantName || lineContact.tenant.name,
+          tenantNameTh: invoice.tenantNameTh || lineContact.tenant.nameTh,
+          tenantType: invoice.tenantType || lineContact.tenant.tenantType,
         },
       });
     }

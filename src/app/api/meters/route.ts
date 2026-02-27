@@ -50,7 +50,16 @@ export async function GET(request: NextRequest) {
       orderBy: [{ readingDate: "desc" }, { unitId: "asc" }],
     });
 
-    return NextResponse.json(readings);
+    // Use snapshot fallback when unit relation is null (unit deleted)
+    const readingsWithSnapshot = readings.map(reading => ({
+      ...reading,
+      unit: reading.unit || {
+        unitNumber: reading.unitNumber || "-",
+        tenants: [],
+      },
+    }));
+
+    return NextResponse.json(readingsWithSnapshot);
   } catch (error) {
     console.error("Error fetching meter readings:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -107,6 +116,9 @@ export async function POST(request: NextRequest) {
         rate,
         amount,
         readingDate: new Date(data.readingDate),
+        // Snapshot fields (preserved even if unit is deleted)
+        projectName: unit.project.name,
+        unitNumber: unit.unitNumber,
       },
       include: {
         project: { select: { name: true, nameTh: true } },

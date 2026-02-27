@@ -100,19 +100,23 @@ export async function GET(request: NextRequest) {
       data.byType[invoice.type].invoiced += invoice.totalAmount;
       data.byType[invoice.type].paid += invoice.paidAmount;
 
-      // Aggregate by project
-      if (!data.byProject[invoice.project.name]) {
-        data.byProject[invoice.project.name] = { invoiced: 0, paid: 0 };
+      // Aggregate by project (use snapshot fallback)
+      const projectName = invoice.projectName || invoice.project?.name || "Unknown";
+      const tenantDisplayName = invoice.tenantName || invoice.tenant?.name || "Unknown";
+      const unitDisplayNumber = invoice.unitNumber || invoice.unit?.unitNumber || "-";
+
+      if (!data.byProject[projectName]) {
+        data.byProject[projectName] = { invoiced: 0, paid: 0 };
       }
-      data.byProject[invoice.project.name].invoiced += invoice.totalAmount;
-      data.byProject[invoice.project.name].paid += invoice.paidAmount;
+      data.byProject[projectName].invoiced += invoice.totalAmount;
+      data.byProject[projectName].paid += invoice.paidAmount;
 
       // PROBLEM DETECTION 1: Missing payments (no payments at all)
       if (invoice.payments.length === 0 && invoice.status !== "CANCELLED") {
         data.missingPayments.push({
           invoiceNo: invoice.invoiceNo,
-          tenant: invoice.tenant.name,
-          unit: invoice.unit.unitNumber,
+          tenant: tenantDisplayName,
+          unit: unitDisplayNumber,
           amount: invoice.totalAmount,
           dueDate: invoice.dueDate,
           status: invoice.status,
@@ -124,8 +128,8 @@ export async function GET(request: NextRequest) {
         const totalPayments = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
         data.potentialDuplicates.push({
           invoiceNo: invoice.invoiceNo,
-          tenant: invoice.tenant.name,
-          unit: invoice.unit.unitNumber,
+          tenant: tenantDisplayName,
+          unit: unitDisplayNumber,
           totalAmount: invoice.totalAmount,
           paidAmount: invoice.paidAmount,
           paymentsCount: invoice.payments.length,

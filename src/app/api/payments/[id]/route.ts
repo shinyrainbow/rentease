@@ -29,7 +29,7 @@ export async function PATCH(
       },
     });
 
-    if (!existingPayment) {
+    if (!existingPayment || !existingPayment.invoice) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
@@ -61,6 +61,10 @@ export async function PATCH(
     });
 
     // Recalculate invoice's paidAmount and status
+    if (!payment.invoice) {
+      return NextResponse.json(payment);
+    }
+
     const allPayments = await prisma.payment.findMany({
       where: {
         invoiceId: payment.invoice.id,
@@ -135,7 +139,7 @@ export async function DELETE(
       },
     });
 
-    if (!existingPayment) {
+    if (!existingPayment || !existingPayment.invoice) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 

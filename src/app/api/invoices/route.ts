@@ -40,9 +40,10 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Use snapshot data if available, otherwise fall back to joined tenant data
+    // Use snapshot data as fallback when relations are null (unit/tenant deleted)
     const invoicesWithSnapshot = invoices.map(invoice => ({
       ...invoice,
+      unit: invoice.unit || { unitNumber: invoice.unitNumber || "-" },
       tenant: invoice.tenantName ? {
         name: invoice.tenantName,
         nameTh: invoice.tenantNameTh,
@@ -144,6 +145,9 @@ export async function POST(request: NextRequest) {
         withholdingTax,
         totalAmount,
         lineItems,
+        // Project/Unit snapshot
+        projectName: unit.project.name,
+        unitNumber: unit.unitNumber,
         // Tenant snapshot
         tenantName: activeTenant.name,
         tenantNameTh: activeTenant.nameTh,

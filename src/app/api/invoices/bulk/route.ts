@@ -145,6 +145,9 @@ export async function POST(request: NextRequest) {
           withholdingTax,
           totalAmount,
           lineItems: lineItems as Prisma.InputJsonValue,
+          // Project/Unit snapshot
+          projectName: project.name,
+          unitNumber: unit.unitNumber,
           // Tenant snapshot
           tenantName: tenant.name,
           tenantNameTh: tenant.nameTh,

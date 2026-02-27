@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         tenant: true,
+        unit: true,
         project: { include: { lineOa: true } },
       },
     });
@@ -109,6 +110,15 @@ export async function POST(request: NextRequest) {
             method: "TRANSFER",
             status: "PENDING",
             paidAt: new Date(),
+            // Snapshot fields
+            projectName: invoice.projectName || invoice.project.name,
+            unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
+            invoiceNo: invoice.invoiceNo,
+            invoiceDate: invoice.invoiceDate,
+            invoiceTotalAmount: invoice.totalAmount,
+            tenantName: invoice.tenantName || invoice.tenant?.name,
+            tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
+            tenantType: invoice.tenantType || invoice.tenant?.tenantType,
           },
         });
       }

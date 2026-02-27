@@ -80,7 +80,12 @@ export async function POST(request: NextRequest) {
       const protocol = host.includes("localhost") ? "http" : "https";
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `${protocol}://${host}`);
       console.log("Using baseUrl for image generation:", baseUrl);
-      const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+      // Use snapshot fields with relation fallback
+      const resolvedTenantName = invoice.tenantName || invoice.tenant?.name || "-";
+      const resolvedTenantNameTh = invoice.tenantNameTh || invoice.tenant?.nameTh;
+      const resolvedUnitNumber = invoice.unitNumber || invoice.unit?.unitNumber || "-";
+
+      const tenantName = lang === "th" && resolvedTenantNameTh ? resolvedTenantNameTh : resolvedTenantName;
       const companyName = lang === "th" && invoice.project.companyNameTh ? invoice.project.companyNameTh : (invoice.project.companyName || invoice.project.name);
 
       // Generate presigned URL for logo if it's an S3 key
@@ -104,11 +109,11 @@ export async function POST(request: NextRequest) {
         dueDate: invoice.dueDate.toISOString(),
         dateCreated: invoice.createdAt.toISOString(),
         totalAmount: String(invoice.totalAmount),
-        unitNumber: invoice.unit.unitNumber,
+        unitNumber: resolvedUnitNumber,
         tenantName,
-        tenantAddress: invoice.tenant.address || "",
-        tenantTaxId: invoice.tenant.taxId || "",
-        tenantIdCard: invoice.tenant.idCard || "",
+        tenantAddress: invoice.tenant?.address || "",
+        tenantTaxId: invoice.tenantTaxId || invoice.tenant?.taxId || "",
+        tenantIdCard: invoice.tenantIdCard || invoice.tenant?.idCard || "",
         companyName,
         companyNameTh: invoice.project.companyNameTh || "",
         companyAddress: invoice.project.companyAddress || "",
@@ -118,7 +123,7 @@ export async function POST(request: NextRequest) {
         // Additional details
         subtotal: String(invoice.subtotal),
         withholdingTax: String(invoice.withholdingTax || 0),
-        withholdingTaxPercent: String(invoice.tenant.withholdingTax || 0),
+        withholdingTaxPercent: String(invoice.tenant?.withholdingTax || 0),
         lineItems: JSON.stringify(invoice.lineItems || []),
         // Bank info for payment
         bankName: invoice.project.bankName || "",
@@ -174,7 +179,7 @@ export async function POST(request: NextRequest) {
       messageContent = `
 ${textLabels.title}
 ${textLabels.invoiceNo}: ${invoice.invoiceNo}
-${textLabels.unit}: ${invoice.unit.unitNumber}
+${textLabels.unit}: ${resolvedUnitNumber}
 ${textLabels.total}: ฿${invoice.totalAmount.toLocaleString()}
 ${textLabels.dueDate}: ${(() => { const d = new Date(invoice.dueDate); const thMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"]; const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return `${d.getDate()} ${lang === "th" ? thMonths[d.getMonth()] : enMonths[d.getMonth()]} ${d.getFullYear()}`; })()}
 
@@ -229,12 +234,18 @@ ${textLabels.footer}
       const protocol = host.includes("localhost") ? "http" : "https";
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `${protocol}://${host}`);
       console.log("Using baseUrl for receipt image generation:", baseUrl);
-      const tenantName = lang === "th" && receipt.invoice.tenant.nameTh ? receipt.invoice.tenant.nameTh : receipt.invoice.tenant.name;
-      const companyName = lang === "th" && receipt.invoice.project.companyNameTh ? receipt.invoice.project.companyNameTh : (receipt.invoice.project.companyName || receipt.invoice.project.name);
+      // Use snapshot fields with relation fallback
+      const rInv = receipt.invoice;
+      const resolvedTenantName = receipt.tenantName || rInv.tenantName || rInv.tenant?.name || "-";
+      const resolvedTenantNameTh = receipt.tenantNameTh || rInv.tenantNameTh || rInv.tenant?.nameTh;
+      const resolvedUnitNumber = receipt.unitNumber || rInv.unitNumber || rInv.unit?.unitNumber || "-";
+
+      const tenantName = lang === "th" && resolvedTenantNameTh ? resolvedTenantNameTh : resolvedTenantName;
+      const companyName = lang === "th" && rInv.project.companyNameTh ? rInv.project.companyNameTh : (rInv.project.companyName || rInv.project.name);
 
       // Generate presigned URL for logo if it's an S3 key
       let logoUrl = "";
-      const logoKeyOrUrl = receipt.invoice.project.logoUrl || "";
+      const logoKeyOrUrl = rInv.project.logoUrl || "";
       if (logoKeyOrUrl) {
         if (isS3Key(logoKeyOrUrl)) {
           try {
@@ -250,29 +261,29 @@ ${textLabels.footer}
       const params = new URLSearchParams({
         lang,
         receiptNo: receipt.receiptNo,
-        invoiceNo: receipt.invoice.invoiceNo,
+        invoiceNo: receipt.invoiceNo || rInv.invoiceNo,
         amount: String(receipt.amount),
         issuedAt: receipt.issuedAt.toISOString(),
-        unitNumber: receipt.invoice.unit.unitNumber,
+        unitNumber: resolvedUnitNumber,
         tenantName,
-        tenantAddress: receipt.invoice.tenant.address || "",
-        tenantTaxId: receipt.invoice.tenant.taxId || "",
-        tenantIdCard: receipt.invoice.tenant.idCard || "",
+        tenantAddress: rInv.tenant?.address || "",
+        tenantTaxId: receipt.tenantTaxId || rInv.tenantTaxId || rInv.tenant?.taxId || "",
+        tenantIdCard: rInv.tenantIdCard || rInv.tenant?.idCard || "",
         companyName,
-        companyNameTh: receipt.invoice.project.companyNameTh || "",
-        companyAddress: receipt.invoice.project.companyAddress || "",
-        companyTaxId: receipt.invoice.project.taxId || "",
+        companyNameTh: rInv.project.companyNameTh || "",
+        companyAddress: rInv.project.companyAddress || "",
+        companyTaxId: rInv.project.taxId || "",
         logoUrl,
-        ownerName: receipt.invoice.project.owner?.name || "",
+        ownerName: rInv.project.owner?.name || "",
         // Additional details
-        subtotal: String(receipt.invoice.subtotal),
-        withholdingTax: String(receipt.invoice.withholdingTax || 0),
-        withholdingTaxPercent: String(receipt.invoice.tenant.withholdingTax || 0),
-        lineItems: JSON.stringify(receipt.invoice.lineItems || []),
+        subtotal: String(rInv.subtotal),
+        withholdingTax: String(rInv.withholdingTax || 0),
+        withholdingTaxPercent: String(rInv.tenant?.withholdingTax || 0),
+        lineItems: JSON.stringify(rInv.lineItems || []),
         // Bank info
-        bankName: receipt.invoice.project.bankName || "",
-        bankAccountName: receipt.invoice.project.bankAccountName || "",
-        bankAccountNumber: receipt.invoice.project.bankAccountNumber || "",
+        bankName: rInv.project.bankName || "",
+        bankAccountName: rInv.project.bankAccountName || "",
+        bankAccountNumber: rInv.project.bankAccountNumber || "",
         copy: String(copy),
       });
 
@@ -323,7 +334,7 @@ ${textLabels.footer}
       messageContent = `
 ${textLabels.title}
 ${textLabels.receiptNo}: ${receipt.receiptNo}
-${textLabels.unit}: ${receipt.invoice.unit.unitNumber}
+${textLabels.unit}: ${resolvedUnitNumber}
 ${textLabels.amount}: ฿${receipt.amount.toLocaleString()}
 ${textLabels.date}: ${(() => { const d = new Date(receipt.issuedAt); const thMonths = ["มค", "กพ", "มีค", "เมย", "พค", "มิย", "กค", "สค", "กย", "ตค", "พย", "ธค"]; const enMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return `${d.getDate()} ${lang === "th" ? thMonths[d.getMonth()] : enMonths[d.getMonth()]} ${d.getFullYear()}`; })()}
 

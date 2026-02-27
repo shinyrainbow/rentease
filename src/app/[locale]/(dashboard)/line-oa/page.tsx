@@ -425,26 +425,28 @@ export default function LineOAPage() {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                      <div className="overflow-x-auto scrollbar-thin">
-                                        <div className="flex items-center gap-2 w-max">
-                                          <p className="font-medium whitespace-nowrap">{contact.displayName}</p>
-                                          {contact.contactType === "GROUP" && (
-                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 shrink-0">
-                                              Group
-                                            </Badge>
-                                          )}
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-medium truncate">{contact.displayName}</p>
+                                        {contact.contactType === "GROUP" && (
+                                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 shrink-0">
+                                            Group
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {(contact.project || contact.tenant) && (
+                                        <div className="flex flex-wrap items-center gap-1 mt-1">
                                           {contact.project && (
-                                            <Badge variant="outline" className="text-xs shrink-0">
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                               {contact.project.name}
                                             </Badge>
                                           )}
                                           {contact.tenant && (
-                                            <Badge variant="secondary" className="text-xs shrink-0">
+                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                               {contact.tenant.name}
                                             </Badge>
                                           )}
                                         </div>
-                                      </div>
+                                      )}
                                       {contact.messages[0] && (
                                         <p className="text-xs text-muted-foreground truncate mt-1">
                                           {contact.messages[0].content || `[${contact.messages[0].messageType}]`}

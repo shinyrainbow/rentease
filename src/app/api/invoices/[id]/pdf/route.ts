@@ -218,7 +218,14 @@ export async function POST(
     y += 12;
 
     // ============ BILL TO SECTION ============
-    const tenantName = lang === "th" && invoice.tenant.nameTh ? invoice.tenant.nameTh : invoice.tenant.name;
+    // Use snapshot fields with relation fallback (relations may be null if unit/tenant deleted)
+    const resolvedTenantName = invoice.tenantName || invoice.tenant?.name || "-";
+    const resolvedTenantNameTh = invoice.tenantNameTh || invoice.tenant?.nameTh;
+    const resolvedUnitNumber = invoice.unitNumber || invoice.unit?.unitNumber || "-";
+    const resolvedTenantAddress = invoice.tenant?.address || "";
+    const resolvedTenantTaxId = invoice.tenantTaxId || invoice.tenant?.taxId || "";
+
+    const tenantName = lang === "th" && resolvedTenantNameTh ? resolvedTenantNameTh : resolvedTenantName;
     const labelWidth = 40;
 
     doc.setFontSize(11);
@@ -228,7 +235,7 @@ export async function POST(
     doc.setTextColor(107, 114, 128);
     doc.text(`${t.unit}:`, margin, y);
     doc.setTextColor(0, 0, 0);
-    doc.text(invoice.unit.unitNumber, margin + labelWidth, y);
+    doc.text(resolvedUnitNumber, margin + labelWidth, y);
     y += 5;
 
     // Name
@@ -239,20 +246,20 @@ export async function POST(
     y += 5;
 
     // Address
-    if (invoice.tenant.address) {
+    if (resolvedTenantAddress) {
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.address}:`, margin, y);
       doc.setTextColor(0, 0, 0);
-      doc.text(invoice.tenant.address, margin + labelWidth, y);
+      doc.text(resolvedTenantAddress, margin + labelWidth, y);
       y += 5;
     }
 
     // Tax ID
-    if (invoice.tenant.taxId) {
+    if (resolvedTenantTaxId) {
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.taxId}:`, margin, y);
       doc.setTextColor(0, 0, 0);
-      doc.text(invoice.tenant.taxId, margin + labelWidth, y);
+      doc.text(resolvedTenantTaxId, margin + labelWidth, y);
       y += 5;
     }
 
@@ -327,7 +334,7 @@ export async function POST(
 
     // Withholding Tax
     if (invoice.withholdingTax > 0) {
-      const withholdingTaxPercent = invoice.tenant.withholdingTax || 0;
+      const withholdingTaxPercent = invoice.tenant?.withholdingTax || 0;
       doc.setTextColor(107, 114, 128);
       doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
       doc.setTextColor(220, 38, 38); // Red

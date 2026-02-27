@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Add presigned URLs for slips
+    // Add presigned URLs for slips + snapshot fallbacks for nullable relations
     const paymentsWithUrls = await Promise.all(
       payments.map(async (payment) => {
         const slipsWithUrls = await Promise.all(
@@ -48,6 +48,18 @@ export async function GET(request: NextRequest) {
         );
         return {
           ...payment,
+          // Use snapshot fallback when invoice/tenant relations are null
+          invoice: payment.invoice || {
+            invoiceNo: payment.invoiceNo || "-",
+            dueDate: payment.invoiceDate,
+            project: { name: payment.projectName || "Unknown", nameTh: null },
+            unit: { unitNumber: payment.unitNumber || "-" },
+            receipt: null,
+          },
+          tenant: payment.tenant || {
+            name: payment.tenantName || "Unknown",
+            nameTh: payment.tenantNameTh,
+          },
           slips: slipsWithUrls,
         };
       })
@@ -71,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: data.invoiceId, project: { ownerId: session.user.id } },
-      include: { tenant: true, project: true },
+      include: { tenant: true, project: true, unit: true },
     });
 
     if (!invoice) {
@@ -100,14 +112,17 @@ export async function POST(request: NextRequest) {
         checkDate: data.checkDate ? new Date(data.checkDate) : null,
         notes: data.notes,
         paidAt: new Date(),
+        // Project/Unit snapshot (preserve data at time of payment)
+        projectName: invoice.projectName || invoice.project.name,
+        unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
         // Invoice snapshot (preserve data at time of payment)
         invoiceNo: invoice.invoiceNo,
         invoiceDate: invoice.invoiceDate,
         invoiceTotalAmount: invoice.totalAmount,
         // Tenant snapshot (preserve data at time of payment)
-        tenantName: invoice.tenantName || invoice.tenant.name,
-        tenantNameTh: invoice.tenantNameTh || invoice.tenant.nameTh,
-        tenantType: invoice.tenantType || invoice.tenant.tenantType,
+        tenantName: invoice.tenantName || invoice.tenant?.name,
+        tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
+        tenantType: invoice.tenantType || invoice.tenant?.tenantType,
       },
       include: {
         invoice: {
@@ -146,6 +161,16 @@ export async function POST(request: NextRequest) {
             receiptNo,
             invoiceId: invoice.id,
             amount: invoice.totalAmount,
+            // Snapshot fields
+            projectName: invoice.projectName || invoice.project.name,
+            unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
+            invoiceNo: invoice.invoiceNo,
+            invoiceDate: invoice.invoiceDate,
+            invoiceTotalAmount: invoice.totalAmount,
+            tenantName: invoice.tenantName || invoice.tenant?.name,
+            tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
+            tenantType: invoice.tenantType || invoice.tenant?.tenantType,
+            tenantTaxId: invoice.tenantTaxId || invoice.tenant?.taxId,
           },
         });
       }
