@@ -75,6 +75,23 @@ export async function PUT(
       return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
     }
 
+    // Check for overlapping contracts on the same unit (exclude self)
+    const overlapping = await prisma.tenant.findFirst({
+      where: {
+        unitId: existingTenant.unitId,
+        id: { not: id },
+        contractStart: { lt: endDate },
+        contractEnd: { gt: startDate },
+      },
+    });
+
+    if (overlapping) {
+      return NextResponse.json(
+        { error: "contractOverlap", overlappingTenant: overlapping.name },
+        { status: 400 }
+      );
+    }
+
     // Properly map and sanitize the data for Prisma
     const updateData = {
       name: data.name,

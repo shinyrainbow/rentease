@@ -103,8 +103,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit not found" }, { status: 404 });
     }
 
-    // Note: Allow multiple tenants per unit (for cases where current contract is ending
-    // and new tenant is already lined up)
+    // Check for overlapping contracts on the same unit
+    const overlapping = await prisma.tenant.findFirst({
+      where: {
+        unitId: data.unitId,
+        contractStart: { lt: endDate },
+        contractEnd: { gt: startDate },
+      },
+    });
+
+    if (overlapping) {
+      return NextResponse.json(
+        { error: "contractOverlap", overlappingTenant: overlapping.name },
+        { status: 400 }
+      );
+    }
 
     // Properly map and sanitize the data for Prisma
     const tenantData = {

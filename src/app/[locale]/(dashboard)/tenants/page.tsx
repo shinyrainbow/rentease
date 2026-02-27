@@ -59,6 +59,7 @@ interface Unit {
 
 interface Tenant {
   id: string;
+  unitId: string;
   name: string;
   nameTh: string | null;
   email: string | null;
@@ -75,6 +76,7 @@ interface Tenant {
   imageUrl: string | null;
   unit: {
     unitNumber: string;
+    projectId: string;
     project: { name: string };
   };
   invoices?: Array<{ id: string; invoiceNo: string }>;
@@ -179,36 +181,6 @@ export default function TenantsPage() {
     e.preventDefault();
     setDateError(null);
     setFormError(null);
-
-    // Validate contract dates if unit has existing tenant
-    if (!editingTenant && formData.unitId) {
-      const selectedUnit = allUnits.find(u => u.id === formData.unitId);
-      if (selectedUnit?.tenant?.contractEnd) {
-        const currentContractEnd = new Date(selectedUnit.tenant.contractEnd);
-        const newContractStart = formData.contractStart ? new Date(formData.contractStart) : null;
-
-        if (!newContractStart) {
-          setDateError("Contract start date is required when unit has existing tenant");
-          toast({
-            title: tCommon("error"),
-            description: "Contract start date is required when unit has existing tenant",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (newContractStart <= currentContractEnd) {
-          const errorMsg = `Contract start date must be after ${formatDate(currentContractEnd)} (current tenant's contract end)`;
-          setDateError(errorMsg);
-          toast({
-            title: tCommon("error"),
-            description: errorMsg,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-    }
 
     // contractStart and contractEnd are required
     if (!formData.contractStart || !formData.contractEnd) {
