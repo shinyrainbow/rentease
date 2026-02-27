@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/layout/sidebar-context";
-import Image from "next/image";
+
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "dashboard" },
@@ -66,8 +66,9 @@ export function Sidebar() {
               {/* <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">R</span>
               </div> */}
-              <Image
-                src="/logo.png" // ไฟล์ต้องอยู่ใน /public
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
                 alt="RentEase Logo"
                 width={80}
                 height={80}
