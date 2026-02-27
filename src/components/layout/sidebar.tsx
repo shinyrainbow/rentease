@@ -63,16 +63,16 @@ export function Sidebar() {
               href={`/${locale}/dashboard`}
               className="flex items-center gap-2"
             >
-              {/* <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">R</span>
-              </div> */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+
               <img
                 src="/logo.png"
                 alt="RentEase Logo"
                 width={40}
                 height={40}
               />
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <span className="font-bold text-xl">RentEase</span>
             </Link>
           )}
