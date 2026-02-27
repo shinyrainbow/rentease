@@ -84,6 +84,10 @@ export async function PUT(
       updateData.notes = data.notes;
     }
 
+    if (data.invoiceNo !== undefined) {
+      updateData.invoiceNo = data.invoiceNo;
+    }
+
     const invoice = await prisma.invoice.update({
       where: { id },
       data: updateData,

@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Send, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye, Edit, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -880,11 +881,10 @@ export default function ReceiptsPage() {
 
             {/* Issued Date */}
             <div className="space-y-2">
-              <Label>{t("issuedAt") || "วันที่ออกใบเสร็จ"} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-              <Input
-                type="date"
+              <Label>{t("issuedAt") || "วันที่ออกใบเสร็จ"} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+              <DateInput
                 value={createFormData.issuedAt}
-                onChange={(e) => setCreateFormData((prev) => ({ ...prev, issuedAt: e.target.value }))}
+                onChange={(v) => setCreateFormData((prev) => ({ ...prev, issuedAt: v }))}
               />
             </div>
 
@@ -1100,11 +1100,10 @@ export default function ReceiptsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("issuedAt") || "Issued Date"} *</Label>
-              <Input
-                type="date"
+              <Label>{t("issuedAt") || "Issued Date"} * <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+              <DateInput
                 value={editFormData.issuedAt}
-                onChange={(e) => setEditFormData((prev) => ({ ...prev, issuedAt: e.target.value }))}
+                onChange={(v) => setEditFormData((prev) => ({ ...prev, issuedAt: v }))}
                 required
               />
             </div>

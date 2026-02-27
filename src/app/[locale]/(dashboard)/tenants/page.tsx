@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, UserX, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, Camera, User } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Loader2, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, Camera, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { CalendarView } from "@/components/ui/calendar-view";
@@ -92,9 +93,7 @@ export default function TenantsPage() {
   const [deleting, setDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [endContractDialogOpen, setEndContractDialogOpen] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<Tenant | null>(null);
-  const [tenantToEndContract, setTenantToEndContract] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
@@ -343,11 +342,6 @@ export default function TenantsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const openEndContractDialog = (tenant: Tenant) => {
-    setTenantToEndContract(tenant);
-    setEndContractDialogOpen(true);
-  };
-
   const handleDelete = async () => {
     if (!tenantToDelete) return;
 
@@ -374,43 +368,6 @@ export default function TenantsPage() {
       }
     } catch (error) {
       console.error("Error deleting tenant:", error);
-      toast({
-        title: tCommon("error"),
-        description: "Network error",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleEndContract = async () => {
-    if (!tenantToEndContract) return;
-
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/tenants/${tenantToEndContract.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "end_contract" }),
-      });
-      if (res.ok) {
-        toast({
-          title: tCommon("success"),
-          description: "Contract ended",
-        });
-        setEndContractDialogOpen(false);
-        setTenantToEndContract(null);
-        fetchData();
-      } else {
-        toast({
-          title: tCommon("error"),
-          description: "Failed to end contract",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error ending contract:", error);
       toast({
         title: tCommon("error"),
         description: "Network error",
@@ -650,18 +607,17 @@ export default function TenantsPage() {
                     <div className="space-y-1">
                       <Label className="text-xs">โครงการ / Project</Label>
                       <Select
-                        value={formProjectFilter || "__all__"}
+                        value={formProjectFilter || undefined}
                         onValueChange={(v) => {
-                          setFormProjectFilter(v === "__all__" ? "" : v);
+                          setFormProjectFilter(v);
                           setFormData({ ...formData, unitId: "" });
                           setDateError(null);
                         }}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="ทุกโครงการ" />
+                          <SelectValue placeholder="เลือกโครงการ" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__all__">-- ทุกโครงการ --</SelectItem>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               {project.name}
@@ -678,13 +634,14 @@ export default function TenantsPage() {
                           setFormData({ ...formData, unitId: value });
                           setDateError(null);
                         }}
+                        disabled={!formProjectFilter}
                       >
                         <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select unit" />
+                          <SelectValue placeholder={formProjectFilter ? "เลือกห้อง" : "กรุณาเลือกโครงการก่อน"} />
                         </SelectTrigger>
                         <SelectContent>
                           {allUnits
-                            .filter((unit) => !formProjectFilter || unit.projectId === formProjectFilter)
+                            .filter((unit) => unit.projectId === formProjectFilter)
                             .map((unit) => (
                               <SelectItem key={unit.id} value={unit.id}>
                                 {unit.unitNumber}
@@ -800,11 +757,11 @@ export default function TenantsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("contractStart")} <span className="text-red-500">*</span> <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
-                  <Input className="h-9" type="date" required value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
+                  <DateInput className="h-9" required value={formData.contractStart} onChange={(v) => setFormData({ ...formData, contractStart: v })} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{t("contractEnd")} <span className="text-red-500">*</span> <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
-                  <Input className="h-9" type="date" required value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
+                  <DateInput className="h-9" required value={formData.contractEnd} onChange={(v) => setFormData({ ...formData, contractEnd: v })} />
                 </div>
               </div>
               {dateError && <p className="text-xs text-red-600">{dateError}</p>}
@@ -1061,11 +1018,6 @@ export default function TenantsPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tenant)} title={t("editTenant")}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {getDisplayStatus(tenant) === "ACTIVE" && (
-                          <Button variant="ghost" size="icon" onClick={() => openEndContractDialog(tenant)} title={t("endContract")}>
-                            <UserX className="h-4 w-4 text-orange-500" />
-                          </Button>
-                        )}
                         <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(tenant)} title={tCommon("delete")}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -1125,29 +1077,6 @@ export default function TenantsPage() {
       </Dialog>
 
       {/* End Contract Confirmation Dialog */}
-      <Dialog open={endContractDialogOpen} onOpenChange={setEndContractDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("endContract")}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t("confirmEndContract")}
-          </p>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setEndContractDialogOpen(false)} disabled={deleting}>
-              {tCommon("cancel")}
-            </Button>
-            <Button
-              onClick={handleEndContract}
-              disabled={deleting}
-              className="bg-orange-500 text-white hover:bg-orange-600"
-            >
-              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {t("endContract")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

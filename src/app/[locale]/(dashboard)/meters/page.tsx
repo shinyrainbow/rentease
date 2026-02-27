@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -380,17 +381,16 @@ export default function MetersPage() {
                       <div className="space-y-2">
                         <Label className="text-xs">{t("project")}</Label>
                         <Select
-                          value={formProjectFilter || "__all__"}
+                          value={formProjectFilter || undefined}
                           onValueChange={(v) => {
-                            setFormProjectFilter(v === "__all__" ? "" : v);
+                            setFormProjectFilter(v);
                             setFormData({ ...formData, unitId: "" });
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t("allProjects")} />
+                            <SelectValue placeholder={t("selectProject") || "เลือกโครงการ"} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__all__">-- {t("allProjects")} --</SelectItem>
                             {projects.map((project) => (
                               <SelectItem key={project.id} value={project.id}>
                                 {(locale === "th" ? project.nameTh : null) || project.name}
@@ -404,16 +404,17 @@ export default function MetersPage() {
                         <Select
                           value={formData.unitId || undefined}
                           onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                          disabled={!formProjectFilter}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t("selectUnit")} />
+                            <SelectValue placeholder={formProjectFilter ? t("selectUnit") : (t("selectProjectFirst") || "กรุณาเลือกโครงการก่อน")} />
                           </SelectTrigger>
                           <SelectContent>
                             {units
-                              .filter((u) => !formProjectFilter || u.projectId === formProjectFilter)
+                              .filter((u) => u.projectId === formProjectFilter)
                               .map((unit) => (
                                 <SelectItem key={unit.id} value={unit.id}>
-                                  {!formProjectFilter && `${(locale === "th" ? unit.project.nameTh : null) || unit.project.name} - `}{unit.unitNumber}{unit.tenant ? ` (${(locale === "th" ? unit.tenant.nameTh : null) || unit.tenant.name})` : ""}
+                                  {unit.unitNumber}{unit.tenant ? ` (${(locale === "th" ? unit.tenant.nameTh : null) || unit.tenant.name})` : ""}
                                 </SelectItem>
                               ))}
                           </SelectContent>
@@ -498,11 +499,10 @@ export default function MetersPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{t("readingDate")}</Label>
-                  <Input
-                    type="date"
+                  <Label>{t("readingDate")} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                  <DateInput
                     value={formData.readingDate}
-                    onChange={(e) => setFormData({ ...formData, readingDate: e.target.value })}
+                    onChange={(v) => setFormData({ ...formData, readingDate: v })}
                   />
                 </div>
 

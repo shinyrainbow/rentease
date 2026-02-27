@@ -112,53 +112,6 @@ export async function PUT(
   }
 }
 
-// End contract - set contract end date to now to mark as expired
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง (Unauthorized)" }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const data = await request.json();
-
-    const existingTenant = await prisma.tenant.findFirst({
-      where: { id, unit: { project: { ownerId: session.user.id } } },
-      include: { unit: true },
-    });
-
-    if (!existingTenant) {
-      return NextResponse.json({ error: "ไม่พบผู้เช่า (Tenant not found)" }, { status: 404 });
-    }
-
-    // End contract by setting contractEnd to now (or specified date)
-    if (data.action === "end_contract") {
-      const contractEndDate = data.contractEnd ? new Date(data.contractEnd) : new Date();
-
-      const tenant = await prisma.tenant.update({
-        where: { id },
-        data: {
-          contractEnd: contractEndDate,
-        },
-        include: {
-          unit: { include: { project: { select: { name: true, nameTh: true } } } },
-        },
-      });
-
-      return NextResponse.json(tenant);
-    }
-
-    return NextResponse.json({ error: "คำสั่งไม่ถูกต้อง (Invalid action)" }, { status: 400 });
-  } catch (error) {
-    console.error("Error updating tenant:", error);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ (Internal server error)" }, { status: 500 });
-  }
-}
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

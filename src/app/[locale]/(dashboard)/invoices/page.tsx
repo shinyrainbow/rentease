@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -945,11 +946,10 @@ export default function InvoicesPage() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>{t("dueDate")}</Label>
-                    <Input
-                      type="date"
+                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                    <DateInput
                       value={bulkFormData.dueDate}
-                      onChange={(e) => setBulkFormData({ ...bulkFormData, dueDate: e.target.value })}
+                      onChange={(v) => setBulkFormData({ ...bulkFormData, dueDate: v })}
                     />
                   </div>
                   <div className="flex justify-end gap-2">
@@ -1149,11 +1149,10 @@ export default function InvoicesPage() {
                   )}
 
                   <div className="space-y-2">
-                    <Label>{t("dueDate")}</Label>
-                    <Input
-                      type="date"
+                    <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                    <DateInput
                       value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      onChange={(v) => setFormData({ ...formData, dueDate: v })}
                       required
                     />
                   </div>
@@ -1253,13 +1252,15 @@ export default function InvoicesPage() {
             <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
           </SelectContent>
         </Select>
-        <Input
-          type="month"
-          value={monthFilter}
-          onChange={(e) => setMonthFilter(e.target.value)}
-          className="w-[180px]"
-          placeholder="Filter by month"
-        />
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">{t("billingMonth") || "เดือนที่ออกบิล"}</Label>
+          <Input
+            type="month"
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            className="w-[180px]"
+          />
+        </div>
         <Button variant="outline" onClick={handleExportCSV}>
           <Download className="h-4 w-4 mr-2" />
           {tCommon("export")}
@@ -1476,11 +1477,10 @@ export default function InvoicesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>{t("dueDate")}</Label>
-                <Input
-                  type="date"
+                <Label>{t("dueDate")} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                <DateInput
                   value={editFormData.dueDate}
-                  onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
+                  onChange={(v) => setEditFormData({ ...editFormData, dueDate: v })}
                   required
                 />
               </div>

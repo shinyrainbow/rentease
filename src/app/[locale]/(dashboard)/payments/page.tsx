@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Check, X, Image, Plus, Trash2, Loader2, Search, Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
@@ -971,11 +972,10 @@ export default function PaymentsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-                  <Input
-                    type="date"
+                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                  <DateInput
                     value={createFormData.checkDate}
-                    onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkDate: e.target.value }))}
+                    onChange={(v) => setCreateFormData((prev) => ({ ...prev, checkDate: v }))}
                   />
                 </div>
               </div>
@@ -1161,11 +1161,10 @@ export default function PaymentsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(1 มค 2025)</span></Label>
-                  <Input
-                    type="date"
+                  <Label>{t("checkDate") || "วันที่เช็ค"} <span className="text-muted-foreground text-xs">(วัน เดือน ปี)</span></Label>
+                  <DateInput
                     value={editFormData.checkDate}
-                    onChange={(e) => setEditFormData((prev) => ({ ...prev, checkDate: e.target.value }))}
+                    onChange={(v) => setEditFormData((prev) => ({ ...prev, checkDate: v }))}
                   />
                 </div>
               </div>

@@ -221,6 +221,8 @@
     "project": "Project",
     "unit": "Unit",
     "selectUnit": "Select unit",
+    "selectProject": "Select Project",
+    "selectProjectFirst": "Please select a project first",
     "allProjects": "All Projects",
     "type": "Type"
   },
@@ -231,6 +233,8 @@
     "sendViaLine": "Send via LINE",
     "downloadPdf": "Download PDF",
     "invoiceNo": "Invoice No.",
+    "invoiceNoHint": "Editable, auto-generated when unit is selected",
+    "billingMonth": "Billing Month",
     "type": "Type",
     "dueDate": "Due Date",
     "subtotal": "Subtotal",
