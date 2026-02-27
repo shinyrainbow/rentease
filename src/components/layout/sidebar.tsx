@@ -18,7 +18,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  FileSignature,
   BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,17 +62,13 @@ export function Sidebar() {
               href={`/${locale}/dashboard`}
               className="flex items-center gap-2"
             >
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
                 alt="RentEase Logo"
                 width={40}
                 height={40}
               />
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {/* <span className="font-bold text-xl">RentEase</span> */}
             </Link>
           )}
           <Button

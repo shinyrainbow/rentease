@@ -1207,21 +1207,21 @@ export default function InvoicesPage() {
           size="sm"
           onClick={() => setStatusFilter("")}
         >
-          All
+          {tCommon("all")}
         </Button>
         <Button
           variant={statusFilter === "OVERDUE" ? "destructive" : "outline"}
           size="sm"
           onClick={() => setStatusFilter(statusFilter === "OVERDUE" ? "" : "OVERDUE")}
         >
-          Overdue
+          {t("statuses.OVERDUE")}
         </Button>
         <Button
           variant={statusFilter === "PENDING" ? "secondary" : "outline"}
           size="sm"
           onClick={() => setStatusFilter(statusFilter === "PENDING" ? "" : "PENDING")}
         >
-          Pending
+          {t("statuses.PENDING")}
         </Button>
         <Button
           variant={statusFilter === "PAID" ? "default" : "outline"}
@@ -1229,48 +1229,57 @@ export default function InvoicesPage() {
           className={statusFilter === "PAID" ? "bg-green-600 hover:bg-green-700" : ""}
           onClick={() => setStatusFilter(statusFilter === "PAID" ? "" : "PAID")}
         >
-          Paid
+          {t("statuses.PAID")}
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("searchPlaceholder") || "Search invoice, tenant, unit..."}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="space-y-1 flex-1 min-w-[200px] max-w-md">
+          <Label className="text-xs text-muted-foreground">{tCommon("search")}</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t("searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
-        <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("allProjects") || "All Projects"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={tCommon("all")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{tCommon("all")}</SelectItem>
-            <SelectItem value="PENDING">{t("statuses.PENDING")}</SelectItem>
-            <SelectItem value="PARTIAL">{t("statuses.PARTIAL")}</SelectItem>
-            <SelectItem value="PAID">{t("statuses.PAID")}</SelectItem>
-            <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
-          </SelectContent>
-        </Select>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">{t("billingMonth") || "เดือนที่ออกบิล"}</Label>
+          <Label className="text-xs text-muted-foreground">{t("project")}</Label>
+          <Select value={projectFilter || "__all__"} onValueChange={(v) => setProjectFilter(v === "__all__" ? "" : v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={t("allProjects")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{t("allProjects")}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">{tCommon("status")}</Label>
+          <Select value={statusFilter || "__all__"} onValueChange={(v) => setStatusFilter(v === "__all__" ? "" : v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={tCommon("all")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{tCommon("all")}</SelectItem>
+              <SelectItem value="PENDING">{t("statuses.PENDING")}</SelectItem>
+              <SelectItem value="PARTIAL">{t("statuses.PARTIAL")}</SelectItem>
+              <SelectItem value="PAID">{t("statuses.PAID")}</SelectItem>
+              <SelectItem value="OVERDUE">{t("statuses.OVERDUE")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">{t("billingMonth")}</Label>
           <Input
             type="month"
             value={monthFilter}
