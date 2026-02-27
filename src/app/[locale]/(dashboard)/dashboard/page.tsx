@@ -378,9 +378,9 @@ export default async function DashboardPage() {
                 {data.recentPayments.map((payment) => (
                   <div key={payment.id} className="flex items-center justify-between text-sm">
                     <div>
-                      <p className="font-medium">{payment.invoice.invoiceNo}</p>
+                      <p className="font-medium">{payment.invoice?.invoiceNo || payment.invoiceNo || "-"}</p>
                       <p className="text-muted-foreground text-xs">
-                        {payment.invoice.tenant?.name}
+                        {payment.invoice?.tenant?.name || payment.tenantName}
                       </p>
                     </div>
                     <div className="text-right">

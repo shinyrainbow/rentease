@@ -136,7 +136,7 @@ export async function POST(
       },
     });
 
-    if (!receipt) {
+    if (!receipt || !receipt.invoice) {
       return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
     }
 

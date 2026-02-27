@@ -116,7 +116,7 @@ export async function DELETE(
       },
     });
 
-    if (!existingReceipt) {
+    if (!existingReceipt || !existingReceipt.invoice) {
       return NextResponse.json({ error: "ไม่พบใบเสร็จ (Receipt not found)" }, { status: 404 });
     }
 
