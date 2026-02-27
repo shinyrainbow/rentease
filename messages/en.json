@@ -115,7 +115,10 @@
       "MIXED": "Mixed"
     },
     "totalUnits": "Units",
-    "occupancyRate": "Occupancy"
+    "occupancyRate": "Occupancy",
+    "deleteProject": "Delete Project",
+    "confirmDelete": "Are you sure you want to delete project \"{name}\"?",
+    "cannotDeleteHasUnits": "Cannot delete project — please delete all {count} unit(s) first"
   },
   "units": {
     "title": "Units",

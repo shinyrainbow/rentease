@@ -59,7 +59,7 @@ interface Unit {
 
 interface Tenant {
   id: string;
-  unitId: string;
+  unitId: string | null;
   name: string;
   nameTh: string | null;
   email: string | null;

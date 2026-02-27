@@ -115,7 +115,10 @@
       "MIXED": "ผสม"
     },
     "totalUnits": "ห้อง",
-    "occupancyRate": "อัตราเช่า"
+    "occupancyRate": "อัตราเช่า",
+    "deleteProject": "ลบโครงการ",
+    "confirmDelete": "คุณต้องการลบโครงการ \"{name}\" หรือไม่?",
+    "cannotDeleteHasUnits": "ไม่สามารถลบโครงการได้ — กรุณาลบห้องทั้งหมด {count} ห้องก่อน"
   },
   "units": {
     "title": "ห้อง/ยูนิต",

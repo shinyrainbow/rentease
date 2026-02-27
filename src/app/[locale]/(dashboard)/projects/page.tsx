@@ -14,6 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,8 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Building2, MapPin, Calendar } from "lucide-react";
+import { Plus, Building2, MapPin, Calendar, Trash2, Loader2 } from "lucide-react";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface Unit {
   id: string;
@@ -145,9 +156,13 @@ export default function ProjectsPage() {
   const params = useParams();
   const locale = params.locale as string;
 
+  const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -229,6 +244,35 @@ export default function ProjectsPage() {
       electricityRate: 7,
       waterRate: 18,
     });
+  };
+
+  const handleDelete = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/projects/${projectToDelete.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast({ title: tCommon("success"), description: `${projectToDelete.name} ${tCommon("deleted")}` });
+        setDeleteDialogOpen(false);
+        setProjectToDelete(null);
+        fetchProjects();
+      } else {
+        const data = await res.json();
+        if (data.error === "cannotDeleteHasUnits") {
+          toast({
+            title: tCommon("error"),
+            description: t("cannotDeleteHasUnits", { count: data.unitCount }),
+            variant: "destructive",
+          });
+        } else {
+          toast({ title: tCommon("error"), description: data.error, variant: "destructive" });
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getTypeLabel = (type: string) => {
@@ -381,7 +425,8 @@ export default function ProjectsPage() {
             const occupancyRate = totalUnits > 0 ? Math.round((occupiedCount / totalUnits) * 100) : 0;
 
             return (
-              <Link key={project.id} href={`/${locale}/projects/${project.id}`}>
+              <div key={project.id} className="relative group">
+                <Link href={`/${locale}/projects/${project.id}`}>
                 <Card className="group hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer h-full overflow-hidden">
                   {/* Floor Plan Thumbnail */}
                   <div className="p-4 pb-0">
@@ -455,11 +500,48 @@ export default function ProjectsPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setProjectToDelete(project);
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             );
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteProject")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("confirmDelete", { name: projectToDelete?.name || "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {tCommon("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
