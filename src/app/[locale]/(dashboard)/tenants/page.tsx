@@ -250,6 +250,7 @@ export default function TenantsPage() {
           baseRent: formData.baseRent ? parseFloat(formData.baseRent) : 0,
           contractStart: formData.contractStart,
           contractEnd: formData.contractEnd,
+          address: formData.address || "",
         }),
       });
 

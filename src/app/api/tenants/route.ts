@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
       nameTh: data.nameTh || null,
       email: data.email || null,
       phone: data.phone || null,
+      address: data.address || null,
       idCard: data.idCard || null,
       taxId: data.taxId || null,
       tenantType: data.tenantType || "INDIVIDUAL",
