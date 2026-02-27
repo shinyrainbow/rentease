@@ -425,23 +425,25 @@ export default function LineOAPage() {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <p className="font-medium truncate">{contact.displayName}</p>
-                                        {contact.contactType === "GROUP" && (
-                                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                            Group
-                                          </Badge>
-                                        )}
-                                        {contact.tenant && (
-                                          <Badge variant="secondary" className="text-xs">
-                                            {contact.tenant.name}
-                                          </Badge>
-                                        )}
-                                        {contact.project && (
-                                          <Badge variant="outline" className="text-xs">
-                                            {contact.project.name}
-                                          </Badge>
-                                        )}
+                                      <div className="overflow-x-auto scrollbar-thin">
+                                        <div className="flex items-center gap-2 w-max">
+                                          <p className="font-medium whitespace-nowrap">{contact.displayName}</p>
+                                          {contact.contactType === "GROUP" && (
+                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 shrink-0">
+                                              Group
+                                            </Badge>
+                                          )}
+                                          {contact.project && (
+                                            <Badge variant="outline" className="text-xs shrink-0">
+                                              {contact.project.name}
+                                            </Badge>
+                                          )}
+                                          {contact.tenant && (
+                                            <Badge variant="secondary" className="text-xs shrink-0">
+                                              {contact.tenant.name}
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </div>
                                       {contact.messages[0] && (
                                         <p className="text-xs text-muted-foreground truncate mt-1">
