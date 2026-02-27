@@ -47,6 +47,7 @@ interface Unit {
   id: string;
   unitNumber: string;
   status: string;
+  projectId: string;
   project: { name: string };
   tenant: {
     name: string;
@@ -108,6 +109,7 @@ export default function TenantsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
+  const [formProjectFilter, setFormProjectFilter] = useState<string>("");
 
   const [formData, setFormData] = useState({
     unitId: "",
@@ -500,6 +502,7 @@ export default function TenantsPage() {
       contractStart: "",
       contractEnd: "",
     });
+    setFormProjectFilter("");
   };
 
   // Sorting
@@ -650,26 +653,55 @@ export default function TenantsPage() {
 
               {!editingTenant && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Unit</Label>
-                  <Select
-                    value={formData.unitId || undefined}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, unitId: value });
-                      setDateError(null);
-                    }}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allUnits.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.project.name} - {unit.unitNumber}
-                          {unit.tenant && ` (${unit.tenant.name})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">โครงการ / Project</Label>
+                      <Select
+                        value={formProjectFilter || "__all__"}
+                        onValueChange={(v) => {
+                          setFormProjectFilter(v === "__all__" ? "" : v);
+                          setFormData({ ...formData, unitId: "" });
+                          setDateError(null);
+                        }}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="ทุกโครงการ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">-- ทุกโครงการ --</SelectItem>
+                          {projects.map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Unit</Label>
+                      <Select
+                        value={formData.unitId || undefined}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, unitId: value });
+                          setDateError(null);
+                        }}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allUnits
+                            .filter((unit) => !formProjectFilter || unit.projectId === formProjectFilter)
+                            .map((unit) => (
+                              <SelectItem key={unit.id} value={unit.id}>
+                                {!formProjectFilter && `${unit.project.name} - `}{unit.unitNumber}
+                                {unit.tenant && ` (${unit.tenant.name})`}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   {formData.unitId && (() => {
                     const selectedUnit = allUnits.find(u => u.id === formData.unitId);
                     if (selectedUnit?.tenant) {
