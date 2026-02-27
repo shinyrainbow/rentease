@@ -319,7 +319,7 @@ export default async function DashboardPage() {
                     <div>
                       <p className="font-medium">{tenant.name}</p>
                       <p className="text-muted-foreground text-xs">
-                        {tenant.unit.project.name} - {tenant.unit.unitNumber}
+                        {tenant.unit?.project.name} - {tenant.unit?.unitNumber}
                       </p>
                     </div>
                     <div className="text-right">
