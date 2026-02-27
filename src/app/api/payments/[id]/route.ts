@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireMutationAccess } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 import { getPresignedUrl } from "@/lib/s3";
 
@@ -10,10 +10,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireMutationAccess();
+    if (error) return error;
 
     const { id } = await params;
     const data = await request.json();
@@ -117,10 +115,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error: authError } = await requireMutationAccess();
+    if (authError) return authError;
 
     const { id } = await params;
 

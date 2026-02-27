@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireMutationAccess } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 import { generateInvoiceNo } from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
@@ -8,10 +8,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireMutationAccess();
+    if (error) return error;
 
     const data = await request.json();
     const { projectId, type, month, dueDate } = data;
@@ -60,7 +58,7 @@ export async function POST(request: NextRequest) {
       const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), invoiceDate, unit.unitNumber);
 
       // Calculate amounts based on type
-      const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number }[] = [];
+      const lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number; previousReading?: number; currentReading?: number; readingDate?: string; meterType?: string }[] = [];
       let subtotal = 0;
       const meterReadingIds: string[] = [];
 
@@ -113,6 +111,10 @@ export async function POST(request: NextRequest) {
             unitPrice: reading.rate,
             usage: reading.usage,
             rate: reading.rate,
+            previousReading: reading.previousReading,
+            currentReading: reading.currentReading,
+            readingDate: reading.readingDate.toISOString(),
+            meterType: reading.type,
           });
           subtotal += reading.amount;
           meterReadingIds.push(reading.id);

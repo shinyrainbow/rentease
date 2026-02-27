@@ -32,35 +32,28 @@ export async function GET(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: {
-            // Show tenants whose contract hasn't expired yet (including future tenants)
-            OR: [
-              { contractEnd: null },
-              { contractEnd: { gte: new Date() } },
-            ],
-          },
           select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
-          orderBy: { contractStart: "asc" },
-          take: 1,
+          orderBy: { contractStart: "desc" },
         },
       },
       orderBy: [{ projectId: "asc" }, { unitNumber: "asc" }],
     });
 
-    // Transform to include single active tenant and compute status dynamically
+    // Transform: pick the currently active tenant for display, compute status dynamically
     const today = new Date();
     const unitsWithTenant = units.map((unit) => {
-      const tenant = unit.tenants[0] || null;
-      // Compute status dynamically: MAINTENANCE/RESERVED are manual overrides, keep as-is
-      // Otherwise, check if any active tenant exists
+      // Find the currently active tenant (started AND not ended)
+      const activeTenant = unit.tenants.find((t) => {
+        const started = new Date(t.contractStart) <= today;
+        const notEnded = new Date(t.contractEnd) >= today;
+        return started && notEnded;
+      });
+      // Fall back to the most recent tenant (any status)
+      const tenant = activeTenant || unit.tenants[0] || null;
+
       let computedStatus = unit.status;
       if (unit.status !== "MAINTENANCE" && unit.status !== "RESERVED") {
-        const hasActiveTenant = unit.tenants.some((t) => {
-          const started = !t.contractStart || new Date(t.contractStart) <= today;
-          const notEnded = !t.contractEnd || new Date(t.contractEnd) >= today;
-          return started && notEnded;
-        });
-        computedStatus = hasActiveTenant ? "OCCUPIED" : "VACANT";
+        computedStatus = activeTenant ? "OCCUPIED" : "VACANT";
       }
       return {
         ...unit,
@@ -113,16 +106,8 @@ export async function POST(request: NextRequest) {
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: {
-            // Show tenants whose contract hasn't expired yet (including future tenants)
-            OR: [
-              { contractEnd: null },
-              { contractEnd: { gte: new Date() } },
-            ],
-          },
           select: { name: true, nameTh: true, contractStart: true, contractEnd: true },
-          orderBy: { contractStart: "asc" },
-          take: 1,
+          orderBy: { contractStart: "desc" },
         },
       },
     });

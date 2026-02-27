@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { requireMutationAccess } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 import { generateInvoiceNo } from "@/lib/utils";
 
@@ -61,10 +62,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireMutationAccess();
+    if (error) return error;
 
     const data = await request.json();
 
@@ -94,7 +93,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Calculate amounts based on type
-    let lineItems: { description: string; amount: number }[] = [];
+    let lineItems: { description: string; amount: number; quantity?: number; unitPrice?: number; usage?: number; rate?: number; previousReading?: number; currentReading?: number; readingDate?: string; meterType?: string }[] = [];
     let subtotal = 0;
     const meterReadingIds: string[] = [];
 
@@ -122,7 +121,18 @@ export async function POST(request: NextRequest) {
           const description = reading.type === "ELECTRICITY"
             ? `ค่าไฟฟ้า / Electricity (${reading.usage} units x ฿${reading.rate})`
             : `ค่าน้ำ / Water (${reading.usage} units x ฿${reading.rate})`;
-          lineItems.push({ description, amount: reading.amount });
+          lineItems.push({
+            description,
+            amount: reading.amount,
+            quantity: reading.usage,
+            unitPrice: reading.rate,
+            usage: reading.usage,
+            rate: reading.rate,
+            previousReading: reading.previousReading,
+            currentReading: reading.currentReading,
+            readingDate: reading.readingDate.toISOString(),
+            meterType: reading.type,
+          });
           subtotal += reading.amount;
           meterReadingIds.push(reading.id);
         }

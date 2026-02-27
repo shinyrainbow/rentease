@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Loader2, Check, Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, Eye, Edit, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useCanMutate } from "@/hooks/use-role";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 import { formatDate } from "@/lib/utils";
 
@@ -114,6 +115,7 @@ export default function ReceiptsPage() {
   const t = useTranslations("receipts");
   const tCommon = useTranslations("common");
   const { toast } = useToast();
+  const canMutate = useCanMutate();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -575,10 +577,12 @@ export default function ReceiptsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <Button onClick={handleOpenCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("createReceipt") || "สร้างใบเสร็จ"}
-        </Button>
+        {canMutate && (
+          <Button onClick={handleOpenCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("createReceipt") || "สร้างใบเสร็จ"}
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -634,7 +638,7 @@ export default function ReceiptsPage() {
                   <div className="flex items-center">{t("issuedAt")}<SortIcon column="issuedAt" /></div>
                 </TableHead>
                 <TableHead>LINE</TableHead>
-                <TableHead>{tCommon("actions")}</TableHead>
+                {canMutate && <TableHead>{tCommon("actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -676,49 +680,51 @@ export default function ReceiptsPage() {
                         {receipt.sentViaLine ? "Sent" : "Not Sent"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("viewReceipt") || "View Receipt"}
-                          onClick={() => handleViewReceipt(receipt)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                         <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("sendViaLine")}
-                          onClick={() => openLineSendDialog(receipt)}
-                          disabled={sendingReceiptId === receipt.id}
-                        >
-                          {sendingReceiptId === receipt.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : receipt.sentViaLine ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={tCommon("edit") || "Edit"}
-                          onClick={() => handleEditReceipt(receipt)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={tCommon("delete") || "Delete"}
-                          onClick={() => openDeleteDialog(receipt)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canMutate && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("viewReceipt") || "View Receipt"}
+                            onClick={() => handleViewReceipt(receipt)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                           <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("sendViaLine")}
+                            onClick={() => openLineSendDialog(receipt)}
+                            disabled={sendingReceiptId === receipt.id}
+                          >
+                            {sendingReceiptId === receipt.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : receipt.sentViaLine ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={tCommon("edit") || "Edit"}
+                            onClick={() => handleEditReceipt(receipt)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={tCommon("delete") || "Delete"}
+                            onClick={() => openDeleteDialog(receipt)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -773,7 +779,7 @@ export default function ReceiptsPage() {
       </Dialog>
 
       {/* Create Receipt Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      {canMutate && <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("createReceipt") || "สร้างใบเสร็จรับเงิน"}</DialogTitle>
@@ -906,7 +912,7 @@ export default function ReceiptsPage() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Receipt Preview Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={(open) => {
@@ -1067,7 +1073,7 @@ export default function ReceiptsPage() {
       </Dialog>
 
       {/* Edit Receipt Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      {canMutate && <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("editReceipt") || "Edit Receipt"}</DialogTitle>
@@ -1114,10 +1120,10 @@ export default function ReceiptsPage() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {canMutate && <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("deleteReceipt") || "Delete Receipt"}</DialogTitle>
@@ -1149,7 +1155,7 @@ export default function ReceiptsPage() {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </div>
   );
 }

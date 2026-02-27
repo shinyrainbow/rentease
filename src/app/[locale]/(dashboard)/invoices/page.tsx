@@ -48,6 +48,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { exportToCSV, formatDateForExport, formatCurrencyForExport } from "@/lib/export";
 import { formatDate } from "@/lib/utils";
 import { Download } from "lucide-react";
+import { useCanMutate } from "@/hooks/use-role";
 
 interface Project {
   id: string;
@@ -136,6 +137,7 @@ interface MeterReading {
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
   const tCommon = useTranslations("common");
+  const canMutate = useCanMutate();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -876,302 +878,306 @@ export default function InvoicesPage() {
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
         <div className="flex gap-2">
           {/* Bulk Generate Button */}
-          <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("bulkGenerate")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("bulkGenerateTitle")}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleBulkGenerate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t("project")}</Label>
-                  <Select
-                    value={bulkFormData.projectId || "__all__"}
-                    onValueChange={(value) => setBulkFormData({ ...bulkFormData, projectId: value === "__all__" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("allProjects")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">{t("allProjects")}</SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("type")}</Label>
-                  <Select
-                    value={bulkFormData.type}
-                    onValueChange={(value) => setBulkFormData({ ...bulkFormData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
-                      <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                      <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Month selector for UTILITY/COMBINED */}
-                {(bulkFormData.type === "UTILITY" || bulkFormData.type === "COMBINED") && (
+          {canMutate && (
+            <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("bulkGenerate")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t("bulkGenerateTitle")}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleBulkGenerate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
-                    <Input
-                      type="month"
-                      value={bulkFormData.month}
-                      onChange={(e) => setBulkFormData({ ...bulkFormData, month: e.target.value })}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t("bulkMonthHint") || "Uninvoiced meter readings from this month will be used"}
-                    </p>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>{t("dueDate")}</Label>
-                  <Input
-                    type="date"
-                    value={bulkFormData.dueDate}
-                    onChange={(e) => setBulkFormData({ ...bulkFormData, dueDate: e.target.value })}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsBulkDialogOpen(false)}>
-                    {tCommon("cancel")}
-                  </Button>
-                  <Button type="submit" disabled={bulkGenerating}>
-                    {bulkGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {t("generate")}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Single Invoice Create Button */}
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("createInvoice")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("createInvoice")}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Project Selection */}
-                <div className="space-y-2">
-                  <Label>{t("project") || "โครงการ"}</Label>
-                  <Select
-                    value={formData.projectId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, projectId: value, unitId: "" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectProject") || "เลือกโครงการ"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Unit Selection */}
-                <div className="space-y-2">
-                  <Label>{t("unit") || "ห้อง/ยูนิต"}</Label>
-                  <Select
-                    value={formData.unitId || undefined}
-                    onValueChange={(value) => {
-                      const selectedUnit = units.find((u) => u.id === value);
-                      const now = new Date();
-                      const mm = String(now.getMonth() + 1).padStart(2, "0");
-                      const yyyy = now.getFullYear();
-                      const projCode = selectedUnit?.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
-                      const defaultNo = `INV-${projCode}-${mm}-${yyyy}-${selectedUnit?.unitNumber || ""}`;
-                      setFormData({ ...formData, unitId: value, invoiceNo: defaultNo });
-                    }}
-                    disabled={!formData.projectId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.projectId ? (t("selectUnit") || "เลือกห้อง") : (t("selectProjectFirst") || "กรุณาเลือกโครงการก่อน")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredUnitsForCreate.length === 0 ? (
-                        <SelectItem value="__none__" disabled>
-                          {t("noUnitsWithTenant") || "ไม่มีห้องที่มีผู้เช่า"}
-                        </SelectItem>
-                      ) : (
-                        filteredUnitsForCreate.map((unit) => (
-                          <SelectItem key={unit.id} value={unit.id}>
-                            {unit.unitNumber} - {unit.tenant?.name}
+                    <Label>{t("project")}</Label>
+                    <Select
+                      value={bulkFormData.projectId || "__all__"}
+                      onValueChange={(value) => setBulkFormData({ ...bulkFormData, projectId: value === "__all__" ? "" : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("allProjects")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">{t("allProjects")}</SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
                           </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t("type")}</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
-                      <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                      <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Meter Reading Picker - shown for UTILITY and COMBINED */}
-                {(formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId && (
-                  <>
-                    {/* Month selector */}
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("type")}</Label>
+                    <Select
+                      value={bulkFormData.type}
+                      onValueChange={(value) => setBulkFormData({ ...bulkFormData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
+                        <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
+                        <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Month selector for UTILITY/COMBINED */}
+                  {(bulkFormData.type === "UTILITY" || bulkFormData.type === "COMBINED") && (
                     <div className="space-y-2">
                       <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
-                      {loadingReadings && readingMonths.length === 0 ? (
-                        <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {tCommon("loading") || "Loading..."}
-                        </div>
-                      ) : readingMonths.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-2">
-                          {t("noMeterReadings") || "No uninvoiced meter readings found for this unit"}
-                        </p>
-                      ) : (
-                        <Select
-                          value={selectedReadingMonth}
-                          onValueChange={handleReadingMonthChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectMonth") || "Select month"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {readingMonths.map((month) => (
-                              <SelectItem key={month} value={month}>
-                                {month}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      <Input
+                        type="month"
+                        value={bulkFormData.month}
+                        onChange={(e) => setBulkFormData({ ...bulkFormData, month: e.target.value })}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t("bulkMonthHint") || "Uninvoiced meter readings from this month will be used"}
+                      </p>
                     </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>{t("dueDate")}</Label>
+                    <Input
+                      type="date"
+                      value={bulkFormData.dueDate}
+                      onChange={(e) => setBulkFormData({ ...bulkFormData, dueDate: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsBulkDialogOpen(false)}>
+                      {tCommon("cancel")}
+                    </Button>
+                    <Button type="submit" disabled={bulkGenerating}>
+                      {bulkGenerating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {t("generate")}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
 
-                    {/* Meter readings list */}
-                    {selectedReadingMonth && (
+          {/* Single Invoice Create Button */}
+          {canMutate && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("createInvoice")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t("createInvoice")}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Project Selection */}
+                  <div className="space-y-2">
+                    <Label>{t("project") || "โครงการ"}</Label>
+                    <Select
+                      value={formData.projectId || undefined}
+                      onValueChange={(value) => setFormData({ ...formData, projectId: value, unitId: "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("selectProject") || "เลือกโครงการ"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Unit Selection */}
+                  <div className="space-y-2">
+                    <Label>{t("unit") || "ห้อง/ยูนิต"}</Label>
+                    <Select
+                      value={formData.unitId || undefined}
+                      onValueChange={(value) => {
+                        const selectedUnit = units.find((u) => u.id === value);
+                        const now = new Date();
+                        const mm = String(now.getMonth() + 1).padStart(2, "0");
+                        const yyyy = now.getFullYear();
+                        const projCode = selectedUnit?.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
+                        const defaultNo = `INV-${projCode}-${mm}-${yyyy}-${selectedUnit?.unitNumber || ""}`;
+                        setFormData({ ...formData, unitId: value, invoiceNo: defaultNo });
+                      }}
+                      disabled={!formData.projectId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={formData.projectId ? (t("selectUnit") || "เลือกห้อง") : (t("selectProjectFirst") || "กรุณาเลือกโครงการก่อน")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredUnitsForCreate.length === 0 ? (
+                          <SelectItem value="__none__" disabled>
+                            {t("noUnitsWithTenant") || "ไม่มีห้องที่มีผู้เช่า"}
+                          </SelectItem>
+                        ) : (
+                          filteredUnitsForCreate.map((unit) => (
+                            <SelectItem key={unit.id} value={unit.id}>
+                              {unit.unitNumber} - {unit.tenant?.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t("type")}</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) => setFormData({ ...formData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
+                        <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
+                        <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Meter Reading Picker - shown for UTILITY and COMBINED */}
+                  {(formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId && (
+                    <>
+                      {/* Month selector */}
                       <div className="space-y-2">
-                        <Label>{t("selectMeterReadings") || "Select Meter Readings"}</Label>
-                        {loadingReadings ? (
-                          <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                        <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
+                        {loadingReadings && readingMonths.length === 0 ? (
+                          <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
+                            {tCommon("loading") || "Loading..."}
                           </div>
-                        ) : availableReadings.length === 0 ? (
+                        ) : readingMonths.length === 0 ? (
                           <p className="text-sm text-muted-foreground py-2">
                             {t("noMeterReadings") || "No uninvoiced meter readings found for this unit"}
                           </p>
                         ) : (
-                          <div className="border rounded-md max-h-48 overflow-y-auto">
-                            {availableReadings.map((reading) => (
-                              <label
-                                key={reading.id}
-                                className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
-                              >
-                                <Checkbox
-                                  checked={selectedReadingIds.has(reading.id)}
-                                  onCheckedChange={(checked) => {
-                                    const newSet = new Set(selectedReadingIds);
-                                    if (checked) {
-                                      newSet.add(reading.id);
-                                    } else {
-                                      newSet.delete(reading.id);
-                                    }
-                                    setSelectedReadingIds(newSet);
-                                  }}
-                                />
-                                <div className="flex-1 text-sm">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-medium">
-                                      {reading.type === "ELECTRICITY" ? "⚡ " : "💧 "}
-                                      {reading.type === "ELECTRICITY"
-                                        ? (t("electricity") || "Electricity")
-                                        : (t("water") || "Water")}
-                                    </span>
-                                    <span className="font-semibold">฿{reading.amount.toLocaleString()}</span>
-                                  </div>
-                                  <div className="text-muted-foreground text-xs">
-                                    {reading.usage} units × ฿{reading.rate} | {formatDate(reading.readingDate)}
-                                  </div>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                        {availableReadings.length > 0 && selectedReadingIds.size > 0 && (
-                          <div className="text-sm text-right font-medium">
-                            {t("selectedTotal") || "Total"}: ฿{availableReadings
-                              .filter((r) => selectedReadingIds.has(r.id))
-                              .reduce((sum, r) => sum + r.amount, 0)
-                              .toLocaleString()}
-                          </div>
+                          <Select
+                            value={selectedReadingMonth}
+                            onValueChange={handleReadingMonthChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("selectMonth") || "Select month"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {readingMonths.map((month) => (
+                                <SelectItem key={month} value={month}>
+                                  {month}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
                       </div>
-                    )}
-                  </>
-                )}
 
-                <div className="space-y-2">
-                  <Label>{t("dueDate")}</Label>
-                  <Input
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    required
-                  />
-                </div>
+                      {/* Meter readings list */}
+                      {selectedReadingMonth && (
+                        <div className="space-y-2">
+                          <Label>{t("selectMeterReadings") || "Select Meter Readings"}</Label>
+                          {loadingReadings ? (
+                            <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                          ) : availableReadings.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-2">
+                              {t("noMeterReadings") || "No uninvoiced meter readings found for this unit"}
+                            </p>
+                          ) : (
+                            <div className="border rounded-md max-h-48 overflow-y-auto">
+                              {availableReadings.map((reading) => (
+                                <label
+                                  key={reading.id}
+                                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                                >
+                                  <Checkbox
+                                    checked={selectedReadingIds.has(reading.id)}
+                                    onCheckedChange={(checked) => {
+                                      const newSet = new Set(selectedReadingIds);
+                                      if (checked) {
+                                        newSet.add(reading.id);
+                                      } else {
+                                        newSet.delete(reading.id);
+                                      }
+                                      setSelectedReadingIds(newSet);
+                                    }}
+                                  />
+                                  <div className="flex-1 text-sm">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium">
+                                        {reading.type === "ELECTRICITY" ? "⚡ " : "💧 "}
+                                        {reading.type === "ELECTRICITY"
+                                          ? (t("electricity") || "Electricity")
+                                          : (t("water") || "Water")}
+                                      </span>
+                                      <span className="font-semibold">฿{reading.amount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="text-muted-foreground text-xs">
+                                      {reading.usage} units × ฿{reading.rate} | {formatDate(reading.readingDate)}
+                                    </div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {availableReadings.length > 0 && selectedReadingIds.size > 0 && (
+                            <div className="text-sm text-right font-medium">
+                              {t("selectedTotal") || "Total"}: ฿{availableReadings
+                                .filter((r) => selectedReadingIds.has(r.id))
+                                .reduce((sum, r) => sum + r.amount, 0)
+                                .toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
 
-                {/* Editable Invoice Number */}
-                <div className="space-y-2">
-                  <Label>{t("invoiceNo") || "เลขที่ใบแจ้งหนี้ / Invoice No."}</Label>
-                  <Input
-                    value={formData.invoiceNo}
-                    onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
-                    placeholder="INV-XXX-MM-YYYY-Unit"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("invoiceNoHint") || "แก้ไขได้ตามต้องการ / Editable, auto-generated when unit is selected"}
-                  </p>
-                </div>
+                  <div className="space-y-2">
+                    <Label>{t("dueDate")}</Label>
+                    <Input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      required
+                    />
+                  </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    {tCommon("cancel")}
-                  </Button>
-                  <Button type="submit">{tCommon("create")}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  {/* Editable Invoice Number */}
+                  <div className="space-y-2">
+                    <Label>{t("invoiceNo") || "เลขที่ใบแจ้งหนี้ / Invoice No."}</Label>
+                    <Input
+                      value={formData.invoiceNo}
+                      onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
+                      placeholder="INV-XXX-MM-YYYY-Unit"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t("invoiceNoHint") || "แก้ไขได้ตามต้องการ / Editable, auto-generated when unit is selected"}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      {tCommon("cancel")}
+                    </Button>
+                    <Button type="submit">{tCommon("create")}</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -1258,7 +1264,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Batch Action Bar */}
-      {selectedInvoices.size > 0 && (
+      {canMutate && selectedInvoices.size > 0 && (
         <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
           <span className="text-sm font-medium">{selectedInvoices.size} {tCommon("select")}</span>
           <Button
@@ -1293,12 +1299,14 @@ export default function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedInvoices.size === sortedInvoices.length && sortedInvoices.length > 0}
-                    onCheckedChange={toggleAllInvoices}
-                  />
-                </TableHead>
+                {canMutate && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedInvoices.size === sortedInvoices.length && sortedInvoices.length > 0}
+                      onCheckedChange={toggleAllInvoices}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("invoiceNo")}>
                   <div className="flex items-center">{t("invoiceNo")}<SortIcon column="invoiceNo" /></div>
                 </TableHead>
@@ -1326,7 +1334,7 @@ export default function InvoicesPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                   <div className="flex items-center">{tCommon("status")}<SortIcon column="status" /></div>
                 </TableHead>
-                <TableHead className="sticky right-0 bg-background">{tCommon("actions")}</TableHead>
+                {canMutate && <TableHead className="sticky right-0 bg-background">{tCommon("actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1339,12 +1347,14 @@ export default function InvoicesPage() {
               ) : (
                 sortedInvoices.map((invoice) => (
                   <TableRow key={invoice.id} className={selectedInvoices.has(invoice.id) ? "bg-muted/50" : ""}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedInvoices.has(invoice.id)}
-                        onCheckedChange={() => toggleInvoiceSelection(invoice.id)}
-                      />
-                    </TableCell>
+                    {canMutate && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedInvoices.has(invoice.id)}
+                          onCheckedChange={() => toggleInvoiceSelection(invoice.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
                     <TableCell>
                       <div>
@@ -1372,53 +1382,55 @@ export default function InvoicesPage() {
                         {t(`statuses.${invoice.status}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="sticky right-0 bg-background">
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title={t("viewInvoice")}
-                          onClick={() => handleViewInvoice(invoice)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title={t("sendViaLine")}
-                          onClick={() => openLineSendDialog(invoice)}
-                          disabled={sendingInvoiceId === invoice.id}
-                        >
-                          {sendingInvoiceId === invoice.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : invoice.sentViaLine ? (
-                            <Check className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title={t("editInvoice") || "Edit Invoice"}
-                          onClick={() => handleEdit(invoice)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title={t("deleteInvoice") || "Delete Invoice"}
-                          onClick={() => openDeleteDialog(invoice)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canMutate && (
+                      <TableCell className="sticky right-0 bg-background">
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title={t("viewInvoice")}
+                            onClick={() => handleViewInvoice(invoice)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title={t("sendViaLine")}
+                            onClick={() => openLineSendDialog(invoice)}
+                            disabled={sendingInvoiceId === invoice.id}
+                          >
+                            {sendingInvoiceId === invoice.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : invoice.sentViaLine ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title={t("editInvoice") || "Edit Invoice"}
+                            onClick={() => handleEdit(invoice)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title={t("deleteInvoice") || "Delete Invoice"}
+                            onClick={() => openDeleteDialog(invoice)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -1428,61 +1440,63 @@ export default function InvoicesPage() {
       </Card>
 
       {/* Edit Invoice Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("editInvoice") || "Edit Invoice"} - {editingInvoice?.invoiceNo}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t("type")}</Label>
-              <Select
-                value={editFormData.type}
-                onValueChange={(value) => setEditFormData({ ...editFormData, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
-                  <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                  <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {canMutate && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{t("editInvoice") || "Edit Invoice"} - {editingInvoice?.invoiceNo}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("type")}</Label>
+                <Select
+                  value={editFormData.type}
+                  onValueChange={(value) => setEditFormData({ ...editFormData, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
+                    <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
+                    <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>{t("dueDate")}</Label>
-              <Input
-                type="date"
-                value={editFormData.dueDate}
-                onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>{t("dueDate")}</Label>
+                <Input
+                  type="date"
+                  value={editFormData.dueDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, dueDate: e.target.value })}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>{t("notes") || "Notes"}</Label>
-              <textarea
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={editFormData.notes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFormData({ ...editFormData, notes: e.target.value })}
-                rows={3}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>{t("notes") || "Notes"}</Label>
+                <textarea
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editFormData.notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  rows={3}
+                />
+              </div>
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={savingEdit}>
-                {tCommon("cancel")}
-              </Button>
-              <Button type="submit" disabled={savingEdit}>
-                {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {tCommon("save")}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={savingEdit}>
+                  {tCommon("cancel")}
+                </Button>
+                <Button type="submit" disabled={savingEdit}>
+                  {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {tCommon("save")}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Invoice Detail Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={(open) => {
@@ -1753,39 +1767,41 @@ export default function InvoicesPage() {
       </Dialog>
 
       {/* Delete Invoice AlertDialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteInvoice") || "Delete Invoice"}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {invoiceToDelete?.payments && invoiceToDelete.payments.length > 0 ? (
-                <span className="text-destructive font-medium">
-                  {t("cannotDeleteHasPayments") || "Cannot delete invoice with linked payments. Please remove all payments first."}
-                </span>
-              ) : invoiceToDelete?.receipt ? (
-                <span className="text-destructive font-medium">
-                  {t("cannotDeleteHasReceipt") || "Cannot delete invoice with linked receipt. Please remove the receipt first."}
-                </span>
-              ) : (
-                <>
-                  {t("confirmDelete")} {invoiceToDelete?.invoiceNo}?
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting || (invoiceToDelete?.payments && invoiceToDelete.payments.length > 0) || !!invoiceToDelete?.receipt}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {tCommon("delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canMutate && (
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("deleteInvoice") || "Delete Invoice"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {invoiceToDelete?.payments && invoiceToDelete.payments.length > 0 ? (
+                  <span className="text-destructive font-medium">
+                    {t("cannotDeleteHasPayments") || "Cannot delete invoice with linked payments. Please remove all payments first."}
+                  </span>
+                ) : invoiceToDelete?.receipt ? (
+                  <span className="text-destructive font-medium">
+                    {t("cannotDeleteHasReceipt") || "Cannot delete invoice with linked receipt. Please remove the receipt first."}
+                  </span>
+                ) : (
+                  <>
+                    {t("confirmDelete")} {invoiceToDelete?.invoiceNo}?
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleting || (invoiceToDelete?.payments && invoiceToDelete.payments.length > 0) || !!invoiceToDelete?.receipt}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {tCommon("delete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

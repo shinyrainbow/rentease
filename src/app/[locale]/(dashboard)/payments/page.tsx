@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useCanMutate } from "@/hooks/use-role";
 import { PageSkeleton } from "@/components/ui/table-skeleton";
 
 interface Project {
@@ -92,6 +93,7 @@ export default function PaymentsPage() {
   const t = useTranslations("payments");
   const tCommon = useTranslations("common");
   const { toast } = useToast();
+  const canMutate = useCanMutate();
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -571,10 +573,12 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("title")}</h2>
-        <Button onClick={handleOpenCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("createPayment") || "บันทึกการชำระ"}
-        </Button>
+        {canMutate && (
+          <Button onClick={handleOpenCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("createPayment") || "บันทึกการชำระ"}
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -647,7 +651,7 @@ export default function PaymentsPage() {
                 <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                   {tCommon("status")} <SortIcon column="status" />
                 </TableHead>
-                <TableHead>{tCommon("actions")}</TableHead>
+                {canMutate && <TableHead>{tCommon("actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -701,49 +705,51 @@ export default function PaymentsPage() {
                         {t(`statuses.${payment.status}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {payment.status === "PENDING" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-green-600"
-                              onClick={() => handleVerify(payment.id, true)}
-                              title={t("verifyPayment")}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600"
-                              onClick={() => handleVerify(payment.id, false)}
-                              title={t("rejectPayment")}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEditDialog(payment)}
-                          title={t("editPayment") || "Edit"}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600"
-                          onClick={() => handleOpenDeleteDialog(payment)}
-                          title={t("deletePayment") || "Delete"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canMutate && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {payment.status === "PENDING" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-green-600"
+                                onClick={() => handleVerify(payment.id, true)}
+                                title={t("verifyPayment")}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600"
+                                onClick={() => handleVerify(payment.id, false)}
+                                title={t("rejectPayment")}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEditDialog(payment)}
+                            title={t("editPayment") || "Edit"}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600"
+                            onClick={() => handleOpenDeleteDialog(payment)}
+                            title={t("deletePayment") || "Delete"}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -827,7 +833,7 @@ export default function PaymentsPage() {
       </Dialog>
 
       {/* Create Payment Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      {canMutate && <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("createPayment") || "บันทึกการชำระเงิน"}</DialogTitle>
@@ -1034,10 +1040,10 @@ export default function PaymentsPage() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Edit Payment Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      {canMutate && <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("editPayment") || "แก้ไขการชำระเงิน"}</DialogTitle>
@@ -1210,10 +1216,10 @@ export default function PaymentsPage() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Delete Payment Confirmation */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      {canMutate && <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmDeletePayment") || "ยืนยันการลบ"}</AlertDialogTitle>
@@ -1247,7 +1253,7 @@ export default function PaymentsPage() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>}
     </div>
   );
 }

@@ -21,15 +21,7 @@ export async function GET(
       include: {
         project: true,
         tenants: {
-          where: {
-            // Show tenants whose contract hasn't expired yet (including future tenants)
-            OR: [
-              { contractEnd: null },
-              { contractEnd: { gte: new Date() } },
-            ],
-          },
-          orderBy: { contractStart: "asc" },
-          take: 1,
+          orderBy: { contractStart: "desc" },
         },
         meterReadings: { orderBy: { createdAt: "desc" }, take: 10 },
         invoices: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -41,22 +33,24 @@ export async function GET(
       return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
-    // Compute status dynamically
+    // Pick the currently active tenant, compute status dynamically
     const today = new Date();
+    const activeTenant = unit.tenants.find((t) => {
+      const started = new Date(t.contractStart) <= today;
+      const notEnded = new Date(t.contractEnd) >= today;
+      return started && notEnded;
+    });
+    const tenant = activeTenant || unit.tenants[0] || null;
+
     let computedStatus = unit.status;
     if (unit.status !== "MAINTENANCE" && unit.status !== "RESERVED") {
-      const hasActiveTenant = unit.tenants.some((t) => {
-        const started = !t.contractStart || new Date(t.contractStart) <= today;
-        const notEnded = !t.contractEnd || new Date(t.contractEnd) >= today;
-        return started && notEnded;
-      });
-      computedStatus = hasActiveTenant ? "OCCUPIED" : "VACANT";
+      computedStatus = activeTenant ? "OCCUPIED" : "VACANT";
     }
 
     return NextResponse.json({
       ...unit,
       status: computedStatus,
-      tenant: unit.tenants[0] || null,
+      tenant,
       tenants: undefined,
     });
   } catch (error) {
@@ -105,22 +99,22 @@ export async function PUT(
       include: {
         project: { select: { name: true, nameTh: true } },
         tenants: {
-          where: {
-            // Show tenants whose contract hasn't expired yet (including future tenants)
-            OR: [
-              { contractEnd: null },
-              { contractEnd: { gte: new Date() } },
-            ],
-          },
-          orderBy: { contractStart: "asc" },
-          take: 1,
+          orderBy: { contractStart: "desc" },
         },
       },
     });
 
+    // Pick the currently active tenant
+    const todayPut = new Date();
+    const activeTenantPut = unit.tenants.find((t) => {
+      const started = new Date(t.contractStart) <= todayPut;
+      const notEnded = new Date(t.contractEnd) >= todayPut;
+      return started && notEnded;
+    });
+
     return NextResponse.json({
       ...unit,
-      tenant: unit.tenants[0] || null,
+      tenant: activeTenantPut || unit.tenants[0] || null,
       tenants: undefined,
     });
   } catch (error) {

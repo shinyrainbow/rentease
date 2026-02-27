@@ -203,8 +203,8 @@ model Tenant {
   // Tenant profile image (S3 key)
   imageUrl      String?
 
-  contractStart DateTime?
-  contractEnd   DateTime?
+  contractStart DateTime
+  contractEnd   DateTime
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

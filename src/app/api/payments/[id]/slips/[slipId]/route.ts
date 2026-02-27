@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireMutationAccess } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 import { deleteFile } from "@/lib/s3";
 
@@ -8,10 +8,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; slipId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireMutationAccess();
+    if (error) return error;
 
     const { id: paymentId, slipId } = await params;
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useCanMutate } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -70,6 +71,7 @@ export default function MetersPage() {
   const locale = useLocale();
 
   const { toast } = useToast();
+  const canMutate = useCanMutate();
   const [readings, setReadings] = useState<MeterReading[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -359,12 +361,14 @@ export default function MetersPage() {
             className="w-[180px]"
           />
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReading(null); }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setEditingReading(null); resetForm(); }}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addReading")}
-              </Button>
-            </DialogTrigger>
+            {canMutate && (
+              <DialogTrigger asChild>
+                <Button onClick={() => { setEditingReading(null); resetForm(); }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addReading")}
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editingReading ? t("editReading") : t("addReading")}</DialogTitle>
@@ -547,7 +551,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                       {t("amount")} <SortIcon column="amount" />
                     </TableHead>
-                    <TableHead>{tCommon("actions")}</TableHead>
+                    {canMutate && <TableHead>{tCommon("actions")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -567,16 +571,18 @@ export default function MetersPage() {
                         <TableCell>{reading.usage}</TableCell>
                         <TableCell>฿{reading.rate}</TableCell>
                         <TableCell className="font-medium">฿{reading.amount.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {canMutate && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}
@@ -617,7 +623,7 @@ export default function MetersPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                       {t("amount")} <SortIcon column="amount" />
                     </TableHead>
-                    <TableHead>{tCommon("actions")}</TableHead>
+                    {canMutate && <TableHead>{tCommon("actions")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -637,16 +643,18 @@ export default function MetersPage() {
                         <TableCell>{reading.usage}</TableCell>
                         <TableCell>฿{reading.rate}</TableCell>
                         <TableCell className="font-medium">฿{reading.amount.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {canMutate && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(reading)} title={t("editReading")}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(reading)} title={tCommon("delete")}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

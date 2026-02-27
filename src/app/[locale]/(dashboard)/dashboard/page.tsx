@@ -33,11 +33,8 @@ async function getDashboardData(userId: string) {
         status: true,
         tenants: {
           where: {
-            OR: [
-              { contractEnd: null },
-              { contractEnd: { gte: today } },
-            ],
             contractStart: { lte: today },
+            contractEnd: { gte: today },
           },
           select: { id: true },
           take: 1,

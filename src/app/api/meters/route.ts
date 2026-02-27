@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { requireMutationAccess } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -68,10 +69,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requireMutationAccess();
+    if (error) return error;
 
     const data = await request.json();
 

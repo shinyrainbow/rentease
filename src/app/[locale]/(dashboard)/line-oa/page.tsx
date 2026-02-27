@@ -478,9 +478,18 @@ export default function LineOAPage() {
                             ) : (
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             )}
-                            <div className="flex-1 flex items-center justify-between">
-                              <span className="font-medium text-sm">{lineOa?.name || "LINE OA"}</span>
-                              <Badge variant="outline" className="text-xs">
+                            <div className="flex-1 flex items-center justify-between min-w-0">
+                              <span className="font-medium text-sm truncate">
+                                {lineOa?.name || "LINE OA"}
+                                {(() => {
+                                  const oaAccount = lineOaAccounts.find((a) => a.id === oaId);
+                                  if (oaAccount && oaAccount.projects.length > 0) {
+                                    return <span className="text-muted-foreground font-normal"> ({oaAccount.projects.map((p) => p.name).join(", ")})</span>;
+                                  }
+                                  return null;
+                                })()}
+                              </span>
+                              <Badge variant="outline" className="text-xs shrink-0 ml-2">
                                 {oaContacts.length}
                               </Badge>
                             </div>

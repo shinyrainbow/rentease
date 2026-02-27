@@ -51,7 +51,7 @@ interface Unit {
   project: { name: string };
   tenant: {
     name: string;
-    contractStart: string | null;
+    contractStart: string;
     contractEnd: string | null;
   } | null;
 }
@@ -73,7 +73,7 @@ interface Tenant {
   deposit: number | null;
   discountPercent: number | null;
   discountAmount: number | null;
-  contractStart: string | null;
+  contractStart: string;
   contractEnd: string | null;
   imageUrl: string | null;
   unit: {
@@ -219,8 +219,19 @@ export default function TenantsPage() {
       }
     }
 
+    // contractStart is required
+    if (!formData.contractStart) {
+      setDateError(t("contractStartRequired") || "Contract start date is required");
+      toast({
+        title: tCommon("error"),
+        description: t("contractStartRequired") || "Contract start date is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate contract start date is less than contract end date
-    if (formData.contractStart && formData.contractEnd) {
+    if (formData.contractEnd) {
       const startDate = new Date(formData.contractStart);
       const endDate = new Date(formData.contractEnd);
 
@@ -258,7 +269,7 @@ export default function TenantsPage() {
           deposit: formData.deposit ? parseFloat(formData.deposit) : null,
           discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : 0,
           discountAmount: formData.discountAmount ? parseFloat(formData.discountAmount) : 0,
-          contractStart: formData.contractStart || null,
+          contractStart: formData.contractStart,
           contractEnd: formData.contractEnd || null,
         }),
       });
@@ -572,12 +583,10 @@ export default function TenantsPage() {
     today.setHours(0, 0, 0, 0);
 
     // Check if contract hasn't started yet
-    if (tenant.contractStart) {
-      const startDate = new Date(tenant.contractStart);
-      startDate.setHours(0, 0, 0, 0);
-      if (today < startDate) {
-        return "UPCOMING";
-      }
+    const startDate = new Date(tenant.contractStart);
+    startDate.setHours(0, 0, 0, 0);
+    if (today < startDate) {
+      return "UPCOMING";
     }
 
     // If no contract end date, assume active
@@ -856,8 +865,8 @@ export default function TenantsPage() {
               {/* Contract */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
-                  <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
+                  <Label className="text-xs">{t("contractStart")} <span className="text-red-500">*</span> <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
+                  <Input className="h-9" type="date" required value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
