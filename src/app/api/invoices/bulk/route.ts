@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
 
     for (const tenant of activeTenants) {
       const unit = tenant.unit;
+      if (!unit) continue; // Skip orphaned tenants
       const project = unit.project;
 
       // Skip if tenant already has an invoice of this type in the same month
