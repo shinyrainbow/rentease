@@ -477,9 +477,9 @@ export default function MetersPage() {
                         placeholder={t("enterPreviousReading")}
                       />
                     )}
-                    {!previousInfo?.hasPrevious && !checkingPrevious && formData.unitId && (
+                    {/* {!previousInfo?.hasPrevious && !checkingPrevious && formData.unitId && (
                       <p className="text-xs text-muted-foreground">{t("firstTimeReading")}</p>
-                    )}
+                    )} */}
                   </div>
                 )}
 
