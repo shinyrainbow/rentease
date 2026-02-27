@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest) {
         where: { id: contactId },
         data: {
           tenantId,
-          projectId: tenant.unit.projectId,
+          projectId: tenant.unit?.projectId,
         },
         include: {
           lineOa: { select: { id: true, name: true } },

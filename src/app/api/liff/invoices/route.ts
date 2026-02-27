@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Tenant not linked" }, { status: 404 });
     }
 
+    if (!lineContact.tenant.unit) {
+      return NextResponse.json({ error: "Tenant has no unit assigned" }, { status: 400 });
+    }
+
     // Get unpaid invoices for this tenant
     const invoices = await prisma.invoice.findMany({
       where: {

@@ -62,6 +62,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
+    if (!tenant.unit) {
+      return NextResponse.json({ error: "Tenant has no unit assigned" }, { status: 400 });
+    }
+
     // Verify ownership
     if (tenant.unit.project.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
