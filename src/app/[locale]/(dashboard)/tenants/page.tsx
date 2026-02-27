@@ -719,7 +719,6 @@ export default function TenantsPage() {
                     }
                     return null;
                   })()}
-                  {dateError && <p className="text-xs text-red-600">{dateError}</p>}
                 </div>
               )}
 
@@ -844,14 +843,15 @@ export default function TenantsPage() {
               {/* Contract */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(1 มค 2025)</span></Label>
+                  <Label className="text-xs">{t("contractStart")} <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(1 มค 2025)</span></Label>
+                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
                   <Input className="h-9" type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
                 </div>
               </div>
+              {dateError && <p className="text-xs text-red-600">{dateError}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => { setIsDialogOpen(false); setDateError(null); setFormError(null); }} disabled={saving}>
