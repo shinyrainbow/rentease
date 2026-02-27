@@ -73,7 +73,7 @@ export function Sidebar() {
               />
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <span className="font-bold text-xl">RentEase</span>
+              {/* <span className="font-bold text-xl">RentEase</span> */}
             </Link>
           )}
           <Button
