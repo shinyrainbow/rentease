@@ -254,7 +254,8 @@ export default function LineOAPage() {
         setNewMessage("");
         await fetchMessages(selectedContact.id);
       } else {
-        toast({ title: tCommon("error"), description: "Failed to send message", variant: "destructive" });
+        const data = await res.json().catch(() => null);
+        toast({ title: tCommon("error"), description: data?.error || "Failed to send message", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -329,7 +330,8 @@ export default function LineOAPage() {
         fetchData();
         toast({ title: tCommon("success"), description: tCommon("saved") || "Saved" });
       } else {
-        toast({ title: tCommon("error"), description: "Failed to assign projects", variant: "destructive" });
+        const data = await res.json().catch(() => null);
+        toast({ title: tCommon("error"), description: data?.error || "Failed to assign projects", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error assigning projects:", error);
@@ -350,7 +352,8 @@ export default function LineOAPage() {
         fetchData();
         toast({ title: tCommon("success"), description: tCommon("deleted") || "Deleted" });
       } else {
-        toast({ title: tCommon("error"), description: "Failed to delete", variant: "destructive" });
+        const data = await res.json().catch(() => null);
+        toast({ title: tCommon("error"), description: data?.error || "Failed to delete", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting LINE OA:", error);
@@ -382,7 +385,8 @@ export default function LineOAPage() {
         setSelectedContact(updatedContact);
         toast({ title: tCommon("success"), description: tCommon("saved") || "Saved" });
       } else {
-        toast({ title: tCommon("error"), description: "Failed to link tenant", variant: "destructive" });
+        const data = await res.json().catch(() => null);
+        toast({ title: tCommon("error"), description: data?.error || "Failed to link tenant", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error linking tenant:", error);

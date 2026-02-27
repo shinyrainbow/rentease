@@ -281,9 +281,10 @@ export default function ProjectDetailPage() {
           description: `${formData.name} ${tCommon("updated")}`,
         });
       } else {
+        const data = await res.json().catch(() => null);
         toast({
           title: tCommon("error"),
-          description: "Failed to save project",
+          description: data?.error || "Failed to save project",
           variant: "destructive",
         });
       }
@@ -343,9 +344,10 @@ export default function ProjectDetailPage() {
           description: "Logo uploaded successfully",
         });
       } else {
+        const data = await res.json().catch(() => null);
         toast({
           title: tCommon("error"),
-          description: "Failed to upload logo",
+          description: data?.error || "Failed to upload logo",
           variant: "destructive",
         });
       }
@@ -380,9 +382,10 @@ export default function ProjectDetailPage() {
         setDeleteProjectDialogOpen(false);
         router.push(`/${locale}/projects`);
       } else {
+        const data = await res.json().catch(() => null);
         toast({
           title: tCommon("error"),
-          description: "Failed to delete project",
+          description: data?.error || "Failed to delete project",
           variant: "destructive",
         });
       }

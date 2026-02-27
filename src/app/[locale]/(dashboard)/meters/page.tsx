@@ -249,9 +249,10 @@ export default function MetersPage() {
         setReadingToDelete(null);
         fetchData();
       } else {
+        const data = await res.json().catch(() => null);
         toast({
           title: tCommon("error"),
-          description: "Failed to delete",
+          description: data?.error || "Failed to delete",
           variant: "destructive",
         });
       }

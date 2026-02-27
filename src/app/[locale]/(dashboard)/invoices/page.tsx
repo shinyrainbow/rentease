@@ -469,16 +469,17 @@ export default function InvoicesPage() {
           description: `${editingInvoice.invoiceNo} ${t("updated") || "has been updated"}`,
         });
       } else {
+        const data = await res.json().catch(() => null);
         toast({
-          title: "Error",
-          description: "Failed to update invoice",
+          title: tCommon("error"),
+          description: data?.error || "Failed to update invoice",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error updating invoice:", error);
       toast({
-        title: "Error",
+        title: tCommon("error"),
         description: "Failed to update invoice",
         variant: "destructive",
       });
