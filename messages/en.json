@@ -68,7 +68,8 @@
     "floorPlans": "Floor Plans",
     "lineOA": "LINE OA",
     "settings": "Settings",
-    "reports": "Reports"
+    "reports": "Reports",
+    "summary": "Summary"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -301,6 +302,8 @@
     "invoiceVersion": "Version",
     "originalVersion": "Original",
     "copyVersion": "Copy",
+    "cannotDeleteHasPayments": "Cannot delete invoice with linked payments. Please remove all payments first.",
+    "cannotDeleteHasReceipt": "Cannot delete invoice with linked receipt. Please remove the receipt first.",
     "readingMonth": "Meter Reading Month",
     "selectMonth": "Select month",
     "selectMeterReadings": "Select Meter Readings",
@@ -328,8 +331,7 @@
     "notes": "Notes",
     "searchPlaceholder": "Search invoice, tenant, unit...",
     "allProjects": "All Projects",
-
-
+    "dueDate": "Due Date",
     "project": "Project",
     "selectInvoice": "Select Invoice",
     "selectInvoicePlaceholder": "Select invoice to pay",
@@ -364,6 +366,19 @@
       "PENDING": "Pending",
       "VERIFIED": "Verified",
       "REJECTED": "Rejected"
+    },
+    "cannotDeleteHasReceipt": "Cannot delete payment because the invoice has a receipt. Please remove the receipt first.",
+    "statusChangeWarning": "Warning: Changing status from \"Verified\" will automatically delete receipts linked to this invoice.",
+    "statusChangeWarningDesc": "Please verify before making changes.",
+    "addSlip": "Add Slip",
+    "paymentSlipsTitle": "Payment Slips",
+    "checkNoPlaceholder": "Check number",
+    "bankPlaceholder": "Bank name",
+    "transferRefPlaceholder": "Transfer reference number",
+    "invoiceTypes": {
+      "RENT": "Rent",
+      "UTILITY": "Utility",
+      "COMBINED": "Combined"
     }
   },
   "receipts": {
@@ -409,7 +424,19 @@
     "withholdingTax": "Withholding Tax",
     "amountReceived": "Amount Received",
     "pdfPreview": "PDF Preview",
-    "details": "Details"
+    "details": "Details",
+    "editReceipt": "Edit Receipt",
+    "deleteReceipt": "Delete Receipt",
+    "receiptUpdated": "Receipt Updated",
+    "receiptUpdatedDesc": "Receipt has been updated successfully",
+    "receiptDeleted": "Receipt Deleted",
+    "receiptDeletedDesc": "Receipt has been deleted successfully",
+    "deleteReceiptConfirm": "Are you sure you want to delete this receipt?",
+    "deleteReceiptWarning": "Deleting this receipt will update the invoice status to PARTIAL or PENDING.",
+    "originalVersion": "Original",
+    "copyVersion": "Copy",
+    "receiptVersion": "Version",
+    "receiptNoHint": "Editable, auto-generated when invoice is selected"
   },
   "maintenance": {
     "title": "Maintenance Requests",
@@ -560,5 +587,26 @@
       "termination": "Termination",
       "terminationContent": "Either party may terminate this agreement with 30 days written notice. Early termination by the Tenant may result in forfeiture of the security deposit."
     }
+  },
+  "summary": {
+    "title": "Summary",
+    "totalRevenue": "Total Revenue",
+    "totalOutstanding": "Total Outstanding",
+    "collectionRate": "Collection Rate",
+    "overdueAmount": "Overdue Amount",
+    "monthlyTrend": "Monthly Trend",
+    "revenueByType": "Revenue by Type",
+    "collectionTrend": "Collection Trend",
+    "monthlyBreakdown": "Monthly Breakdown",
+    "month": "Month",
+    "invoiced": "Invoiced",
+    "collected": "Collected",
+    "outstanding": "Outstanding",
+    "rate": "Rate",
+    "last3Months": "Last 3 Months",
+    "last6Months": "Last 6 Months",
+    "last12Months": "Last 12 Months",
+    "allTime": "All Time",
+    "exportData": "Export Data"
   }
 }

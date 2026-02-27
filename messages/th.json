@@ -331,6 +331,7 @@
     "notes": "หมายเหตุ",
     "searchPlaceholder": "ค้นหาใบแจ้งหนี้, ผู้เช่า, ห้อง...",
     "allProjects": "โครงการทั้งหมด",
+    "dueDate": "วันครบกำหนด",
     "project": "โครงการ",
     "selectInvoice": "เลือกใบแจ้งหนี้",
     "selectInvoicePlaceholder": "เลือกใบแจ้งหนี้ที่ต้องการชำระ",
@@ -368,7 +369,17 @@
     },
     "cannotDeleteHasReceipt": "ไม่สามารถลบการชำระเงินที่ใบแจ้งหนี้มีใบเสร็จแล้ว กรุณาลบใบเสร็จก่อน",
     "statusChangeWarning": "คำเตือน: การเปลี่ยนสถานะจาก \"ยืนยันแล้ว\" จะทำให้ใบเสร็จที่เชื่อมโยงกับใบแจ้งหนี้นี้ถูกลบโดยอัตโนมัติ",
-    "statusChangeWarningDesc": "กรุณาตรวจสอบให้แน่ใจก่อนทำการเปลี่ยนแปลง"
+    "statusChangeWarningDesc": "กรุณาตรวจสอบให้แน่ใจก่อนทำการเปลี่ยนแปลง",
+    "addSlip": "เพิ่มสลิป",
+    "paymentSlipsTitle": "สลิปการชำระเงิน",
+    "checkNoPlaceholder": "เลขที่เช็ค",
+    "bankPlaceholder": "ชื่อธนาคาร",
+    "transferRefPlaceholder": "เลขอ้างอิงการโอน",
+    "invoiceTypes": {
+      "RENT": "ค่าเช่า",
+      "UTILITY": "ค่าสาธารณูปโภค",
+      "COMBINED": "รวม"
+    }
   },
   "receipts": {
     "title": "ใบเสร็จ",
@@ -414,6 +425,7 @@
     "amountReceived": "จำนวนเงินที่รับ",
     "pdfPreview": "ตัวอย่าง PDF",
     "details": "รายละเอียด",
+    "receiptNoHint": "แก้ไขได้ตามต้องการ ระบบจะสร้างให้อัตโนมัติเมื่อเลือกใบแจ้งหนี้",
     "editReceipt": "แก้ไขใบเสร็จ",
     "deleteReceipt": "ลบใบเสร็จ",
     "receiptUpdated": "อัปเดตใบเสร็จแล้ว",

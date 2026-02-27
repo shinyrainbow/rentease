@@ -16,6 +16,10 @@ export async function PATCH(
     const { id } = await params;
     const data = await request.json();
 
+    if (data.amount !== undefined && (typeof data.amount !== "number" || isNaN(data.amount) || data.amount <= 0)) {
+      return NextResponse.json({ error: "Valid positive amount is required" }, { status: 400 });
+    }
+
     // Check if payment exists and belongs to user
     const existingPayment = await prisma.payment.findFirst({
       where: {
@@ -63,6 +67,10 @@ export async function PATCH(
       return NextResponse.json(payment);
     }
 
+    const fullInvoice = await prisma.invoice.findUnique({
+      where: { id: payment.invoice.id },
+    });
+
     const allPayments = await prisma.payment.findMany({
       where: {
         invoiceId: payment.invoice.id,
@@ -78,6 +86,8 @@ export async function PATCH(
       newStatus = "PAID";
     } else if (newPaidAmount > 0) {
       newStatus = "PARTIAL";
+    } else if (fullInvoice?.dueDate && new Date(fullInvoice.dueDate) < new Date()) {
+      newStatus = "OVERDUE";
     }
 
     // Update invoice with new paidAmount and status
@@ -179,6 +189,8 @@ export async function DELETE(
       newStatus = "PAID";
     } else if (newPaidAmount > 0) {
       newStatus = "PARTIAL";
+    } else if (existingPayment.invoice.dueDate && new Date(existingPayment.invoice.dueDate) < new Date()) {
+      newStatus = "OVERDUE";
     }
 
     // Update invoice with new paidAmount and status

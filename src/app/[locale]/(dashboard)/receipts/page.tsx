@@ -639,7 +639,7 @@ export default function ReceiptsPage() {
                   <div className="flex items-center">{t("issuedAt")}<SortIcon column="issuedAt" /></div>
                 </TableHead>
                 <TableHead>LINE</TableHead>
-                {canMutate && <TableHead>{tCommon("actions")}</TableHead>}
+                <TableHead>{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -681,51 +681,53 @@ export default function ReceiptsPage() {
                         {receipt.sentViaLine ? "Sent" : "Not Sent"}
                       </Badge>
                     </TableCell>
-                    {canMutate && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t("viewReceipt") || "View Receipt"}
-                            onClick={() => handleViewReceipt(receipt)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                           <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t("sendViaLine")}
-                            onClick={() => openLineSendDialog(receipt)}
-                            disabled={sendingReceiptId === receipt.id}
-                          >
-                            {sendingReceiptId === receipt.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : receipt.sentViaLine ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Send className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={tCommon("edit") || "Edit"}
-                            onClick={() => handleEditReceipt(receipt)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={tCommon("delete") || "Delete"}
-                            onClick={() => openDeleteDialog(receipt)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t("viewReceipt") || "View Receipt"}
+                          onClick={() => handleViewReceipt(receipt)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {canMutate && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={t("sendViaLine")}
+                              onClick={() => openLineSendDialog(receipt)}
+                              disabled={sendingReceiptId === receipt.id}
+                            >
+                              {sendingReceiptId === receipt.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : receipt.sentViaLine ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={tCommon("edit") || "Edit"}
+                              onClick={() => handleEditReceipt(receipt)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={tCommon("delete") || "Delete"}
+                              onClick={() => openDeleteDialog(receipt)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

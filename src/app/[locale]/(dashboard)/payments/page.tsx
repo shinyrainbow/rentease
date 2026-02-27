@@ -697,7 +697,7 @@ export default function PaymentsPage() {
                           onClick={() => handleOpenSlips(payment)}
                         >
                           <Plus className="h-4 w-4 mr-1" />
-                          Add
+                          {t("addSlip")}
                         </Button>
                       )}
                     </TableCell>
@@ -764,7 +764,7 @@ export default function PaymentsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              สลิปการชำระเงิน - {selectedPayment?.invoice.invoiceNo}
+              {t("paymentSlipsTitle")} - {selectedPayment?.invoice.invoiceNo}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -810,7 +810,7 @@ export default function PaymentsPage() {
                 ) : (
                   <div className="text-center text-muted-foreground">
                     <Plus className="h-6 w-6 mx-auto mb-1" />
-                    <span className="text-sm">เพิ่มสลิป</span>
+                    <span className="text-sm">{t("addSlip")}</span>
                   </div>
                 )}
               </div>
@@ -826,7 +826,7 @@ export default function PaymentsPage() {
 
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => setIsSlipsOpen(false)}>
-                ปิด
+                {tCommon("close")}
               </Button>
             </div>
           </div>
@@ -885,7 +885,7 @@ export default function PaymentsPage() {
                     </SelectItem>
                   ) : (
                     unpaidInvoices.map((inv) => {
-                      const typeLabel = inv.type === "RENT" ? "ค่าเช่า" : inv.type === "UTILITY" ? "ค่าสาธารณูปโภค" : "รวม";
+                      const typeLabel = t(`invoiceTypes.${inv.type}`);
                       return (
                         <SelectItem key={inv.id} value={inv.id}>
                           {inv.invoiceNo} - {inv.tenant.name} - {new Date(inv.dueDate).toISOString().split("T")[0]} - {typeLabel} (฿{(inv.totalAmount - inv.paidAmount).toLocaleString()})
@@ -959,7 +959,7 @@ export default function PaymentsPage() {
                     <Input
                       value={createFormData.checkNo}
                       onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkNo: e.target.value }))}
-                      placeholder="เลขที่เช็ค"
+                      placeholder={t("checkNoPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
@@ -967,7 +967,7 @@ export default function PaymentsPage() {
                     <Input
                       value={createFormData.checkBank}
                       onChange={(e) => setCreateFormData((prev) => ({ ...prev, checkBank: e.target.value }))}
-                      placeholder="ชื่อธนาคาร"
+                      placeholder={t("bankPlaceholder")}
                     />
                   </div>
                 </div>

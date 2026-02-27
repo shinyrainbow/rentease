@@ -141,6 +141,8 @@ export async function DELETE(
       newStatus = "PAID";
     } else if (paidAmount > 0) {
       newStatus = "PARTIAL";
+    } else if (existingReceipt.invoice.dueDate && new Date(existingReceipt.invoice.dueDate) < new Date()) {
+      newStatus = "OVERDUE";
     }
 
     // Update invoice with new status and paidAmount

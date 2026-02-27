@@ -296,6 +296,7 @@ export default function TenantsPage() {
   };
 
   const handleEdit = (tenant: Tenant) => {
+    setDateError(null);
     setEditingTenant(tenant);
     setFormData({
       unitId: "",
@@ -501,9 +502,9 @@ export default function TenantsPage() {
       case "status":
         return direction * getDisplayStatus(a).localeCompare(getDisplayStatus(b));
       case "contractStart":
-        return direction * (new Date(a.contractStart).getTime() - new Date(b.contractStart).getTime());
+        return direction * ((a.contractStart ? new Date(a.contractStart).getTime() : 0) - (b.contractStart ? new Date(b.contractStart).getTime() : 0));
       case "contractEnd":
-        return direction * (new Date(a.contractEnd).getTime() - new Date(b.contractEnd).getTime());
+        return direction * ((a.contractEnd ? new Date(a.contractEnd).getTime() : 0) - (b.contractEnd ? new Date(b.contractEnd).getTime() : 0));
       default:
         return 0;
     }
@@ -514,12 +515,24 @@ export default function TenantsPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // If no start date, assume active
+    if (!tenant.contractStart) {
+      // If no end date either, assume active
+      if (!tenant.contractEnd) return "ACTIVE";
+      const endDate = new Date(tenant.contractEnd);
+      endDate.setHours(0, 0, 0, 0);
+      return today <= endDate ? "ACTIVE" : "EXPIRED";
+    }
+
     // Check if contract hasn't started yet
     const startDate = new Date(tenant.contractStart);
     startDate.setHours(0, 0, 0, 0);
     if (today < startDate) {
       return "UPCOMING";
     }
+
+    // If no end date, assume still active (no end = indefinite)
+    if (!tenant.contractEnd) return "ACTIVE";
 
     // Compare today with contract end date
     const endDate = new Date(tenant.contractEnd);

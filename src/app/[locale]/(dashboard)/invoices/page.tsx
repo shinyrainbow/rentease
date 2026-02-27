@@ -76,6 +76,7 @@ interface Invoice {
   totalAmount: number;
   paidAmount: number;
   sentViaLine: boolean;
+  projectId: string;
   project: {
     name: string;
     companyName: string | null;
@@ -310,6 +311,10 @@ export default function InvoicesPage() {
     }
   }, [formData.unitId, formData.type]);
 
+  useEffect(() => {
+    setSelectedInvoices(new Set());
+  }, [statusFilter, projectFilter, monthFilter, searchQuery]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -329,6 +334,13 @@ export default function InvoicesPage() {
         setIsDialogOpen(false);
         resetForm();
         fetchData();
+      } else {
+        const data = await res.json();
+        toast({
+          title: tCommon("error"),
+          description: data.error || "Failed to create invoice",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -523,6 +535,7 @@ export default function InvoicesPage() {
 
   const handleBulkDelete = async () => {
     if (selectedInvoices.size === 0) return;
+    if (!window.confirm(`Delete ${selectedInvoices.size} selected invoices?`)) return;
 
     setBulkDeleting(true);
     try {
@@ -704,11 +717,12 @@ export default function InvoicesPage() {
   // Filter invoices by project, billing month, and search query
   const filteredInvoices = invoices.filter((invoice) => {
     // Project filter
-    if (projectFilter && invoice.project.name !== projectFilter) {
+    if (projectFilter && invoice.projectId !== projectFilter) {
       return false;
     }
     // Month filter (by invoiceDate)
-    if (monthFilter && invoice.invoiceDate) {
+    if (monthFilter) {
+      if (!invoice.invoiceDate) return false;
       const d = new Date(invoice.invoiceDate);
       const invMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (invMonth !== monthFilter) return false;
@@ -1234,7 +1248,7 @@ export default function InvoicesPage() {
           <SelectContent>
             <SelectItem value="__all__">{t("allProjects") || "All Projects"}</SelectItem>
             {projects.map((project) => (
-              <SelectItem key={project.id} value={project.name}>
+              <SelectItem key={project.id} value={project.id}>
                 {project.name}
               </SelectItem>
             ))}
@@ -1512,8 +1526,7 @@ export default function InvoicesPage() {
       {/* Invoice Detail Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={(open) => {
         setViewDialogOpen(open);
-        if (!open && pdfPreviewUrl) {
-          URL.revokeObjectURL(pdfPreviewUrl);
+        if (!open) {
           setPdfPreviewUrl(null);
         }
       }}>

@@ -281,10 +281,6 @@ export default function MetersPage() {
   const electricityReadings = readings.filter((r) => r.type === "ELECTRICITY");
   const waterReadings = readings.filter((r) => r.type === "WATER");
 
-  const filteredUnits = selectedProject
-    ? units.filter((u) => u.projectId === selectedProject)
-    : units;
-
   // Sorting
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -361,7 +357,7 @@ export default function MetersPage() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="w-[180px]"
           />
-          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReading(null); }}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setEditingReading(null); resetForm(); } }}>
             {canMutate && (
               <DialogTrigger asChild>
                 <Button onClick={() => { setEditingReading(null); resetForm(); }}>
@@ -679,7 +675,7 @@ export default function MetersPage() {
       </Tabs>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setReadingToDelete(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("deleteReading")}</DialogTitle>
