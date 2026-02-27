@@ -160,6 +160,7 @@ export default function InvoicesPage() {
     unitId: "",
     type: "RENT",
     dueDate: "",
+    invoiceNo: "",
   });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -379,6 +380,7 @@ export default function InvoicesPage() {
       unitId: "",
       type: "RENT",
       dueDate: nextMonth.toISOString().split("T")[0],
+      invoiceNo: "",
     });
     setAvailableReadings([]);
     setSelectedReadingIds(new Set());

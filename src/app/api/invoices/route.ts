@@ -85,9 +85,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unit or tenant not found" }, { status: 404 });
     }
 
-    // Use invoiceDate for invoice number generation
+    // Use custom invoiceNo if provided, otherwise generate one
     const invoiceDate = data.invoiceDate ? new Date(data.invoiceDate) : new Date();
-    const invoiceNo = generateInvoiceNo(unit.project.name.substring(0, 3).toUpperCase(), invoiceDate);
+    const invoiceNo = data.invoiceNo || generateInvoiceNo(
+      unit.project.name.substring(0, 3).toUpperCase(),
+      invoiceDate,
+      unit.unitNumber
+    );
 
     // Calculate amounts based on type
     let lineItems: { description: string; amount: number }[] = [];

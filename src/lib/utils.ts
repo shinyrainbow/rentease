@@ -42,18 +42,18 @@ export function formatDateTime(date: Date | string | null | undefined, lang: "th
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
-export function generateInvoiceNo(projectCode: string, date: Date): string {
+export function generateInvoiceNo(projectCode: string, date: Date, unitNumber?: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-  return `INV-${projectCode}-${year}${month}-${random}`;
+  const suffix = unitNumber || Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  return `INV-${projectCode}-${month}-${year}-${suffix}`;
 }
 
-export function generateReceiptNo(projectCode: string, date: Date): string {
+export function generateReceiptNo(projectCode: string, date: Date, unitNumber?: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-  return `RCP-${projectCode}-${year}${month}-${random}`;
+  const suffix = unitNumber || Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  return `RCP-${projectCode}-${month}-${year}-${suffix}`;
 }
 
 export function calculateWithholdingTax(amount: number, percentage: number): number {
