@@ -171,36 +171,7 @@ export default function UnitsPage() {
     setIsDialogOpen(true);
   };
 
-  const openDeleteDialog = async (unit: Unit) => {
-    // First check if the unit has linked data
-    try {
-      const res = await fetch(`/api/units/${unit.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        const hasActiveTenants = data.tenants && data.tenants.length > 0;
-        const hasInvoices = data.invoices && data.invoices.length > 0;
-
-        if (hasActiveTenants || hasInvoices) {
-          const warnings = [];
-          if (hasActiveTenants) {
-            warnings.push(`${data.tenants.length} tenant(s)`);
-          }
-          if (hasInvoices) {
-            warnings.push(`${data.invoices.length} invoice(s)`);
-          }
-
-          toast({
-            title: "Cannot Delete Unit",
-            description: `This unit has linked ${warnings.join(" and ")}. Please remove them first before deleting the unit.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Error checking unit data:", error);
-    }
-
+  const openDeleteDialog = (unit: Unit) => {
     setUnitToDelete(unit);
     setDeleteDialogOpen(true);
   };
