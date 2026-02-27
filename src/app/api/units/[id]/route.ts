@@ -87,7 +87,7 @@ export async function PUT(
     if (data.floor !== undefined) updateData.floor = data.floor;
     if (data.size !== undefined) updateData.size = data.size;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.status !== undefined) updateData.status = data.status;
+    // Status is computed dynamically from tenant contracts — not manually settable
     if (data.positionX !== undefined) updateData.positionX = data.positionX;
     if (data.positionY !== undefined) updateData.positionY = data.positionY;
     if (data.width !== undefined) updateData.width = data.width;

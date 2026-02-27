@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       floor: typeof data.floor === "number" ? data.floor : parseInt(data.floor) || 1,
       size: data.size ? parseFloat(data.size) : null,
       type: data.type || "WAREHOUSE",
-      status: data.status || "VACANT",
+      status: "VACANT", // Status is computed dynamically from tenant contracts
       positionX: data.positionX ? parseFloat(data.positionX) : null,
       positionY: data.positionY ? parseFloat(data.positionY) : null,
       width: data.width ? parseFloat(data.width) : null,

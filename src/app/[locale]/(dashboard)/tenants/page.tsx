@@ -52,7 +52,7 @@ interface Unit {
   tenant: {
     name: string;
     contractStart: string;
-    contractEnd: string | null;
+    contractEnd: string;
   } | null;
 }
 
@@ -74,7 +74,7 @@ interface Tenant {
   discountPercent: number | null;
   discountAmount: number | null;
   contractStart: string;
-  contractEnd: string | null;
+  contractEnd: string;
   imageUrl: string | null;
   unit: {
     unitNumber: string;
@@ -219,32 +219,31 @@ export default function TenantsPage() {
       }
     }
 
-    // contractStart is required
-    if (!formData.contractStart) {
-      setDateError(t("contractStartRequired") || "Contract start date is required");
+    // contractStart and contractEnd are required
+    if (!formData.contractStart || !formData.contractEnd) {
+      const errorMsg = t("contractDatesRequired") || "Contract start and end dates are required";
+      setDateError(errorMsg);
       toast({
         title: tCommon("error"),
-        description: t("contractStartRequired") || "Contract start date is required",
+        description: errorMsg,
         variant: "destructive",
       });
       return;
     }
 
     // Validate contract start date is less than contract end date
-    if (formData.contractEnd) {
-      const startDate = new Date(formData.contractStart);
-      const endDate = new Date(formData.contractEnd);
+    const startDate = new Date(formData.contractStart);
+    const endDate = new Date(formData.contractEnd);
 
-      if (startDate >= endDate) {
-        const errorMsg = t("contractStartMustBeLessThanEnd") || "Contract start date must be less than contract end date";
-        setDateError(errorMsg);
-        toast({
-          title: tCommon("error"),
-          description: errorMsg,
-          variant: "destructive",
-        });
-        return;
-      }
+    if (startDate >= endDate) {
+      const errorMsg = t("contractStartMustBeLessThanEnd") || "Contract start date must be less than contract end date";
+      setDateError(errorMsg);
+      toast({
+        title: tCommon("error"),
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
     }
 
     setSaving(true);
@@ -270,7 +269,7 @@ export default function TenantsPage() {
           discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : 0,
           discountAmount: formData.discountAmount ? parseFloat(formData.discountAmount) : 0,
           contractStart: formData.contractStart,
-          contractEnd: formData.contractEnd || null,
+          contractEnd: formData.contractEnd,
         }),
       });
 
@@ -565,13 +564,9 @@ export default function TenantsPage() {
       case "status":
         return direction * getDisplayStatus(a).localeCompare(getDisplayStatus(b));
       case "contractStart":
-        const aStartDate = a.contractStart ? new Date(a.contractStart).getTime() : 0;
-        const bStartDate = b.contractStart ? new Date(b.contractStart).getTime() : 0;
-        return direction * (aStartDate - bStartDate);
+        return direction * (new Date(a.contractStart).getTime() - new Date(b.contractStart).getTime());
       case "contractEnd":
-        const aDate = a.contractEnd ? new Date(a.contractEnd).getTime() : 0;
-        const bDate = b.contractEnd ? new Date(b.contractEnd).getTime() : 0;
-        return direction * (aDate - bDate);
+        return direction * (new Date(a.contractEnd).getTime() - new Date(b.contractEnd).getTime());
       default:
         return 0;
     }
@@ -587,11 +582,6 @@ export default function TenantsPage() {
     startDate.setHours(0, 0, 0, 0);
     if (today < startDate) {
       return "UPCOMING";
-    }
-
-    // If no contract end date, assume active
-    if (!tenant.contractEnd) {
-      return "ACTIVE";
     }
 
     // Compare today with contract end date
@@ -718,30 +708,12 @@ export default function TenantsPage() {
                             .map((unit) => (
                               <SelectItem key={unit.id} value={unit.id}>
                                 {!formProjectFilter && `${unit.project.name} - `}{unit.unitNumber}
-                                {unit.tenant && ` (${unit.tenant.name})`}
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  {formData.unitId && (() => {
-                    const selectedUnit = allUnits.find(u => u.id === formData.unitId);
-                    if (selectedUnit?.tenant) {
-                      return (
-                        <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-xs">
-                          <AlertTriangle className="h-3 w-3 text-yellow-600 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="font-medium text-yellow-800">Unit has active tenant: {selectedUnit.tenant.name}</p>
-                            {selectedUnit.tenant.contractEnd && (
-                              <p className="text-yellow-600">Ends {formatDate(selectedUnit.tenant.contractEnd)}</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                 </div>
               )}
 
@@ -869,11 +841,26 @@ export default function TenantsPage() {
                   <Input className="h-9" type="date" required value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("contractEnd")} <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
-                  <Input className="h-9" type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
+                  <Label className="text-xs">{t("contractEnd")} <span className="text-red-500">*</span> <span className="text-muted-foreground">(วัน เดือน ปี)</span></Label>
+                  <Input className="h-9" type="date" required value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
                 </div>
               </div>
               {dateError && <p className="text-xs text-red-600">{dateError}</p>}
+              {(formData.contractStart || formData.contractEnd) && formData.unitId && (() => {
+                const selectedUnit = allUnits.find(u => u.id === formData.unitId);
+                if (selectedUnit?.tenant) {
+                  return (
+                    <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-xs">
+                      <AlertTriangle className="h-3 w-3 text-yellow-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-medium text-yellow-800">Unit has active tenant: {selectedUnit.tenant.name}</p>
+                        <p className="text-yellow-600">Ends {formatDate(selectedUnit.tenant.contractEnd)}</p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => { setIsDialogOpen(false); setDateError(null); setFormError(null); }} disabled={saving}>
