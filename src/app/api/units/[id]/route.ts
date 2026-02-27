@@ -137,40 +137,14 @@ export async function DELETE(
 
     const existingUnit = await prisma.unit.findFirst({
       where: { id, project: { ownerId: session.user.id } },
-      include: {
-        tenants: true,
-        invoices: true,
-      },
     });
 
     if (!existingUnit) {
       return NextResponse.json({ error: "ไม่พบห้องพัก (Unit not found)" }, { status: 404 });
     }
 
-    // Check for linked tenants
-    if (existingUnit.tenants.length > 0) {
-      return NextResponse.json(
-        {
-          error: `ห้องพักนี้มีผู้เช่า ${existingUnit.tenants.length} คน กรุณาลบหรือย้ายผู้เช่าก่อนลบห้องพัก (This unit has linked ${existingUnit.tenants.length} tenant(s). Please remove them first before deleting the unit.)`,
-          details: `This unit has ${existingUnit.tenants.length} tenant(s) associated with it. Please remove or transfer the tenant(s) before deleting the unit.`,
-          linkedTenants: existingUnit.tenants.length,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check for linked invoices
-    if (existingUnit.invoices.length > 0) {
-      return NextResponse.json(
-        {
-          error: `ห้องพักนี้มีใบแจ้งหนี้ ${existingUnit.invoices.length} ใบ กรุณาลบใบแจ้งหนี้ก่อนลบห้องพัก (This unit has linked ${existingUnit.invoices.length} invoice(s). Please remove them first before deleting the unit.)`,
-          details: `This unit has ${existingUnit.invoices.length} invoice(s) associated with it. Please remove or archive the invoice(s) before deleting the unit.`,
-          linkedInvoices: existingUnit.invoices.length,
-        },
-        { status: 400 }
-      );
-    }
-
+    // Tenants will have unitId set to NULL (snapshot data preserved)
+    // Invoices will have unitId set to NULL (snapshot data preserved)
     await prisma.unit.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

@@ -102,10 +102,22 @@ export async function DELETE(
 
     const existingProject = await prisma.project.findFirst({
       where: { id, ownerId: session.user.id },
+      include: { units: { select: { id: true } } },
     });
 
     if (!existingProject) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Block deletion if project still has units
+    if (existingProject.units.length > 0) {
+      return NextResponse.json(
+        {
+          error: "cannotDeleteHasUnits",
+          unitCount: existingProject.units.length,
+        },
+        { status: 400 }
+      );
     }
 
     await prisma.project.delete({ where: { id } });
