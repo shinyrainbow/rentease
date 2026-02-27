@@ -292,6 +292,7 @@ export default function ReceiptsPage() {
       invoiceId: "",
       amount: "",
       issuedAt: new Date().toISOString().split("T")[0],
+      receiptNo: "",
     });
     setSelectedProjectId("");
     fetchPaidInvoices();

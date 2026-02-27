@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const receiptNo = data.receiptNo || generateReceiptNo(
       invoice.project.name.substring(0, 3).toUpperCase(),
       new Date(),
-      invoice.unit.unitNumber
+      invoice.unit?.unitNumber
     );
 
     // Create the receipt
