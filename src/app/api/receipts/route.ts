@@ -80,10 +80,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate receipt number
-    const receiptNo = generateReceiptNo(
+    // Use custom receipt number or generate one
+    const receiptNo = data.receiptNo || generateReceiptNo(
       invoice.project.name.substring(0, 3).toUpperCase(),
-      new Date()
+      new Date(),
+      invoice.unit.unitNumber
     );
 
     // Create the receipt

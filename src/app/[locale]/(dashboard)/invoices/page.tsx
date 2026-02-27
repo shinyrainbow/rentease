@@ -997,7 +997,15 @@ export default function InvoicesPage() {
                   <Label>{t("unit") || "ห้อง/ยูนิต"}</Label>
                   <Select
                     value={formData.unitId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                    onValueChange={(value) => {
+                      const selectedUnit = units.find((u) => u.id === value);
+                      const now = new Date();
+                      const mm = String(now.getMonth() + 1).padStart(2, "0");
+                      const yyyy = now.getFullYear();
+                      const projCode = selectedUnit?.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
+                      const defaultNo = `INV-${projCode}-${mm}-${yyyy}-${selectedUnit?.unitNumber || ""}`;
+                      setFormData({ ...formData, unitId: value, invoiceNo: defaultNo });
+                    }}
                     disabled={!formData.projectId}
                   >
                     <SelectTrigger>
@@ -1140,6 +1148,19 @@ export default function InvoicesPage() {
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                     required
                   />
+                </div>
+
+                {/* Editable Invoice Number */}
+                <div className="space-y-2">
+                  <Label>{t("invoiceNo") || "เลขที่ใบแจ้งหนี้ / Invoice No."}</Label>
+                  <Input
+                    value={formData.invoiceNo}
+                    onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
+                    placeholder="INV-XXX-MM-YYYY-Unit"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("invoiceNoHint") || "แก้ไขได้ตามต้องการ / Editable, auto-generated when unit is selected"}
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-2">

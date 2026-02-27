@@ -87,6 +87,7 @@ export default function MetersPage() {
   const [sortColumn, setSortColumn] = useState<string>("unit");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  const [formProjectFilter, setFormProjectFilter] = useState<string>("");
   const [formData, setFormData] = useState({
     unitId: "",
     type: "ELECTRICITY",
@@ -270,6 +271,7 @@ export default function MetersPage() {
       previousReading: "",
       readingDate: new Date().toISOString().split("T")[0],
     });
+    setFormProjectFilter("");
     setPreviousInfo(null);
   };
 
@@ -370,23 +372,49 @@ export default function MetersPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!editingReading && (
                   <>
-                    <div className="space-y-2">
-                      <Label>Unit</Label>
-                      <Select
-                        value={formData.unitId || undefined}
-                        onValueChange={(value) => setFormData({ ...formData, unitId: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredUnits.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {(locale === "th" ? unit.project.nameTh : null) || unit.project.name} - {unit.unitNumber} ({(locale === "th" ? unit.tenant?.nameTh : null) || unit.tenant?.name})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs">โครงการ / Project</Label>
+                        <Select
+                          value={formProjectFilter || "__all__"}
+                          onValueChange={(v) => {
+                            setFormProjectFilter(v === "__all__" ? "" : v);
+                            setFormData({ ...formData, unitId: "" });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="ทุกโครงการ" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">-- ทุกโครงการ --</SelectItem>
+                            {projects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {(locale === "th" ? project.nameTh : null) || project.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Unit</Label>
+                        <Select
+                          value={formData.unitId || undefined}
+                          onValueChange={(value) => setFormData({ ...formData, unitId: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {units
+                              .filter((u) => !formProjectFilter || u.projectId === formProjectFilter)
+                              .map((unit) => (
+                                <SelectItem key={unit.id} value={unit.id}>
+                                  {!formProjectFilter && `${(locale === "th" ? unit.project.nameTh : null) || unit.project.name} - `}{unit.unitNumber}{unit.tenant ? ` (${(locale === "th" ? unit.tenant.nameTh : null) || unit.tenant.name})` : ""}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-2">

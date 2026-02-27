@@ -142,6 +142,7 @@ export default function ReceiptsPage() {
     invoiceId: "",
     amount: "",
     issuedAt: new Date().toISOString().split("T")[0],
+    receiptNo: "",
   });
 
   // Edit receipt state
@@ -320,6 +321,7 @@ export default function ReceiptsPage() {
           invoiceId: createFormData.invoiceId,
           amount: createFormData.amount ? parseFloat(createFormData.amount) : undefined,
           issuedAt: createFormData.issuedAt,
+          receiptNo: createFormData.receiptNo || undefined,
         }),
       });
 
@@ -804,10 +806,17 @@ export default function ReceiptsPage() {
                 value={createFormData.invoiceId || undefined}
                 onValueChange={(v) => {
                   const inv = paidInvoices.find((i) => i.id === v);
+                  const now = new Date();
+                  const mm = String(now.getMonth() + 1).padStart(2, "0");
+                  const yyyy = now.getFullYear();
+                  const projCode = inv?.project?.name?.substring(0, 3).toUpperCase() || "PRJ";
+                  const unitNum = inv?.unit?.unitNumber || "";
+                  const defaultReceiptNo = `RCP-${projCode}-${mm}-${yyyy}-${unitNum}`;
                   setCreateFormData((prev) => ({
                     ...prev,
                     invoiceId: v,
                     amount: inv ? String(inv.totalAmount) : "",
+                    receiptNo: defaultReceiptNo,
                   }));
                 }}
               >
@@ -870,6 +879,19 @@ export default function ReceiptsPage() {
                 value={createFormData.issuedAt}
                 onChange={(e) => setCreateFormData((prev) => ({ ...prev, issuedAt: e.target.value }))}
               />
+            </div>
+
+            {/* Editable Receipt Number */}
+            <div className="space-y-2">
+              <Label>{t("receiptNo") || "เลขที่ใบเสร็จ / Receipt No."}</Label>
+              <Input
+                value={createFormData.receiptNo}
+                onChange={(e) => setCreateFormData((prev) => ({ ...prev, receiptNo: e.target.value }))}
+                placeholder="RCP-XXX-MM-YYYY-Unit"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("receiptNoHint") || "แก้ไขได้ตามต้องการ / Editable, auto-generated when invoice is selected"}
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

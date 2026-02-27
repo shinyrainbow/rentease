@@ -72,7 +72,8 @@ export async function POST(
         // Create receipt if doesn't exist yet
         const receiptNo = generateReceiptNo(
           payment.invoice.project.name.substring(0, 3).toUpperCase(),
-          new Date()
+          new Date(),
+          payment.invoice.unit?.unitNumber
         );
 
         await prisma.receipt.create({
