@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify ownership
-    if (tenant.unit.project.ownerId !== session.user.id) {
+    if (tenant.unit!.project.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
     const contract = await prisma.leaseContract.create({
       data: {
         contractNo,
-        projectId: tenant.unit.projectId,
-        unitId: tenant.unitId,
+        projectId: tenant.unit!.projectId,
+        unitId: tenant.unitId!,
         tenantId: tenant.id,
         title: title || null,
         titleTh: titleTh || null,

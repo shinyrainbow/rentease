@@ -291,33 +291,35 @@ export async function POST(request: NextRequest) {
             if (lineContact.tenantId && lineContact.tenant) {
               const tenant = lineContact.tenant;
 
-              await prisma.maintenanceRequest.create({
-                data: {
-                  projectId: tenant.unit?.projectId ?? "",
-                  unitId: tenant.unitId,
-                  title: "แจ้งซ่อมจาก LINE / Maintenance from LINE",
-                  description: message.text,
-                  category: "GENERAL",
-                  priority: "MEDIUM",
-                  lineMessageId: message.id,
-                },
-              });
+              if (tenant.unitId && tenant.unit) {
+                await prisma.maintenanceRequest.create({
+                  data: {
+                    projectId: tenant.unit.projectId,
+                    unitId: tenant.unitId,
+                    title: "แจ้งซ่อมจาก LINE / Maintenance from LINE",
+                    description: message.text,
+                    category: "GENERAL",
+                    priority: "MEDIUM",
+                    lineMessageId: message.id,
+                  },
+                });
 
-              // Send confirmation reply
-              await fetch("https://api.line.me/v2/bot/message/reply", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                  replyToken,
-                  messages: [{
-                    type: "text",
-                    text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit?.unitNumber ?? ""}\nMaintenance request received for unit ${tenant.unit?.unitNumber ?? ""}. Thank you!`,
-                  }],
-                }),
-              });
+                // Send confirmation reply
+                await fetch("https://api.line.me/v2/bot/message/reply", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({
+                    replyToken,
+                    messages: [{
+                      type: "text",
+                      text: `รับแจ้งซ่อมเรียบร้อยแล้วค่ะ ห้อง ${tenant.unit.unitNumber}\nMaintenance request received for unit ${tenant.unit.unitNumber}. Thank you!`,
+                    }],
+                  }),
+                });
+              }
             } else {
               await fetch("https://api.line.me/v2/bot/message/reply", {
                 method: "POST",

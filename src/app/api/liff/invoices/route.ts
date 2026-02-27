@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const project = lineContact.tenant.unit.project;
+    const project = lineContact.tenant.unit?.project;
 
     return NextResponse.json({
       tenant: {
@@ -60,11 +60,11 @@ export async function GET(request: NextRequest) {
         name: lineContact.tenant.name,
         nameTh: lineContact.tenant.nameTh,
       },
-      project: {
+      project: project ? {
         id: project.id,
         name: project.name,
         nameTh: project.nameTh,
-      },
+      } : null,
       invoices,
     });
   } catch (error) {
