@@ -143,6 +143,12 @@ export async function DELETE(
       );
     }
 
+    // Unlink meter readings so they can be re-invoiced
+    await prisma.meterReading.updateMany({
+      where: { invoiceId: id },
+      data: { invoiceId: null },
+    });
+
     await prisma.invoice.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

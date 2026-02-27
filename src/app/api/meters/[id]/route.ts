@@ -48,6 +48,13 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
 
+    if (data.currentReading === undefined || typeof data.currentReading !== "number" || isNaN(data.currentReading)) {
+      return NextResponse.json({ error: "Valid currentReading is required" }, { status: 400 });
+    }
+    if (!data.readingDate) {
+      return NextResponse.json({ error: "readingDate is required" }, { status: 400 });
+    }
+
     // Find existing reading and verify ownership
     const existingReading = await prisma.meterReading.findFirst({
       where: {

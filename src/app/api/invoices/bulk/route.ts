@@ -55,6 +55,23 @@ export async function POST(request: NextRequest) {
       const unit = tenant.unit;
       const project = unit.project;
 
+      // Skip if tenant already has an invoice of this type in the same month
+      const existingInvoice = await prisma.invoice.findFirst({
+        where: {
+          tenantId: tenant.id,
+          type,
+          invoiceDate: {
+            gte: new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 1),
+            lt: new Date(invoiceDate.getFullYear(), invoiceDate.getMonth() + 1, 1),
+          },
+        },
+      });
+
+      if (existingInvoice) {
+        skipped++;
+        continue;
+      }
+
       const invoiceNo = generateInvoiceNo(project.name.substring(0, 3).toUpperCase(), invoiceDate, unit.unitNumber);
 
       // Calculate amounts based on type
@@ -121,40 +138,44 @@ export async function POST(request: NextRequest) {
 
       const totalAmount = subtotal - withholdingTax;
 
-      const invoice = await prisma.invoice.create({
-        data: {
-          invoiceNo,
-          projectId: unit.projectId,
-          unitId: unit.id,
-          tenantId: tenant.id,
-          type,
-          dueDate: new Date(dueDate),
-          invoiceDate,
-          subtotal,
-          withholdingTax,
-          totalAmount,
-          lineItems: lineItems as Prisma.InputJsonValue,
-          // Project/Unit snapshot
-          projectName: project.name,
-          unitNumber: unit.unitNumber,
-          // Tenant snapshot
-          tenantName: tenant.name,
-          tenantNameTh: tenant.nameTh,
-          tenantType: tenant.tenantType,
-          tenantTaxId: tenant.taxId,
-          tenantIdCard: tenant.idCard,
-          tenantPhone: tenant.phone,
-          tenantEmail: tenant.email,
-        },
-      });
-
-      // Link meter readings to this invoice
-      if (meterReadingIds.length > 0) {
-        await prisma.meterReading.updateMany({
-          where: { id: { in: meterReadingIds } },
-          data: { invoiceId: invoice.id },
+      const invoice = await prisma.$transaction(async (tx) => {
+        const created = await tx.invoice.create({
+          data: {
+            invoiceNo,
+            projectId: unit.projectId,
+            unitId: unit.id,
+            tenantId: tenant.id,
+            type,
+            dueDate: new Date(dueDate),
+            invoiceDate,
+            subtotal,
+            withholdingTax,
+            totalAmount,
+            lineItems: lineItems as Prisma.InputJsonValue,
+            // Project/Unit snapshot
+            projectName: project.name,
+            unitNumber: unit.unitNumber,
+            // Tenant snapshot
+            tenantName: tenant.name,
+            tenantNameTh: tenant.nameTh,
+            tenantType: tenant.tenantType,
+            tenantTaxId: tenant.taxId,
+            tenantIdCard: tenant.idCard,
+            tenantPhone: tenant.phone,
+            tenantEmail: tenant.email,
+          },
         });
-      }
+
+        // Link meter readings to this invoice
+        if (meterReadingIds.length > 0) {
+          await tx.meterReading.updateMany({
+            where: { id: { in: meterReadingIds } },
+            data: { invoiceId: created.id },
+          });
+        }
+
+        return created;
+      });
 
       createdInvoices.push(invoice);
     }

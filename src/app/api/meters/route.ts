@@ -74,6 +74,19 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    if (data.currentReading === undefined || typeof data.currentReading !== "number" || isNaN(data.currentReading)) {
+      return NextResponse.json({ error: "Valid currentReading is required" }, { status: 400 });
+    }
+    if (!data.type || !["ELECTRICITY", "WATER"].includes(data.type)) {
+      return NextResponse.json({ error: "Valid type (ELECTRICITY or WATER) is required" }, { status: 400 });
+    }
+    if (!data.readingDate) {
+      return NextResponse.json({ error: "readingDate is required" }, { status: 400 });
+    }
+    if (!data.unitId) {
+      return NextResponse.json({ error: "unitId is required" }, { status: 400 });
+    }
+
     const unit = await prisma.unit.findFirst({
       where: { id: data.unitId, project: { ownerId: session.user.id } },
       include: { project: true },

@@ -143,45 +143,49 @@ export async function POST(request: NextRequest) {
 
     const totalAmount = subtotal - withholdingTax;
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNo,
-        projectId: unit.projectId,
-        unitId: unit.id,
-        tenantId: activeTenant.id,
-        type: data.type,
-        dueDate: new Date(data.dueDate),
-        invoiceDate,
-        subtotal,
-        withholdingTax,
-        totalAmount,
-        lineItems,
-        // Project/Unit snapshot
-        projectName: unit.project.name,
-        unitNumber: unit.unitNumber,
-        // Tenant snapshot
-        tenantName: activeTenant.name,
-        tenantNameTh: activeTenant.nameTh,
-        tenantType: activeTenant.tenantType,
-        tenantTaxId: activeTenant.taxId,
-        tenantIdCard: activeTenant.idCard,
-        tenantPhone: activeTenant.phone,
-        tenantEmail: activeTenant.email,
-      },
-      include: {
-        project: { select: { name: true, nameTh: true } },
-        unit: { select: { unitNumber: true } },
-        tenant: { select: { name: true, nameTh: true } },
-      },
-    });
-
-    // Link meter readings to this invoice
-    if (meterReadingIds.length > 0) {
-      await prisma.meterReading.updateMany({
-        where: { id: { in: meterReadingIds } },
-        data: { invoiceId: invoice.id },
+    const invoice = await prisma.$transaction(async (tx) => {
+      const created = await tx.invoice.create({
+        data: {
+          invoiceNo,
+          projectId: unit.projectId,
+          unitId: unit.id,
+          tenantId: activeTenant.id,
+          type: data.type,
+          dueDate: new Date(data.dueDate),
+          invoiceDate,
+          subtotal,
+          withholdingTax,
+          totalAmount,
+          lineItems,
+          // Project/Unit snapshot
+          projectName: unit.project.name,
+          unitNumber: unit.unitNumber,
+          // Tenant snapshot
+          tenantName: activeTenant.name,
+          tenantNameTh: activeTenant.nameTh,
+          tenantType: activeTenant.tenantType,
+          tenantTaxId: activeTenant.taxId,
+          tenantIdCard: activeTenant.idCard,
+          tenantPhone: activeTenant.phone,
+          tenantEmail: activeTenant.email,
+        },
+        include: {
+          project: { select: { name: true, nameTh: true } },
+          unit: { select: { unitNumber: true } },
+          tenant: { select: { name: true, nameTh: true } },
+        },
       });
-    }
+
+      // Link meter readings to this invoice
+      if (meterReadingIds.length > 0) {
+        await tx.meterReading.updateMany({
+          where: { id: { in: meterReadingIds } },
+          data: { invoiceId: created.id },
+        });
+      }
+
+      return created;
+    });
 
     return NextResponse.json(invoice);
   } catch (error) {

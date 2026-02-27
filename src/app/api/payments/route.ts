@@ -80,6 +80,13 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    if (data.amount === undefined || typeof data.amount !== "number" || isNaN(data.amount) || data.amount <= 0) {
+      return NextResponse.json({ error: "Valid positive amount is required" }, { status: 400 });
+    }
+    if (!data.invoiceId) {
+      return NextResponse.json({ error: "invoiceId is required" }, { status: 400 });
+    }
+
     const invoice = await prisma.invoice.findFirst({
       where: { id: data.invoiceId, project: { ownerId: session.user.id } },
       include: { tenant: true, project: true, unit: true },
@@ -137,43 +144,47 @@ export async function POST(request: NextRequest) {
 
     // If auto-verify is enabled, also update invoice and create receipt if needed
     if (shouldAutoVerify) {
-      const newPaidAmount = invoice.paidAmount + data.amount;
-      const newStatus = newPaidAmount >= invoice.totalAmount ? "PAID" : "PARTIAL";
+      await prisma.$transaction(async (tx) => {
+        // Re-read invoice inside transaction to avoid race conditions
+        const freshInvoice = await tx.invoice.findUniqueOrThrow({ where: { id: invoice.id } });
+        const newPaidAmount = freshInvoice.paidAmount + data.amount;
+        const newStatus = newPaidAmount >= freshInvoice.totalAmount ? "PAID" : "PARTIAL";
 
-      await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: {
-          paidAmount: newPaidAmount,
-          status: newStatus,
-        },
-      });
-
-      // Create receipt if fully paid
-      if (newStatus === "PAID") {
-        const receiptNo = generateReceiptNo(
-          invoice.project.name.substring(0, 3).toUpperCase(),
-          new Date(),
-          invoice.unit?.unitNumber
-        );
-
-        await prisma.receipt.create({
+        await tx.invoice.update({
+          where: { id: invoice.id },
           data: {
-            receiptNo,
-            invoiceId: invoice.id,
-            amount: invoice.totalAmount,
-            // Snapshot fields
-            projectName: invoice.projectName || invoice.project.name,
-            unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
-            invoiceNo: invoice.invoiceNo,
-            invoiceDate: invoice.invoiceDate,
-            invoiceTotalAmount: invoice.totalAmount,
-            tenantName: invoice.tenantName || invoice.tenant?.name,
-            tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
-            tenantType: invoice.tenantType || invoice.tenant?.tenantType,
-            tenantTaxId: invoice.tenantTaxId || invoice.tenant?.taxId,
+            paidAmount: newPaidAmount,
+            status: newStatus,
           },
         });
-      }
+
+        // Create receipt if fully paid
+        if (newStatus === "PAID") {
+          const receiptNo = generateReceiptNo(
+            invoice.project.name.substring(0, 3).toUpperCase(),
+            new Date(),
+            invoice.unit?.unitNumber || ""
+          );
+
+          await tx.receipt.create({
+            data: {
+              receiptNo,
+              invoiceId: invoice.id,
+              amount: freshInvoice.totalAmount,
+              // Snapshot fields
+              projectName: invoice.projectName || invoice.project.name,
+              unitNumber: invoice.unitNumber || invoice.unit?.unitNumber,
+              invoiceNo: invoice.invoiceNo,
+              invoiceDate: invoice.invoiceDate,
+              invoiceTotalAmount: freshInvoice.totalAmount,
+              tenantName: invoice.tenantName || invoice.tenant?.name,
+              tenantNameTh: invoice.tenantNameTh || invoice.tenant?.nameTh,
+              tenantType: invoice.tenantType || invoice.tenant?.tenantType,
+              tenantTaxId: invoice.tenantTaxId || invoice.tenant?.taxId,
+            },
+          });
+        }
+      });
     }
 
     return NextResponse.json(payment);
