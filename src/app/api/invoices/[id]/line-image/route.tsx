@@ -89,6 +89,10 @@ const translations = {
     whLabel: "WH",
     colTotal: "Total",
     grandTotal: "Grand Total",
+    note: "Remark",
+    transferTo: "Please transfer to",
+    acctNoInline: "Account No.",
+    acctNameInline: "Account Name",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -119,6 +123,10 @@ const translations = {
     whLabel: "ณ ที่จ่าย WH",
     colTotal: "จำนวนเงิน",
     grandTotal: "จำนวนเงินทั้งสิ้น",
+    note: "หมายเหตุ",
+    transferTo: "สามารถโอนเงินเข้าได้ที่",
+    acctNoInline: "เลขที่บัญชี",
+    acctNameInline: "ชื่อบัญชี",
   },
 };
 
@@ -274,10 +282,12 @@ export async function GET(request: NextRequest) {
                 <span style={{ fontSize: "16px", color: "#111827" }}>{formatDate(dateCreated)}</span>
               </div>
               {/* Due Date */}
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                 <span style={{ fontSize: "16px", fontWeight: "bold", color: "#111827" }}>{t.dueDate}</span>
                 <span style={{ fontSize: "16px", color: "#111827" }}>{formatDate(dueDate)}</span>
               </div>
+              {/* Separator under due date */}
+              <div style={{ width: "100%", height: "1px", backgroundColor: "#E5E7EB" }} />
             </div>
           </div>
 
@@ -391,31 +401,26 @@ export async function GET(request: NextRequest) {
             </div>
           </div>
 
-          {/* Payment Info and Signature Section */}
+          {/* Note and Signature Section */}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-            {/* Payment Information */}
+            {/* Note section */}
             {(displayBankName || bankAccountName || bankAccountNumber) && (
               <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                 <span style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "12px" }}>
-                  {t.paymentInfo}
+                  {t.note}
                 </span>
-                {displayBankName && (
-                  <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "16px", color: "#6B7280", width: "140px" }}>{t.bankNameLabel}:</span>
-                    <span style={{ fontSize: "16px", color: "#111827" }}>{displayBankName}</span>
-                  </div>
+                <span style={{ fontSize: "16px", color: "#111827", marginBottom: "6px" }}>
+                  {t.transferTo}
+                </span>
+                {(displayBankName || bankAccountNumber) && (
+                  <span style={{ fontSize: "16px", color: "#111827", marginBottom: "6px" }}>
+                    {displayBankName} {t.acctNoInline} {bankAccountNumber}
+                  </span>
                 )}
                 {bankAccountName && (
-                  <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "16px", color: "#6B7280", width: "140px" }}>{t.accountName}:</span>
-                    <span style={{ fontSize: "16px", color: "#111827" }}>{bankAccountName}</span>
-                  </div>
-                )}
-                {bankAccountNumber && (
-                  <div style={{ display: "flex", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "16px", color: "#6B7280", width: "140px" }}>{t.accountNumber}:</span>
-                    <span style={{ fontSize: "16px", color: "#111827" }}>{bankAccountNumber}</span>
-                  </div>
+                  <span style={{ fontSize: "16px", color: "#111827" }}>
+                    {t.acctNameInline} {bankAccountName}
+                  </span>
                 )}
               </div>
             )}

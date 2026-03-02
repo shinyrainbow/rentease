@@ -63,6 +63,10 @@ const translations = {
     whLabel: "WH",
     colTotal: "Total",
     grandTotal: "Grand Total",
+    note: "Remark",
+    transferTo: "Please transfer to",
+    acctNoInline: "Account No.",
+    acctNameInline: "Account Name",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -94,6 +98,10 @@ const translations = {
     whLabel: "ณ ที่จ่าย WH",
     colTotal: "จำนวนเงิน",
     grandTotal: "จำนวนเงินทั้งสิ้น",
+    note: "หมายเหตุ",
+    transferTo: "สามารถโอนเงินเข้าได้ที่",
+    acctNoInline: "เลขที่บัญชี",
+    acctNameInline: "ชื่อบัญชี",
   },
 };
 
@@ -274,6 +282,12 @@ export async function POST(
     setThaiFont(doc, "normal");
     doc.text(formatDate(invoice.dueDate, lang as "th" | "en"), valueX, y, { align: "right" });
 
+    // Separator under due date
+    y += 3;
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(rightSectionX, y, pageWidth - margin, y);
+
     y += 12;
 
     // ============ BILL TO SECTION ============
@@ -444,40 +458,37 @@ export async function POST(
 
     y += summaryHeight + 35;
 
-    // ============ PAYMENT INFO + SIGNATURE SECTION ============
+    // ============ NOTE + SIGNATURE SECTION ============
     const hasBankInfo = invoice.project.bankName || invoice.project.bankAccountName || invoice.project.bankAccountNumber;
 
-    // Payment Info on left
+    // Note section on left
     if (hasBankInfo) {
+      const bankKey = (invoice.project.bankName || "").toLowerCase();
+      const bankDisplayName = BANK_NAMES[bankKey] || invoice.project.bankName || "";
+
       doc.setFontSize(12);
       setThaiFont(doc, "bold");
-      doc.text(t.paymentInfo, margin, y);
+      doc.text(t.note, margin, y);
       y += 7;
 
       setThaiFont(doc, "normal");
       doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
 
-      if (invoice.project.bankName) {
-        const bankKey = invoice.project.bankName.toLowerCase();
-        const bankDisplayName = BANK_NAMES[bankKey] || invoice.project.bankName;
-        doc.setTextColor(107, 114, 128);
-        doc.text(`${t.bankNameLabel}:`, margin, y);
-        doc.setTextColor(0, 0, 0);
-        doc.text(bankDisplayName, margin + 28, y);
+      // Line 1: สามารถโอนเงินเข้าได้ที่
+      doc.text(t.transferTo, margin, y);
+      y += 6;
+
+      // Line 2: ธนาคาร... เลขที่บัญชี ...
+      if (bankDisplayName || invoice.project.bankAccountNumber) {
+        const line2 = `${bankDisplayName} ${t.acctNoInline} ${invoice.project.bankAccountNumber || ""}`.trim();
+        doc.text(line2, margin, y);
         y += 6;
       }
+
+      // Line 3: ชื่อบัญชี ...
       if (invoice.project.bankAccountName) {
-        doc.setTextColor(107, 114, 128);
-        doc.text(`${t.accountName}:`, margin, y);
-        doc.setTextColor(0, 0, 0);
-        doc.text(invoice.project.bankAccountName, margin + 28, y);
-        y += 6;
-      }
-      if (invoice.project.bankAccountNumber) {
-        doc.setTextColor(107, 114, 128);
-        doc.text(`${t.accountNumber}:`, margin, y);
-        doc.setTextColor(0, 0, 0);
-        doc.text(invoice.project.bankAccountNumber, margin + 28, y);
+        doc.text(`${t.acctNameInline} ${invoice.project.bankAccountName}`, margin, y);
       }
     }
 
