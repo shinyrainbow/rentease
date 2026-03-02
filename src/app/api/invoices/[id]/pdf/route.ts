@@ -214,29 +214,29 @@ export async function POST(
     }
 
     // Company name below logo
-    doc.setFontSize(16);
-    setThaiFont(doc, "bold");
+    doc.setFontSize(11);
+    setThaiFont(doc, "normal");
+    doc.setTextColor(0, 0, 0);
     doc.text(companyName, margin, y);
-    y += 7;
+    y += 5;
 
     // Company address
     if (invoice.project.companyAddress) {
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       setThaiFont(doc, "normal");
-      doc.setTextColor(107, 114, 128);
+      doc.setTextColor(0, 0, 0);
       doc.text(invoice.project.companyAddress, margin, y);
       y += 5;
     }
 
     // Tax ID
     if (invoice.project.taxId) {
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       setThaiFont(doc, "normal");
-      doc.setTextColor(107, 114, 128);
+      doc.setTextColor(0, 0, 0);
       doc.text(`${t.taxId}: ${invoice.project.taxId}`, margin, y);
       y += 5;
     }
-    doc.setTextColor(0, 0, 0);
 
     y += 8;
 
@@ -543,11 +543,10 @@ export async function POST(
       doc.text(`(${invoice.project.owner.name})`, sigX + 22.5, sigY + 26, { align: "center" });
     }
 
-    // ============ FOOTER ============
-    doc.setFontSize(11);
-    setThaiFont(doc, "normal");
-    doc.setTextColor(107, 114, 128);
-    doc.text(t.pleasePayBy, centerX, pageHeight - 15, { align: "center" });
+    // ============ FOOTER - Bold separator ============
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
 
     // Get PDF as buffer
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));

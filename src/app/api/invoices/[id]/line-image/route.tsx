@@ -249,16 +249,16 @@ export async function GET(request: NextRequest) {
                 style={{ objectFit: "contain", borderRadius: "8px", marginBottom: "12px" }}
               />
             )}
-            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827" }}>
+            <span style={{ fontSize: "16px", fontWeight: "normal", color: "#111827" }}>
               {companyName}
             </span>
             {companyAddress && (
-              <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+              <span style={{ fontSize: "16px", fontWeight: "normal", color: "#111827", marginTop: "4px" }}>
                 {companyAddress}
               </span>
             )}
             {taxId && (
-              <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "4px" }}>
+              <span style={{ fontSize: "16px", fontWeight: "normal", color: "#111827", marginTop: "4px" }}>
                 {t.taxId}: {taxId}
               </span>
             )}
@@ -414,12 +414,12 @@ export async function GET(request: NextRequest) {
             );
           })}
 
-          {/* Bottom Summary Row (light green) */}
+          {/* Bottom Summary Row (white bg, merged col2+col3 for grand total label) */}
           <div
             style={{
               display: "flex",
               padding: "14px 0",
-              backgroundColor: "#DCFCE7",
+              backgroundColor: "#ffffff",
               borderTop: "2px solid #000000",
             }}
           >
@@ -427,7 +427,7 @@ export async function GET(request: NextRequest) {
             <div style={{ flex: 1, display: "flex", paddingLeft: "8px" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(totalAmount)}</span>
             </div>
-            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+            <div style={{ width: "280px", display: "flex", justifyContent: "center" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{t.grandTotal}</span>
             </div>
             <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px" }}>
@@ -469,9 +469,9 @@ export async function GET(request: NextRequest) {
             </div>
           </div>
 
-          {/* Footer */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "auto", paddingTop: "40px" }}>
-            <span style={{ fontSize: "16px", color: "#6B7280" }}>{t.pleasePayBy}</span>
+          {/* Footer - Bold separator */}
+          <div style={{ display: "flex", marginTop: "auto", paddingTop: "40px" }}>
+            <div style={{ width: "100%", height: "3px", backgroundColor: "#000000" }} />
           </div>
         </div>
       ),
