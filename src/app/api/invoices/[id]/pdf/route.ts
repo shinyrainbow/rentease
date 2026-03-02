@@ -367,6 +367,11 @@ export async function POST(
     const colCol3TextX = colCol3Left + colCol3W - 3;
     const colTotalTextX = colTotalLeft + colTotalW - 3;
 
+    // Black line above header
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+
     // Table header (white bg, bilingual: English line 1, Thai line 2)
     const headerHeight = 16;
     doc.setFillColor(255, 255, 255);
@@ -378,28 +383,34 @@ export async function POST(
     const hY1 = y + 6;
     const hY2 = y + 12;
 
+    // Column center positions for header text
+    const colDescCenter = colDescLeft + colDescW / 2;
+    const colCol2Center = colCol2Left + colCol2W / 2;
+    const colCol3Center = colCol3Left + colCol3W / 2;
+    const colTotalCenter = colTotalLeft + colTotalW / 2;
+
     // Header line 1 (English)
     doc.text("#", colNumCenter, hY1, { align: "center" });
-    doc.text("Description", colDescTextX, hY1);
+    doc.text("Description", colDescCenter, hY1, { align: "center" });
     if (isUtility) {
-      doc.text("Quantity", colCol2TextX, hY1, { align: "right" });
-      doc.text("Unit Price", colCol3TextX, hY1, { align: "right" });
+      doc.text("Quantity", colCol2Center, hY1, { align: "center" });
+      doc.text("Unit Price", colCol3Center, hY1, { align: "center" });
     } else {
-      doc.text("Price", colCol2TextX, hY1, { align: "right" });
-      doc.text(`WH ${whPercent}%`, colCol3TextX, hY1, { align: "right" });
+      doc.text("Price", colCol2Center, hY1, { align: "center" });
+      doc.text(`WH ${whPercent}%`, colCol3Center, hY1, { align: "center" });
     }
-    doc.text("Total", colTotalTextX, hY1, { align: "right" });
+    doc.text("Total", colTotalCenter, hY1, { align: "center" });
 
     // Header line 2 (Thai)
-    doc.text(t.detail, colDescTextX, hY2);
+    doc.text(t.detail, colDescCenter, hY2, { align: "center" });
     if (isUtility) {
-      doc.text(t.quantity, colCol2TextX, hY2, { align: "right" });
-      doc.text(t.unitPrice, colCol3TextX, hY2, { align: "right" });
+      doc.text(t.quantity, colCol2Center, hY2, { align: "center" });
+      doc.text(t.unitPrice, colCol3Center, hY2, { align: "center" });
     } else {
-      doc.text(t.price, colCol2TextX, hY2, { align: "right" });
-      doc.text(`${t.whLabel} ${whPercent}%`, colCol3TextX, hY2, { align: "right" });
+      doc.text(t.price, colCol2Center, hY2, { align: "center" });
+      doc.text(`${t.whLabel} ${whPercent}%`, colCol3Center, hY2, { align: "center" });
     }
-    doc.text(t.colTotal, colTotalTextX, hY2, { align: "right" });
+    doc.text(t.colTotal, colTotalCenter, hY2, { align: "center" });
 
     y += headerHeight;
 
@@ -462,10 +473,25 @@ export async function POST(
       y += rowHeight;
     });
 
-    // Bottom summary row (white bg)
+    // Separator above summary row
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    // Bottom summary row
     const summaryHeight = 12;
+
+    // White bg for entire row first
     doc.setFillColor(255, 255, 255);
     doc.rect(margin, y, tableWidth, summaryHeight, "F");
+
+    // Light green bg for Thai baht text column (# + desc area)
+    doc.setFillColor(220, 252, 231);
+    doc.rect(margin, y, colNumW + colDescW, summaryHeight, "F");
+
+    // Light green bg for total column
+    doc.setFillColor(220, 252, 231);
+    doc.rect(colTotalLeft, y, colTotalW, summaryHeight, "F");
 
     // Bottom border
     doc.setDrawColor(0, 0, 0);
@@ -543,9 +569,9 @@ export async function POST(
       doc.text(`(${invoice.project.owner.name})`, sigX + 22.5, sigY + 26, { align: "center" });
     }
 
-    // ============ FOOTER - Bold separator ============
+    // ============ FOOTER - Separator ============
     doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(1);
+    doc.setLineWidth(0.5);
     doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
 
     // Get PDF as buffer

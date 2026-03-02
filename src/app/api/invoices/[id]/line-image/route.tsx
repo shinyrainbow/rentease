@@ -319,7 +319,10 @@ export async function GET(request: NextRequest) {
             )}
           </div>
 
-          {/* Table Header - Bilingual (English + Thai) */}
+          {/* Black line above header */}
+          <div style={{ width: "100%", height: "2px", backgroundColor: "#000000" }} />
+
+          {/* Table Header - Bilingual (English + Thai), all centered */}
           <div
             style={{
               display: "flex",
@@ -330,34 +333,34 @@ export async function GET(request: NextRequest) {
             <div style={{ width: "50px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>#</span>
             </div>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingLeft: "8px" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Description</span>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.detail}</span>
             </div>
             {invoiceType === "UTILITY" ? (
               <>
-                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Quantity</span>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.quantity}</span>
                 </div>
-                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Unit Price</span>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.unitPrice}</span>
                 </div>
               </>
             ) : (
               <>
-                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Price</span>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.price}</span>
                 </div>
-                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{`WH ${withholdingTaxPercent}%`}</span>
                   <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
                 </div>
               </>
             )}
-            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "16px" }}>
+            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "center" }}>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Total</span>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.colTotal}</span>
             </div>
@@ -414,23 +417,25 @@ export async function GET(request: NextRequest) {
             );
           })}
 
-          {/* Bottom Summary Row (white bg, merged col2+col3 for grand total label) */}
+          {/* Separator above summary row */}
+          <div style={{ width: "100%", height: "2px", backgroundColor: "#000000" }} />
+
+          {/* Bottom Summary Row (merged col2+col3, green bg on baht text + total) */}
           <div
             style={{
               display: "flex",
               padding: "14px 0",
               backgroundColor: "#ffffff",
-              borderTop: "2px solid #000000",
             }}
           >
-            <div style={{ width: "50px" }} />
-            <div style={{ flex: 1, display: "flex", paddingLeft: "8px" }}>
+            <div style={{ width: "50px", backgroundColor: "#DCFCE7" }} />
+            <div style={{ flex: 1, display: "flex", paddingLeft: "8px", backgroundColor: "#DCFCE7" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(totalAmount)}</span>
             </div>
             <div style={{ width: "280px", display: "flex", justifyContent: "center" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{t.grandTotal}</span>
             </div>
-            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px" }}>
+            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px", backgroundColor: "#DCFCE7" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
@@ -469,9 +474,9 @@ export async function GET(request: NextRequest) {
             </div>
           </div>
 
-          {/* Footer - Bold separator */}
+          {/* Footer - Separator */}
           <div style={{ display: "flex", marginTop: "auto", paddingTop: "40px" }}>
-            <div style={{ width: "100%", height: "3px", backgroundColor: "#000000" }} />
+            <div style={{ width: "100%", height: "2px", backgroundColor: "#000000" }} />
           </div>
         </div>
       ),
