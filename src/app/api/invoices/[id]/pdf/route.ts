@@ -493,11 +493,6 @@ export async function POST(
     doc.setFillColor(220, 252, 231);
     doc.rect(colTotalLeft, y, colTotalW, summaryHeight, "F");
 
-    // Bottom border
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y + summaryHeight, pageWidth - margin, y + summaryHeight);
-
     const summaryTextY = y + summaryHeight / 2 + 1.5;
 
     // Thai baht text on left

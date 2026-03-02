@@ -424,18 +424,17 @@ export async function GET(request: NextRequest) {
           <div
             style={{
               display: "flex",
-              padding: "14px 0",
               backgroundColor: "#ffffff",
             }}
           >
-            <div style={{ width: "50px", backgroundColor: "#DCFCE7" }} />
-            <div style={{ flex: 1, display: "flex", paddingLeft: "8px", backgroundColor: "#DCFCE7" }}>
+            <div style={{ width: "50px", backgroundColor: "#DCFCE7", padding: "14px 0" }} />
+            <div style={{ flex: 1, display: "flex", alignItems: "center", paddingLeft: "8px", backgroundColor: "#DCFCE7", padding: "14px 0 14px 8px" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(totalAmount)}</span>
             </div>
-            <div style={{ width: "280px", display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "280px", display: "flex", justifyContent: "center", alignItems: "center", padding: "14px 0" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{t.grandTotal}</span>
             </div>
-            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px", backgroundColor: "#DCFCE7" }}>
+            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", alignItems: "center", backgroundColor: "#DCFCE7", padding: "14px 16px 14px 0" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
