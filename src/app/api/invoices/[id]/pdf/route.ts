@@ -58,6 +58,11 @@ const translations = {
     accountName: "Account Name",
     accountNumber: "Account Number",
     biller: "Biller",
+    detail: "Description",
+    price: "Price",
+    whLabel: "WH",
+    colTotal: "Total",
+    grandTotal: "Grand Total",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -84,10 +89,43 @@ const translations = {
     accountName: "ชื่อบัญชี",
     accountNumber: "เลขที่บัญชี",
     biller: "ผู้วางบิล",
+    detail: "รายละเอียด",
+    price: "ราคา",
+    whLabel: "ณ ที่จ่าย WH",
+    colTotal: "จำนวนเงิน",
+    grandTotal: "จำนวนเงินทั้งสิ้น",
   },
 };
 
 const PRIMARY_COLOR = { r: 22, g: 163, b: 74 }; // #16a34a (green-600)
+
+function numberToThaiText(num: number): string {
+  const thaiDigits = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  const positions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+  if (num === 0) return "ศูนย์บาทถ้วน";
+  const intPart = Math.floor(Math.abs(num));
+  const decPart = Math.round((Math.abs(num) - intPart) * 100);
+  function convert(n: number): string {
+    if (n === 0) return "";
+    if (n > 999999) return convert(Math.floor(n / 1000000)) + "ล้าน" + convert(n % 1000000);
+    const str = n.toString();
+    let result = "";
+    const len = str.length;
+    for (let i = 0; i < len; i++) {
+      const d = parseInt(str[i]);
+      const pos = len - i - 1;
+      if (d === 0) continue;
+      if (pos === 0 && d === 1 && len > 1) { result += "เอ็ด"; }
+      else if (pos === 1 && d === 1) { result += "สิบ"; }
+      else if (pos === 1 && d === 2) { result += "ยี่สิบ"; }
+      else { result += thaiDigits[d] + positions[pos]; }
+    }
+    return result;
+  }
+  let text = convert(intPart) + "บาท";
+  text += decPart > 0 ? convert(decPart) + "สตางค์" : "ถ้วน";
+  return text;
+}
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString("th-TH", {
@@ -289,98 +327,122 @@ export async function POST(
     // ============ LINE ITEMS TABLE ============
     const lineItems: LineItem[] = (invoice.lineItems as unknown as LineItem[]) || [];
     const tableWidth = pageWidth - margin * 2;
-    const colAmountX = pageWidth - margin - 5;
+    const whPercent = invoice.tenant?.withholdingTax || 0;
 
-    // Table header
-    const headerHeight = 14;
+    // Column positions
+    const colNumW = 10;
+    const colPriceW = 28;
+    const colWhW = 28;
+    const colTotalW = 28;
+    const colDescW = tableWidth - colNumW - colPriceW - colWhW - colTotalW;
+
+    const colNumLeft = margin;
+    const colDescLeft = margin + colNumW;
+    const colPriceLeft = colDescLeft + colDescW;
+    const colWhLeft = colPriceLeft + colPriceW;
+    const colTotalLeft = colWhLeft + colWhW;
+
+    const colNumCenter = colNumLeft + colNumW / 2;
+    const colDescTextX = colDescLeft + 4;
+    const colPriceTextX = colPriceLeft + colPriceW - 3;
+    const colWhTextX = colWhLeft + colWhW - 3;
+    const colTotalTextX = colTotalLeft + colTotalW - 3;
+
+    // Table header (green bg, bilingual: English line 1, Thai line 2)
+    const headerHeight = 16;
     doc.setFillColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
-    doc.roundedRect(margin, y, tableWidth, headerHeight, 2, 2, "F");
+    doc.rect(margin, y, tableWidth, headerHeight, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
+    doc.setFontSize(9);
     setThaiFont(doc, "bold");
-    // Vertically center text in header
-    const headerTextY = y + headerHeight / 2 + 1.5;
-    doc.text(t.description, margin + 8, headerTextY);
-    doc.text(t.amount, colAmountX, headerTextY, { align: "right" });
+    const hY1 = y + 6;
+    const hY2 = y + 12;
 
-    y += headerHeight + 2;
+    // Header line 1 (English)
+    doc.text("#", colNumCenter, hY1, { align: "center" });
+    doc.text("Description", colDescTextX, hY1);
+    doc.text("Price", colPriceTextX, hY1, { align: "right" });
+    doc.text(`WH ${whPercent}%`, colWhTextX, hY1, { align: "right" });
+    doc.text("Total", colTotalTextX, hY1, { align: "right" });
+
+    // Header line 2 (Thai)
+    doc.text(t.detail, colDescTextX, hY2);
+    doc.text(t.price, colPriceTextX, hY2, { align: "right" });
+    doc.text(`${t.whLabel} ${whPercent}%`, colWhTextX, hY2, { align: "right" });
+    doc.text(t.colTotal, colTotalTextX, hY2, { align: "right" });
+
+    y += headerHeight;
+
+    // Black line under header
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 2;
+
     doc.setTextColor(0, 0, 0);
 
     // Table rows
     setThaiFont(doc, "normal");
-    doc.setFontSize(12);
+    doc.setFontSize(10);
+    const rowHeight = 10;
 
     lineItems.forEach((item, index) => {
-      // Alternating row background
-      if (index % 2 === 0) {
-        doc.setFillColor(249, 250, 251);
-      } else {
-        doc.setFillColor(255, 255, 255);
-      }
-      doc.rect(margin, y - 4, tableWidth, 12, "F");
+      const rowY = y;
+      const textY = rowY + rowHeight / 2 + 1.5;
 
-      // Border
+      // Row background
+      doc.setFillColor(255, 255, 255);
+      doc.rect(margin, rowY, tableWidth, rowHeight, "F");
+
+      // Row border bottom
       doc.setDrawColor(229, 231, 235);
       doc.setLineWidth(0.2);
-      doc.line(margin, y + 8, pageWidth - margin, y + 8);
-      doc.line(margin, y - 4, margin, y + 8);
-      doc.line(pageWidth - margin, y - 4, pageWidth - margin, y + 8);
+      doc.line(margin, rowY + rowHeight, pageWidth - margin, rowY + rowHeight);
 
-      doc.text(item.description, margin + 8, y + 3);
-      doc.text(formatCurrency(item.amount), colAmountX, y + 3, { align: "right" });
+      // # column
+      doc.text(String(index + 1), colNumCenter, textY, { align: "center" });
 
-      y += 12;
+      // Description
+      doc.text(item.description, colDescTextX, textY);
+
+      // Price (item amount = pre-WH)
+      doc.text(formatCurrency(item.amount), colPriceTextX, textY, { align: "right" });
+
+      // WH amount per item
+      const itemWh = whPercent > 0 ? item.amount * whPercent / 100 : 0;
+      doc.text(formatCurrency(itemWh), colWhTextX, textY, { align: "right" });
+
+      // Total per item (price - WH)
+      const itemTotal = item.amount - itemWh;
+      doc.text(formatCurrency(itemTotal), colTotalTextX, textY, { align: "right" });
+
+      y += rowHeight;
     });
 
-    // Bottom border with rounded corners (last row)
-    doc.setDrawColor(229, 231, 235);
-    doc.setLineWidth(0.2);
-    doc.line(margin, y - 4, pageWidth - margin, y - 4);
+    // Bottom summary row (light green bg)
+    const summaryHeight = 12;
+    doc.setFillColor(220, 252, 231); // green-100
+    doc.rect(margin, y, tableWidth, summaryHeight, "F");
 
-    y += 8;
-
-    // ============ TOTALS SECTION ============
-    const totalsBoxWidth = 85;
-    const totalsX = pageWidth - margin - totalsBoxWidth;
-
-    // Subtotal
-    doc.setFontSize(12);
-    setThaiFont(doc, "normal");
-    doc.setTextColor(107, 114, 128);
-    doc.text(t.subtotal, totalsX, y);
-    doc.setTextColor(0, 0, 0);
-    doc.text(formatCurrency(invoice.subtotal), colAmountX, y, { align: "right" });
-    y += 7;
-
-    // Withholding Tax
-    if (invoice.withholdingTax > 0) {
-      const withholdingTaxPercent = invoice.tenant?.withholdingTax || 0;
-      doc.setTextColor(107, 114, 128);
-      doc.text(`${t.withholdingTax} (${withholdingTaxPercent}%)`, totalsX, y);
-      doc.setTextColor(220, 38, 38); // Red
-      doc.text(`-${formatCurrency(invoice.withholdingTax)}`, colAmountX, y, { align: "right" });
-      y += 7;
-    }
-
-    y += 4;
-
-    // Separator line above total
-    doc.setDrawColor(229, 231, 235); // gray-200
+    // Bottom border
+    doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
-    doc.line(totalsX - 5, y, colAmountX + 5, y);
-    y += 7;
+    doc.line(margin, y + summaryHeight, pageWidth - margin, y + summaryHeight);
 
-    // Total (no background)
-    doc.setFontSize(14);
+    const summaryTextY = y + summaryHeight / 2 + 1.5;
+
+    // Thai baht text on left
+    doc.setFontSize(10);
     setThaiFont(doc, "bold");
-    doc.setTextColor(0, 0, 0); // Black for label
-    doc.text(t.total, totalsX, y);
-    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b); // Teal for amount
-    doc.text(formatCurrency(invoice.totalAmount), colAmountX, y, { align: "right" });
     doc.setTextColor(0, 0, 0);
+    doc.text(numberToThaiText(invoice.totalAmount), colDescTextX, summaryTextY);
 
-    y += 35;
+    // Grand total label + amount on right
+    doc.text(t.grandTotal, colWhTextX, summaryTextY, { align: "right" });
+    doc.text(formatCurrency(invoice.totalAmount), colTotalTextX, summaryTextY, { align: "right" });
+
+    y += summaryHeight + 35;
 
     // ============ PAYMENT INFO + SIGNATURE SECTION ============
     const hasBankInfo = invoice.project.bankName || invoice.project.bankAccountName || invoice.project.bankAccountNumber;

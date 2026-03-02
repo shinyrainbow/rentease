@@ -14,6 +14,34 @@ interface LineItem {
 
 const PRIMARY_COLOR = "#16a34a"; // green-600
 
+function numberToThaiText(num: number): string {
+  const thaiDigits = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  const positions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+  if (num === 0) return "ศูนย์บาทถ้วน";
+  const intPart = Math.floor(Math.abs(num));
+  const decPart = Math.round((Math.abs(num) - intPart) * 100);
+  function convert(n: number): string {
+    if (n === 0) return "";
+    if (n > 999999) return convert(Math.floor(n / 1000000)) + "ล้าน" + convert(n % 1000000);
+    const str = n.toString();
+    let result = "";
+    const len = str.length;
+    for (let i = 0; i < len; i++) {
+      const d = parseInt(str[i]);
+      const pos = len - i - 1;
+      if (d === 0) continue;
+      if (pos === 0 && d === 1 && len > 1) { result += "เอ็ด"; }
+      else if (pos === 1 && d === 1) { result += "สิบ"; }
+      else if (pos === 1 && d === 2) { result += "ยี่สิบ"; }
+      else { result += thaiDigits[d] + positions[pos]; }
+    }
+    return result;
+  }
+  let text = convert(intPart) + "บาท";
+  text += decPart > 0 ? convert(decPart) + "สตางค์" : "ถ้วน";
+  return text;
+}
+
 const BANK_NAMES: Record<string, string> = {
   kbank: "ธนาคารกสิกรไทย",
   scb: "ธนาคารไทยพาณิชย์",
@@ -56,6 +84,11 @@ const translations = {
     accountName: "Account Name",
     accountNumber: "Account Number",
     biller: "Biller",
+    detail: "Description",
+    price: "Price",
+    whLabel: "WH",
+    colTotal: "Total",
+    grandTotal: "Grand Total",
   },
   th: {
     invoice: "ใบแจ้งหนี้",
@@ -81,6 +114,11 @@ const translations = {
     accountName: "ชื่อบัญชี",
     accountNumber: "เลขที่บัญชี",
     biller: "ผู้วางบิล",
+    detail: "รายละเอียด",
+    price: "ราคา",
+    whLabel: "ณ ที่จ่าย WH",
+    colTotal: "จำนวนเงิน",
+    grandTotal: "จำนวนเงินทั้งสิ้น",
   },
 };
 
@@ -267,70 +305,89 @@ export async function GET(request: NextRequest) {
             )}
           </div>
 
-          {/* Table Header */}
+          {/* Table Header - Bilingual (English + Thai) */}
           <div
             style={{
               display: "flex",
               backgroundColor: PRIMARY_COLOR,
-              padding: "16px 24px",
-              borderRadius: "8px 8px 0 0",
+              padding: "10px 0",
             }}
           >
-            <div style={{ flex: 1, display: "flex" }}>
-              <span style={{ fontSize: "18px", fontWeight: "bold", color: "#ffffff" }}>{t.description}</span>
+            <div style={{ width: "50px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>#</span>
             </div>
-            <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
-              <span style={{ fontSize: "18px", fontWeight: "bold", color: "#ffffff" }}>{t.amount}</span>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingLeft: "8px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Description</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.detail}</span>
+            </div>
+            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Price</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.price}</span>
+            </div>
+            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`WH ${withholdingTaxPercent}%`}</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
+            </div>
+            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "16px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Total</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.colTotal}</span>
             </div>
           </div>
 
-          {/* Table Rows */}
-          {lineItems.map((item, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                padding: "16px 24px",
-                backgroundColor: index % 2 === 0 ? "#F9FAFB" : "#ffffff",
-                borderLeft: "1px solid #E5E7EB",
-                borderRight: "1px solid #E5E7EB",
-                borderBottom: "1px solid #E5E7EB",
-                ...(index === lineItems.length - 1 ? { borderRadius: "0 0 8px 8px" } : {}),
-              }}
-            >
-              <div style={{ flex: 1, display: "flex" }}>
-                <span style={{ fontSize: "18px", color: "#111827" }}>{item.description}</span>
-              </div>
-              <div style={{ width: "200px", display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: "18px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
-              </div>
-            </div>
-          ))}
+          {/* Black line under header */}
+          <div style={{ width: "100%", height: "2px", backgroundColor: "#000000" }} />
 
-          {/* Totals Section */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: "24px" }}>
-            <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span style={{ fontSize: "18px", color: "#6B7280" }}>{t.subtotal}</span>
-              <span style={{ fontSize: "18px", color: "#111827" }}>{formatCurrency(subtotal)}</span>
-            </div>
-            {withholdingTax > 0 && (
-              <div style={{ display: "flex", width: "300px", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "18px", color: "#6B7280" }}>{t.withholdingTax} ({withholdingTaxPercent}%)</span>
-                <span style={{ fontSize: "18px", color: "#DC2626" }}>-{formatCurrency(withholdingTax)}</span>
+          {/* Table Rows */}
+          {lineItems.map((item, index) => {
+            const itemWh = withholdingTaxPercent > 0 ? item.amount * withholdingTaxPercent / 100 : 0;
+            const itemTotal = item.amount - itemWh;
+            return (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  padding: "14px 0",
+                  backgroundColor: "#ffffff",
+                  borderBottom: "1px solid #E5E7EB",
+                }}
+              >
+                <div style={{ width: "50px", display: "flex", justifyContent: "center" }}>
+                  <span style={{ fontSize: "15px", color: "#111827" }}>{index + 1}</span>
+                </div>
+                <div style={{ flex: 1, display: "flex", paddingLeft: "8px" }}>
+                  <span style={{ fontSize: "15px", color: "#111827" }}>{item.description}</span>
+                </div>
+                <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                </div>
+                <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(itemWh)}</span>
+                </div>
+                <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px" }}>
+                  <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(itemTotal)}</span>
+                </div>
               </div>
-            )}
-            {/* Separator line */}
-            <div style={{ width: "300px", height: "1px", backgroundColor: "#E5E7EB", marginTop: "8px", marginBottom: "12px" }} />
-            {/* Total */}
-            <div
-              style={{
-                display: "flex",
-                width: "300px",
-                justifyContent: "space-between",
-              }}
-            >
-              <span style={{ fontSize: "20px", fontWeight: "bold", color: "#111827" }}>{t.total}</span>
-              <span style={{ fontSize: "20px", fontWeight: "bold", color: PRIMARY_COLOR }}>{formatCurrency(totalAmount)}</span>
+            );
+          })}
+
+          {/* Bottom Summary Row (light green) */}
+          <div
+            style={{
+              display: "flex",
+              padding: "14px 0",
+              backgroundColor: "#DCFCE7",
+              borderTop: "2px solid #000000",
+            }}
+          >
+            <div style={{ width: "50px" }} />
+            <div style={{ flex: 1, display: "flex", paddingLeft: "8px" }}>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(totalAmount)}</span>
+            </div>
+            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{t.grandTotal}</span>
+            </div>
+            <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px" }}>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
 
