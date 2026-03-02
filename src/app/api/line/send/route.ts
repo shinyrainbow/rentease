@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
         bankAccountName: invoice.project.bankAccountName || "",
         bankAccountNumber: invoice.project.bankAccountNumber || "",
         copy: String(copy),
+        invoiceType: invoice.type || "",
       });
 
       // Generate image and upload to S3 for reliable delivery
@@ -285,6 +286,7 @@ ${textLabels.footer}
         bankAccountName: rInv.project.bankAccountName || "",
         bankAccountNumber: rInv.project.bankAccountNumber || "",
         copy: String(copy),
+        invoiceType: rInv.type || "",
       });
 
       // Generate image and upload to S3 for reliable delivery

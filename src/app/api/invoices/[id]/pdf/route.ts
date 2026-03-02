@@ -149,46 +149,46 @@ export async function POST(
     // Fetch logo as base64
     const logoBase64 = await fetchImageAsBase64(invoice.project.logoUrl);
 
-    // ============ COMPANY HEADER - LEFT ALIGNED WITH LOGO ============
+    // ============ COMPANY HEADER - LOGO ON TOP, DETAILS BELOW ============
     const logoSize = 20;
-    const textStartX = logoBase64 ? margin + logoSize + 8 : margin;
 
     // Company name
     const companyName = lang === "th" && invoice.project.companyNameTh
       ? invoice.project.companyNameTh
       : (invoice.project.companyName || invoice.project.name);
 
-    // Draw logo on left
+    // Draw logo on top left
     if (logoBase64) {
       doc.addImage(logoBase64, "PNG", margin, y, logoSize, logoSize);
+      y += logoSize + 4;
     }
 
-    // Company details on right of logo
-    let textY = y + 4;
+    // Company name below logo
     doc.setFontSize(16);
     setThaiFont(doc, "bold");
-    doc.text(companyName, textStartX, textY);
-    textY += 7;
+    doc.text(companyName, margin, y);
+    y += 7;
 
     // Company address
     if (invoice.project.companyAddress) {
       doc.setFontSize(10);
       setThaiFont(doc, "normal");
       doc.setTextColor(107, 114, 128);
-      doc.text(invoice.project.companyAddress, textStartX, textY);
-      textY += 5;
+      doc.text(invoice.project.companyAddress, margin, y);
+      y += 5;
     }
 
     // Tax ID
     if (invoice.project.taxId) {
       doc.setFontSize(10);
-      doc.text(`${t.taxId}: ${invoice.project.taxId}`, textStartX, textY);
-      textY += 5;
+      setThaiFont(doc, "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(`${t.taxId}: ${invoice.project.taxId}`, margin, y);
+      y += 5;
     }
     doc.setTextColor(0, 0, 0);
 
-    // Move y to after logo or text, whichever is larger
-    y = Math.max(y + logoSize, textY) + 8;
+    y += 8;
 
     // Separator line above title
     doc.setDrawColor(229, 231, 235); // gray-200

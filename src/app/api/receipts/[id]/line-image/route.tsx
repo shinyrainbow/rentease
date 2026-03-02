@@ -35,6 +35,8 @@ const BANK_NAMES: Record<string, string> = {
 const translations = {
   en: {
     receipt: "RECEIPT",
+    receiptRent: "RENTAL RECEIPT",
+    receiptUtility: "UTILITY RECEIPT",
     receiptNo: "Receipt No",
     date: "Date",
     invoiceRef: "Ref. Invoice",
@@ -57,6 +59,8 @@ const translations = {
   },
   th: {
     receipt: "ใบเสร็จรับเงิน",
+    receiptRent: "ใบเสร็จรับเงินค่าเช่า",
+    receiptUtility: "ใบเสร็จรับเงินค่าสาธารณูปโภค",
     receiptNo: "เลขที่",
     date: "วันที่",
     invoiceRef: "อ้างอิงใบแจ้งหนี้",
@@ -133,6 +137,7 @@ export async function GET(request: NextRequest) {
     const logoUrl = searchParams.get("logoUrl") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
     const isCopy = searchParams.get("copy") === "true";
+    const invoiceType = searchParams.get("invoiceType") || "";
 
     const subtotal = Number(searchParams.get("subtotal") || 0);
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
@@ -215,7 +220,7 @@ export async function GET(request: NextRequest) {
           {/* Receipt Title - Centered */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
             <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
-              {t.receipt} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
+              {invoiceType === "RENT" ? t.receiptRent : invoiceType === "UTILITY" ? t.receiptUtility : t.receipt} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
             </span>
           </div>
 

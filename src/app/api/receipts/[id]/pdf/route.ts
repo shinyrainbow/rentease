@@ -35,6 +35,8 @@ const BANK_NAMES: Record<string, string> = {
 const translations = {
   en: {
     receipt: "RECEIPT",
+    receiptRent: "RENTAL RECEIPT",
+    receiptUtility: "UTILITY RECEIPT",
     original: "(Original)",
     copy: "(Copy)",
     receiptNo: "Receipt No",
@@ -60,6 +62,8 @@ const translations = {
   },
   th: {
     receipt: "ใบเสร็จรับเงิน",
+    receiptRent: "ใบเสร็จรับเงินค่าเช่า",
+    receiptUtility: "ใบเสร็จรับเงินค่าสาธารณูปโภค",
     original: "(ต้นฉบับ)",
     copy: "(สำเนา)",
     receiptNo: "เลขที่",
@@ -202,7 +206,10 @@ export async function POST(
     doc.setFontSize(18);
     setThaiFont(doc, "bold");
     doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
-    const receiptTitle = `${t.receipt} ${copy ? t.copy : t.original}`;
+    const receiptTypeTitle = receipt.invoice.type === "RENT" ? t.receiptRent
+      : receipt.invoice.type === "UTILITY" ? t.receiptUtility
+      : t.receipt;
+    const receiptTitle = `${receiptTypeTitle} ${copy ? t.copy : t.original}`;
     doc.text(receiptTitle, centerX, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
 

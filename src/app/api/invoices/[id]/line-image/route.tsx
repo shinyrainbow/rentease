@@ -35,6 +35,8 @@ const BANK_NAMES: Record<string, string> = {
 const translations = {
   en: {
     invoice: "INVOICE",
+    invoiceRent: "RENTAL INVOICE",
+    invoiceUtility: "UTILITY INVOICE",
     invoiceNo: "Invoice No",
     date: "Date",
     dueDate: "Due Date",
@@ -57,6 +59,8 @@ const translations = {
   },
   th: {
     invoice: "ใบแจ้งหนี้",
+    invoiceRent: "ใบแจ้งหนี้ค่าเช่า",
+    invoiceUtility: "ใบแจ้งหนี้ค่าสาธารณูปโภค",
     invoiceNo: "เลขที่",
     date: "วันที่",
     dueDate: "กำหนดชำระ",
@@ -135,6 +139,7 @@ export async function GET(request: NextRequest) {
     const logoUrl = searchParams.get("logoUrl") || "";
     const lang = (searchParams.get("lang") as "en" | "th") || "th";
     const isCopy = searchParams.get("copy") === "true";
+    const invoiceType = searchParams.get("invoiceType") || "";
 
     const subtotal = Number(searchParams.get("subtotal") || 0);
     const withholdingTax = Number(searchParams.get("withholdingTax") || 0);
@@ -183,32 +188,30 @@ export async function GET(request: NextRequest) {
             padding: "60px 80px",
           }}
         >
-          {/* Company Header - Logo on Left, Details on Right */}
-          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "40px" }}>
+          {/* Company Header - Logo on Top, Details Below */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginBottom: "40px" }}>
             {logoUrl && (
               <img
                 src={logoUrl}
                 alt="Logo"
                 width={100}
                 height={100}
-                style={{ objectFit: "contain", borderRadius: "8px", marginRight: "24px" }}
+                style={{ objectFit: "contain", borderRadius: "8px", marginBottom: "12px" }}
               />
             )}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827" }}>
-                {companyName}
+            <span style={{ fontSize: "22px", fontWeight: "bold", color: "#111827" }}>
+              {companyName}
+            </span>
+            {companyAddress && (
+              <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+                {companyAddress}
               </span>
-              {companyAddress && (
-                <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
-                  {companyAddress}
-                </span>
-              )}
-              {taxId && (
-                <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "4px" }}>
-                  {t.taxId}: {taxId}
-                </span>
-              )}
-            </div>
+            )}
+            {taxId && (
+              <span style={{ fontSize: "14px", color: "#6B7280", marginTop: "4px" }}>
+                {t.taxId}: {taxId}
+              </span>
+            )}
           </div>
 
           {/* Separator line */}
@@ -217,7 +220,7 @@ export async function GET(request: NextRequest) {
           {/* Invoice Title - Centered */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
             <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
-              {t.invoice} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
+              {invoiceType === "RENT" ? t.invoiceRent : invoiceType === "UTILITY" ? t.invoiceUtility : t.invoice} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
             </span>
           </div>
 
