@@ -89,6 +89,8 @@ const translations = {
     whLabel: "WH",
     colTotal: "Total",
     grandTotal: "Grand Total",
+    quantity: "Quantity",
+    unitPrice: "Unit Price",
     note: "Remark",
     transferTo: "Please transfer to",
     acctNoInline: "Account No.",
@@ -123,6 +125,8 @@ const translations = {
     whLabel: "ณ ที่จ่าย WH",
     colTotal: "จำนวนเงิน",
     grandTotal: "จำนวนเงินทั้งสิ้น",
+    quantity: "จำนวน",
+    unitPrice: "ราคา",
     note: "หมายเหตุ",
     transferTo: "สามารถโอนเงินเข้าได้ที่",
     acctNoInline: "เลขที่บัญชี",
@@ -330,14 +334,29 @@ export async function GET(request: NextRequest) {
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Description</span>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.detail}</span>
             </div>
-            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Price</span>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.price}</span>
-            </div>
-            <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`WH ${withholdingTaxPercent}%`}</span>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
-            </div>
+            {invoiceType === "UTILITY" ? (
+              <>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Quantity</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.quantity}</span>
+                </div>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Unit Price</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Price</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.price}</span>
+                </div>
+                <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`WH ${withholdingTaxPercent}%`}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
+                </div>
+              </>
+            )}
             <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "16px" }}>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Total</span>
               <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.colTotal}</span>
@@ -349,8 +368,10 @@ export async function GET(request: NextRequest) {
 
           {/* Table Rows */}
           {lineItems.map((item, index) => {
-            const itemWh = withholdingTaxPercent > 0 ? item.amount * withholdingTaxPercent / 100 : 0;
-            const itemTotal = item.amount - itemWh;
+            const itemWh = invoiceType !== "UTILITY" && withholdingTaxPercent > 0 ? item.amount * withholdingTaxPercent / 100 : 0;
+            const itemTotal = invoiceType === "UTILITY" ? item.amount : item.amount - itemWh;
+            const qty = item.quantity ?? item.usage ?? 0;
+            const uPrice = item.unitPrice ?? item.rate ?? 0;
             return (
               <div
                 key={index}
@@ -367,12 +388,25 @@ export async function GET(request: NextRequest) {
                 <div style={{ flex: 1, display: "flex", paddingLeft: "8px" }}>
                   <span style={{ fontSize: "15px", color: "#111827" }}>{item.description}</span>
                 </div>
-                <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
-                </div>
-                <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(itemWh)}</span>
-                </div>
+                {invoiceType === "UTILITY" ? (
+                  <>
+                    <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                      <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(qty)}</span>
+                    </div>
+                    <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                      <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(uPrice)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                      <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(item.amount)}</span>
+                    </div>
+                    <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "12px" }}>
+                      <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(itemWh)}</span>
+                    </div>
+                  </>
+                )}
                 <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", paddingRight: "16px" }}>
                   <span style={{ fontSize: "15px", color: "#111827" }}>{formatCurrency(itemTotal)}</span>
                 </div>

@@ -63,6 +63,8 @@ const translations = {
     whLabel: "WH",
     colTotal: "Total",
     grandTotal: "Grand Total",
+    quantity: "Quantity",
+    unitPrice: "Unit Price",
     note: "Remark",
     transferTo: "Please transfer to",
     acctNoInline: "Account No.",
@@ -98,6 +100,8 @@ const translations = {
     whLabel: "ณ ที่จ่าย WH",
     colTotal: "จำนวนเงิน",
     grandTotal: "จำนวนเงินทั้งสิ้น",
+    quantity: "จำนวน",
+    unitPrice: "ราคา",
     note: "หมายเหตุ",
     transferTo: "สามารถโอนเงินเข้าได้ที่",
     acctNoInline: "เลขที่บัญชี",
@@ -342,24 +346,25 @@ export async function POST(
     const lineItems: LineItem[] = (invoice.lineItems as unknown as LineItem[]) || [];
     const tableWidth = pageWidth - margin * 2;
     const whPercent = invoice.tenant?.withholdingTax || 0;
+    const isUtility = invoice.type === "UTILITY";
 
     // Column positions
     const colNumW = 10;
-    const colPriceW = 28;
-    const colWhW = 28;
+    const colCol2W = 28; // Price or Quantity
+    const colCol3W = 28; // WH or Unit Price
     const colTotalW = 28;
-    const colDescW = tableWidth - colNumW - colPriceW - colWhW - colTotalW;
+    const colDescW = tableWidth - colNumW - colCol2W - colCol3W - colTotalW;
 
     const colNumLeft = margin;
     const colDescLeft = margin + colNumW;
-    const colPriceLeft = colDescLeft + colDescW;
-    const colWhLeft = colPriceLeft + colPriceW;
-    const colTotalLeft = colWhLeft + colWhW;
+    const colCol2Left = colDescLeft + colDescW;
+    const colCol3Left = colCol2Left + colCol2W;
+    const colTotalLeft = colCol3Left + colCol3W;
 
     const colNumCenter = colNumLeft + colNumW / 2;
     const colDescTextX = colDescLeft + 4;
-    const colPriceTextX = colPriceLeft + colPriceW - 3;
-    const colWhTextX = colWhLeft + colWhW - 3;
+    const colCol2TextX = colCol2Left + colCol2W - 3;
+    const colCol3TextX = colCol3Left + colCol3W - 3;
     const colTotalTextX = colTotalLeft + colTotalW - 3;
 
     // Table header (green bg, bilingual: English line 1, Thai line 2)
@@ -376,14 +381,24 @@ export async function POST(
     // Header line 1 (English)
     doc.text("#", colNumCenter, hY1, { align: "center" });
     doc.text("Description", colDescTextX, hY1);
-    doc.text("Price", colPriceTextX, hY1, { align: "right" });
-    doc.text(`WH ${whPercent}%`, colWhTextX, hY1, { align: "right" });
+    if (isUtility) {
+      doc.text("Quantity", colCol2TextX, hY1, { align: "right" });
+      doc.text("Unit Price", colCol3TextX, hY1, { align: "right" });
+    } else {
+      doc.text("Price", colCol2TextX, hY1, { align: "right" });
+      doc.text(`WH ${whPercent}%`, colCol3TextX, hY1, { align: "right" });
+    }
     doc.text("Total", colTotalTextX, hY1, { align: "right" });
 
     // Header line 2 (Thai)
     doc.text(t.detail, colDescTextX, hY2);
-    doc.text(t.price, colPriceTextX, hY2, { align: "right" });
-    doc.text(`${t.whLabel} ${whPercent}%`, colWhTextX, hY2, { align: "right" });
+    if (isUtility) {
+      doc.text(t.quantity, colCol2TextX, hY2, { align: "right" });
+      doc.text(t.unitPrice, colCol3TextX, hY2, { align: "right" });
+    } else {
+      doc.text(t.price, colCol2TextX, hY2, { align: "right" });
+      doc.text(`${t.whLabel} ${whPercent}%`, colCol3TextX, hY2, { align: "right" });
+    }
     doc.text(t.colTotal, colTotalTextX, hY2, { align: "right" });
 
     y += headerHeight;
@@ -420,16 +435,29 @@ export async function POST(
       // Description
       doc.text(item.description, colDescTextX, textY);
 
-      // Price (item amount = pre-WH)
-      doc.text(formatCurrency(item.amount), colPriceTextX, textY, { align: "right" });
+      if (isUtility) {
+        // Quantity
+        const qty = item.quantity ?? item.usage ?? 0;
+        doc.text(formatCurrency(qty), colCol2TextX, textY, { align: "right" });
 
-      // WH amount per item
-      const itemWh = whPercent > 0 ? item.amount * whPercent / 100 : 0;
-      doc.text(formatCurrency(itemWh), colWhTextX, textY, { align: "right" });
+        // Unit Price
+        const uPrice = item.unitPrice ?? item.rate ?? 0;
+        doc.text(formatCurrency(uPrice), colCol3TextX, textY, { align: "right" });
 
-      // Total per item (price - WH)
-      const itemTotal = item.amount - itemWh;
-      doc.text(formatCurrency(itemTotal), colTotalTextX, textY, { align: "right" });
+        // Total (quantity * unit price = amount)
+        doc.text(formatCurrency(item.amount), colTotalTextX, textY, { align: "right" });
+      } else {
+        // Price (item amount = pre-WH)
+        doc.text(formatCurrency(item.amount), colCol2TextX, textY, { align: "right" });
+
+        // WH amount per item
+        const itemWh = whPercent > 0 ? item.amount * whPercent / 100 : 0;
+        doc.text(formatCurrency(itemWh), colCol3TextX, textY, { align: "right" });
+
+        // Total per item (price - WH)
+        const itemTotal = item.amount - itemWh;
+        doc.text(formatCurrency(itemTotal), colTotalTextX, textY, { align: "right" });
+      }
 
       y += rowHeight;
     });
@@ -453,7 +481,7 @@ export async function POST(
     doc.text(numberToThaiText(invoice.totalAmount), colDescTextX, summaryTextY);
 
     // Grand total label + amount on right
-    doc.text(t.grandTotal, colWhTextX, summaryTextY, { align: "right" });
+    doc.text(t.grandTotal, colCol3TextX, summaryTextY, { align: "right" });
     doc.text(formatCurrency(invoice.totalAmount), colTotalTextX, summaryTextY, { align: "right" });
 
     y += summaryHeight + 35;

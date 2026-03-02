@@ -302,7 +302,7 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-    if ((formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId) {
+    if (formData.type === "UTILITY" && formData.unitId) {
       fetchMeterReadingMonths(formData.unitId);
     } else {
       setAvailableReadings([]);
@@ -321,7 +321,7 @@ export default function InvoicesPage() {
 
     try {
       const payload: Record<string, unknown> = { ...formData };
-      if ((formData.type === "UTILITY" || formData.type === "COMBINED") && selectedReadingIds.size > 0) {
+      if (formData.type === "UTILITY" && selectedReadingIds.size > 0) {
         payload.meterReadingIds = Array.from(selectedReadingIds);
       }
 
@@ -958,12 +958,11 @@ export default function InvoicesPage() {
                       <SelectContent>
                         <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
                         <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                        <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Month selector for UTILITY/COMBINED */}
-                  {(bulkFormData.type === "UTILITY" || bulkFormData.type === "COMBINED") && (
+                  {/* Month selector for UTILITY */}
+                  {bulkFormData.type === "UTILITY" && (
                     <div className="space-y-2">
                       <Label>{t("readingMonth") || "Meter Reading Month"}</Label>
                       <Input
@@ -1077,13 +1076,12 @@ export default function InvoicesPage() {
                       <SelectContent>
                         <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
                         <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                        <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Meter Reading Picker - shown for UTILITY and COMBINED */}
-                  {(formData.type === "UTILITY" || formData.type === "COMBINED") && formData.unitId && (
+                  {/* Meter Reading Picker - shown for UTILITY */}
+                  {formData.type === "UTILITY" && formData.unitId && (
                     <>
                       {/* Month selector */}
                       <div className="space-y-2">
@@ -1510,7 +1508,6 @@ export default function InvoicesPage() {
                   <SelectContent>
                     <SelectItem value="RENT">{t("types.RENT")}</SelectItem>
                     <SelectItem value="UTILITY">{t("types.UTILITY")}</SelectItem>
-                    <SelectItem value="COMBINED">{t("types.COMBINED")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
