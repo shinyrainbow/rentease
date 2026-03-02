@@ -67,7 +67,7 @@ const translations = {
     copy: "(สำเนา)",
     invoiceNo: "เลขที่",
     date: "วันที่",
-    dueDate: "กำหนดชำระ",
+    dueDate: "ครบกำหนด",
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
     unit: "ห้อง",
@@ -190,37 +190,51 @@ export async function POST(
 
     y += 8;
 
-    // Separator line above title
-    doc.setDrawColor(229, 231, 235); // gray-200
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 8;
+    // ============ INVOICE TITLE + DETAILS - RIGHT ALIGNED ============
+    const rightSectionX = pageWidth / 2 + 5;
+    const labelX = rightSectionX;
+    const valueX = pageWidth - margin;
 
-    // ============ INVOICE TITLE - CENTERED ============
-    doc.setFontSize(18);
-    setThaiFont(doc, "bold");
-    doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    // Title
     const invoiceTypeTitle = invoice.type === "RENT" ? t.invoiceRent
       : invoice.type === "UTILITY" ? t.invoiceUtility
       : t.invoice;
     const invoiceTitle = `${invoiceTypeTitle} ${copy ? t.copy : t.original}`;
-    doc.text(invoiceTitle, centerX, y, { align: "center" });
+
+    doc.setFontSize(16);
+    setThaiFont(doc, "bold");
     doc.setTextColor(0, 0, 0);
+    const titleCenterX = rightSectionX + (pageWidth - margin - rightSectionX) / 2;
+    doc.text(invoiceTitle, titleCenterX, y, { align: "center" });
 
-    y += 14;
-
-    // ============ INVOICE DETAILS - TWO COLUMNS ============
-    doc.setFontSize(12);
-    setThaiFont(doc, "normal");
-
-    // Left: Invoice No
-    doc.text(`${t.invoiceNo}: ${invoice.invoiceNo}`, margin, y);
-    // Right: Date
-    doc.text(`${t.date}: ${formatDate(invoice.createdAt, lang as "th" | "en")}`, pageWidth - margin, y, { align: "right" });
+    // Separator under title
+    y += 3;
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(rightSectionX, y, pageWidth - margin, y);
     y += 6;
 
-    // Left: Due Date
-    doc.text(`${t.dueDate}: ${formatDate(invoice.dueDate, lang as "th" | "en")}`, margin, y);
+    // Invoice No
+    doc.setFontSize(11);
+    setThaiFont(doc, "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text(t.invoiceNo, labelX, y);
+    setThaiFont(doc, "normal");
+    doc.text(invoice.invoiceNo, valueX, y, { align: "right" });
+    y += 6;
+
+    // Date
+    setThaiFont(doc, "bold");
+    doc.text(t.date, labelX, y);
+    setThaiFont(doc, "normal");
+    doc.text(formatDate(invoice.createdAt, lang as "th" | "en"), valueX, y, { align: "right" });
+    y += 6;
+
+    // Due Date
+    setThaiFont(doc, "bold");
+    doc.text(t.dueDate, labelX, y);
+    setThaiFont(doc, "normal");
+    doc.text(formatDate(invoice.dueDate, lang as "th" | "en"), valueX, y, { align: "right" });
 
     y += 12;
 

@@ -63,7 +63,7 @@ const translations = {
     invoiceUtility: "ใบแจ้งหนี้ค่าสาธารณูปโภค",
     invoiceNo: "เลขที่",
     date: "วันที่",
-    dueDate: "กำหนดชำระ",
+    dueDate: "ครบกำหนด",
 
     taxId: "เลขประจำตัวผู้เสียภาษี",
     billTo: "เรียกเก็บจาก",
@@ -214,23 +214,33 @@ export async function GET(request: NextRequest) {
             )}
           </div>
 
-          {/* Separator line */}
-          <div style={{ width: "100%", height: "1px", backgroundColor: "#E5E7EB", marginBottom: "24px" }} />
-
-          {/* Invoice Title - Centered */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
-            <span style={{ fontSize: "30px", fontWeight: "bold", color: PRIMARY_COLOR }}>
-              {invoiceType === "RENT" ? t.invoiceRent : invoiceType === "UTILITY" ? t.invoiceUtility : t.invoice} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
-            </span>
-          </div>
-
-          {/* Invoice Details */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-            <span style={{ fontSize: "18px", color: "#111827" }}>{t.invoiceNo}: {invoiceNo}</span>
-            <span style={{ fontSize: "18px", color: "#111827" }}>{t.date}: {formatDate(dateCreated)}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-            <span style={{ fontSize: "18px", color: "#111827" }}>{t.dueDate}: {formatDate(dueDate)}</span>
+          {/* Invoice Title + Details - Right Aligned */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "32px" }}>
+            <div style={{ display: "flex", flexDirection: "column", width: "50%" }}>
+              {/* Title */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+                <span style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+                  {invoiceType === "RENT" ? t.invoiceRent : invoiceType === "UTILITY" ? t.invoiceUtility : t.invoice} {isCopy ? (lang === "th" ? "(สำเนา)" : "(Copy)") : (lang === "th" ? "(ต้นฉบับ)" : "(Original)")}
+                </span>
+              </div>
+              {/* Separator under title */}
+              <div style={{ width: "100%", height: "1px", backgroundColor: "#E5E7EB", marginBottom: "12px" }} />
+              {/* Invoice No */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "16px", fontWeight: "bold", color: "#111827" }}>{t.invoiceNo}</span>
+                <span style={{ fontSize: "16px", color: "#111827" }}>{invoiceNo}</span>
+              </div>
+              {/* Date */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ fontSize: "16px", fontWeight: "bold", color: "#111827" }}>{t.date}</span>
+                <span style={{ fontSize: "16px", color: "#111827" }}>{formatDate(dateCreated)}</span>
+              </div>
+              {/* Due Date */}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "16px", fontWeight: "bold", color: "#111827" }}>{t.dueDate}</span>
+                <span style={{ fontSize: "16px", color: "#111827" }}>{formatDate(dueDate)}</span>
+              </div>
+            </div>
           </div>
 
           {/* Bill To Section */}
