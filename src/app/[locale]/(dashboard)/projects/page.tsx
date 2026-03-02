@@ -167,6 +167,7 @@ export default function ProjectsPage() {
   const [formData, setFormData] = useState({
     name: "",
     nameTh: "",
+    invoiceName: "",
     type: "WAREHOUSE",
     address: "",
     billingDay: 1,
@@ -244,6 +245,7 @@ export default function ProjectsPage() {
     setFormData({
       name: "",
       nameTh: "",
+      invoiceName: "",
       type: "WAREHOUSE",
       address: "",
       billingDay: 1,
@@ -331,6 +333,7 @@ export default function ProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">ชื่อภาษาอังกฤษ (ใช้ในระบบ)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nameTh">{t("projectNameTh")}</Label>
@@ -340,6 +343,17 @@ export default function ProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invoiceName">ชื่อโครงการใช้ในใบแจ้งหนี้</Label>
+                <Input
+                  id="invoiceName"
+                  value={formData.invoiceName}
+                  onChange={(e) => setFormData({ ...formData, invoiceName: e.target.value })}
+                  placeholder="เช่น โครงการ บิซสเปซ แวร์เฮ้าส์ พาร์ค"
+                />
+                <p className="text-xs text-muted-foreground">ชื่อที่แสดงในใบแจ้งหนี้/ใบเสร็จ (ถ้าไม่ระบุจะใช้ชื่อโครงการ)</p>
               </div>
 
               <div className="space-y-2">
@@ -442,9 +456,14 @@ export default function ProjectsPage() {
                   <CardHeader className="pb-3 pt-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1.5 min-w-0 flex-1">
-                        <CardTitle className="text-xl font-semibold truncate group-hover:text-primary transition-colors">
-                          {locale === "th" && project.nameTh ? project.nameTh : project.name}
-                        </CardTitle>
+                        <div>
+                          <CardTitle className="text-xl font-semibold truncate group-hover:text-primary transition-colors">
+                            {project.nameTh || project.name}
+                          </CardTitle>
+                          {project.nameTh && (
+                            <p className="text-sm text-muted-foreground truncate">{project.name}</p>
+                          )}
+                        </div>
                         <Badge className={`${getTypeBadgeColor(project.type)} font-medium`}>
                           {getTypeLabel(project.type)}
                         </Badge>

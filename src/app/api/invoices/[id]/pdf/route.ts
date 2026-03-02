@@ -35,6 +35,8 @@ const BANK_NAMES: Record<string, string> = {
 const translations = {
   en: {
     invoice: "INVOICE",
+    invoiceRent: "RENTAL INVOICE",
+    invoiceUtility: "UTILITY INVOICE",
     original: "(Original)",
     copy: "(Copy)",
     invoiceNo: "Invoice No",
@@ -59,6 +61,8 @@ const translations = {
   },
   th: {
     invoice: "ใบแจ้งหนี้",
+    invoiceRent: "ใบแจ้งหนี้ค่าเช่า",
+    invoiceUtility: "ใบแจ้งหนี้ค่าสาธารณูปโภค",
     original: "(ต้นฉบับ)",
     copy: "(สำเนา)",
     invoiceNo: "เลขที่",
@@ -196,7 +200,10 @@ export async function POST(
     doc.setFontSize(18);
     setThaiFont(doc, "bold");
     doc.setTextColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
-    const invoiceTitle = `${t.invoice} ${copy ? t.copy : t.original}`;
+    const invoiceTypeTitle = invoice.type === "RENT" ? t.invoiceRent
+      : invoice.type === "UTILITY" ? t.invoiceUtility
+      : t.invoice;
+    const invoiceTitle = `${invoiceTypeTitle} ${copy ? t.copy : t.original}`;
     doc.text(invoiceTitle, centerX, y, { align: "center" });
     doc.setTextColor(0, 0, 0);
 

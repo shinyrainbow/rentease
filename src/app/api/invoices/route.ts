@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
           totalAmount,
           lineItems,
           // Project/Unit snapshot
-          projectName: unit.project.name,
+          projectName: unit.project.invoiceName || unit.project.name,
           unitNumber: unit.unitNumber,
           // Tenant snapshot
           tenantName: activeTenant.name,

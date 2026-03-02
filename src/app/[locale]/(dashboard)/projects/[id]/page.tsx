@@ -58,6 +58,7 @@ interface Project {
   id: string;
   name: string;
   nameTh: string | null;
+  invoiceName: string | null;
   type: string;
   address: string | null;
   billingDay: number;
@@ -144,6 +145,7 @@ export default function ProjectDetailPage() {
   const [formData, setFormData] = useState({
     name: "",
     nameTh: "",
+    invoiceName: "",
     type: "WAREHOUSE",
     address: "",
     billingDay: 1,
@@ -229,6 +231,7 @@ export default function ProjectDetailPage() {
       setFormData({
         name: projectData.name,
         nameTh: projectData.nameTh || "",
+        invoiceName: projectData.invoiceName || "",
         type: projectData.type,
         address: projectData.address || "",
         billingDay: projectData.billingDay,
@@ -1274,8 +1277,18 @@ export default function ProjectDetailPage() {
                       value={formData.nameTh}
                       onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
                     />
-                    <p className="text-xs text-muted-foreground">ชื่อภาษาไทย (แสดงในใบแจ้งหนี้)</p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="invoiceName">ชื่อโครงการใช้ในใบแจ้งหนี้</Label>
+                  <Input
+                    id="invoiceName"
+                    value={formData.invoiceName}
+                    onChange={(e) => setFormData({ ...formData, invoiceName: e.target.value })}
+                    placeholder="เช่น โครงการ บิซสเปซ แวร์เฮ้าส์ พาร์ค"
+                  />
+                  <p className="text-xs text-muted-foreground">ชื่อที่แสดงในใบแจ้งหนี้/ใบเสร็จ (ถ้าไม่ระบุจะใช้ชื่อโครงการ)</p>
                 </div>
 
                 <div className="space-y-2">

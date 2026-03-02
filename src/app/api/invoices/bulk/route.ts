@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
             totalAmount,
             lineItems: lineItems as Prisma.InputJsonValue,
             // Project/Unit snapshot
-            projectName: project.name,
+            projectName: project.invoiceName || project.name,
             unitNumber: unit.unitNumber,
             // Tenant snapshot
             tenantName: tenant.name,

@@ -72,6 +72,7 @@ model Project {
   id          String      @id @default(cuid())
   name        String
   nameTh      String?
+  invoiceName String?     // ชื่อโครงการใช้ในใบแจ้งหนี้
   description String?
   address     String?
   type        ProjectType
