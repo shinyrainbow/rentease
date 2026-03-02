@@ -323,43 +323,43 @@ export async function GET(request: NextRequest) {
           <div
             style={{
               display: "flex",
-              backgroundColor: PRIMARY_COLOR,
+              backgroundColor: "#ffffff",
               padding: "10px 0",
             }}
           >
             <div style={{ width: "50px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>#</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>#</span>
             </div>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingLeft: "8px" }}>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Description</span>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.detail}</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Description</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.detail}</span>
             </div>
             {invoiceType === "UTILITY" ? (
               <>
                 <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Quantity</span>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.quantity}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Quantity</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.quantity}</span>
                 </div>
                 <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Unit Price</span>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.unitPrice}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Unit Price</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.unitPrice}</span>
                 </div>
               </>
             ) : (
               <>
                 <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Price</span>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.price}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Price</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.price}</span>
                 </div>
                 <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "12px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`WH ${withholdingTaxPercent}%`}</span>
-                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{`WH ${withholdingTaxPercent}%`}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{`${t.whLabel} ${withholdingTaxPercent}%`}</span>
                 </div>
               </>
             )}
             <div style={{ width: "140px", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: "16px" }}>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>Total</span>
-              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff" }}>{t.colTotal}</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>Total</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>{t.colTotal}</span>
             </div>
           </div>
 

@@ -367,12 +367,12 @@ export async function POST(
     const colCol3TextX = colCol3Left + colCol3W - 3;
     const colTotalTextX = colTotalLeft + colTotalW - 3;
 
-    // Table header (green bg, bilingual: English line 1, Thai line 2)
+    // Table header (white bg, bilingual: English line 1, Thai line 2)
     const headerHeight = 16;
-    doc.setFillColor(PRIMARY_COLOR.r, PRIMARY_COLOR.g, PRIMARY_COLOR.b);
+    doc.setFillColor(255, 255, 255);
     doc.rect(margin, y, tableWidth, headerHeight, "F");
 
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
     setThaiFont(doc, "bold");
     const hY1 = y + 6;
@@ -462,9 +462,9 @@ export async function POST(
       y += rowHeight;
     });
 
-    // Bottom summary row (light green bg)
+    // Bottom summary row (white bg)
     const summaryHeight = 12;
-    doc.setFillColor(220, 252, 231); // green-100
+    doc.setFillColor(255, 255, 255);
     doc.rect(margin, y, tableWidth, summaryHeight, "F");
 
     // Bottom border
@@ -480,8 +480,9 @@ export async function POST(
     doc.setTextColor(0, 0, 0);
     doc.text(numberToThaiText(invoice.totalAmount), colDescTextX, summaryTextY);
 
-    // Grand total label + amount on right
-    doc.text(t.grandTotal, colCol3TextX, summaryTextY, { align: "right" });
+    // Grand total label (merged across col2+col3) + amount on right
+    const mergedCenterX = colCol2Left + (colCol2W + colCol3W) / 2;
+    doc.text(t.grandTotal, mergedCenterX, summaryTextY, { align: "center" });
     doc.text(formatCurrency(invoice.totalAmount), colTotalTextX, summaryTextY, { align: "right" });
 
     y += summaryHeight + 35;
