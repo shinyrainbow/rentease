@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate withholding tax
-    const withholdingTax = activeTenant.tenantType === "COMPANY"
+    // Calculate withholding tax (only for RENT, not UTILITY)
+    const withholdingTax = data.type !== "UTILITY" && activeTenant.tenantType === "COMPANY"
       ? subtotal * (activeTenant.withholdingTax / 100)
       : 0;
 
