@@ -498,16 +498,19 @@ export async function POST(
 
     const summaryTextY = y + summaryHeight / 2 + 1.5;
 
+    // For UTILITY invoices, use subtotal (no WH deduction)
+    const displayTotal = isUtility ? invoice.subtotal : invoice.totalAmount;
+
     // Thai baht text on left
     doc.setFontSize(10);
     setThaiFont(doc, "bold");
     doc.setTextColor(0, 0, 0);
-    doc.text(numberToThaiText(invoice.totalAmount), colDescTextX, summaryTextY);
+    doc.text(numberToThaiText(displayTotal), colDescTextX, summaryTextY);
 
     // Grand total label (merged across col2+col3) + amount on right
     const mergedCenterX = colCol2Left + (colCol2W + colCol3W) / 2;
     doc.text(t.grandTotal, mergedCenterX, summaryTextY, { align: "center" });
-    doc.text(formatCurrency(invoice.totalAmount), colTotalTextX, summaryTextY, { align: "right" });
+    doc.text(formatCurrency(displayTotal), colTotalTextX, summaryTextY, { align: "right" });
 
     y += summaryHeight + 35;
 

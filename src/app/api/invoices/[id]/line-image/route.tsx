@@ -205,6 +205,9 @@ export async function GET(request: NextRequest) {
 
     const displayBankName = bankName ? (BANK_NAMES[bankName] || bankName) : "";
 
+    // For UTILITY invoices, use subtotal (no WH deduction)
+    const displayTotal = invoiceType === "UTILITY" ? subtotal : totalAmount;
+
     const t = translations[lang] || translations.th;
 
     const formatCurrency = (amount: number) => {
@@ -432,13 +435,13 @@ export async function GET(request: NextRequest) {
           >
             <div style={{ width: "50px", backgroundColor: "#DCFCE7", padding: "14px 0" }} />
             <div style={{ flex: 1, display: "flex", alignItems: "center", paddingLeft: "8px", backgroundColor: "#DCFCE7", padding: "14px 0 14px 8px" }}>
-              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(totalAmount)}</span>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{numberToThaiText(displayTotal)}</span>
             </div>
             <div style={{ width: "280px", display: "flex", justifyContent: "center", alignItems: "center", padding: "14px 0" }}>
               <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{t.grandTotal}</span>
             </div>
             <div style={{ width: "140px", display: "flex", justifyContent: "flex-end", alignItems: "center", backgroundColor: "#DCFCE7", padding: "14px 16px 14px 0" }}>
-              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(totalAmount)}</span>
+              <span style={{ fontSize: "15px", fontWeight: "bold", color: "#111827" }}>{formatCurrency(displayTotal)}</span>
             </div>
           </div>
 
