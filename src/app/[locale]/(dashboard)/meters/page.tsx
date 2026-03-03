@@ -391,7 +391,7 @@ export default function MetersPage() {
                           <SelectContent>
                             {projects.map((project) => (
                               <SelectItem key={project.id} value={project.id}>
-                                {(locale === "th" ? project.nameTh : null) || project.name}
+                                {project.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

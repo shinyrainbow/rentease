@@ -473,6 +473,9 @@ export async function POST(
       y += rowHeight;
     });
 
+    // Space above summary row (~2 rows)
+    y += rowHeight * 2;
+
     // Separator above summary row
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);

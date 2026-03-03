@@ -417,6 +417,9 @@ export async function GET(request: NextRequest) {
             );
           })}
 
+          {/* Space above summary row (~2 rows) */}
+          <div style={{ height: "56px" }} />
+
           {/* Separator above summary row */}
           <div style={{ width: "100%", height: "2px", backgroundColor: "#000000" }} />
 
