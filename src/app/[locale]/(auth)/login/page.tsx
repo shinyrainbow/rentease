@@ -85,14 +85,15 @@ export default function LoginPage() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      {/* Registration temporarily disabled */}
+      {/* <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
           {t("noAccount")}{" "}
           <Link href={`/${locale}/register`} className="text-primary hover:underline">
             {t("signUp")}
           </Link>
         </p>
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 }

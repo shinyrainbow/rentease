@@ -3,6 +3,12 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
+  // Registration temporarily disabled
+  return NextResponse.json(
+    { error: "Registration is currently disabled" },
+    { status: 403 }
+  );
+
   try {
     const { name, email, password } = await request.json();
 
