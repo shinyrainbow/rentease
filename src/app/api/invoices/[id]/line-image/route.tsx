@@ -17,6 +17,8 @@ const PRIMARY_COLOR = "#16a34a"; // green-600
 function numberToThaiText(num: number): string {
   const thaiDigits = ["", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
   const positions = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+  // Round to 2 decimal places to avoid floating point issues
+  num = Math.round(num * 100) / 100;
   if (num === 0) return "ศูนย์บาทถ้วน";
   const intPart = Math.floor(Math.abs(num));
   const decPart = Math.round((Math.abs(num) - intPart) * 100);
