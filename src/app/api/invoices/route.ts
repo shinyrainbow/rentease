@@ -139,10 +139,10 @@ export async function POST(request: NextRequest) {
 
     // Calculate withholding tax (only for RENT, not UTILITY)
     const withholdingTax = data.type !== "UTILITY" && activeTenant.tenantType === "COMPANY"
-      ? subtotal * (activeTenant.withholdingTax / 100)
+      ? Math.round(subtotal * (activeTenant.withholdingTax / 100) * 100) / 100
       : 0;
 
-    const totalAmount = subtotal - withholdingTax;
+    const totalAmount = Math.round((subtotal - withholdingTax) * 100) / 100;
 
     const invoice = await prisma.$transaction(async (tx) => {
       const created = await tx.invoice.create({

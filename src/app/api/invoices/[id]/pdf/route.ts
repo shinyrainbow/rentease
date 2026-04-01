@@ -117,8 +117,9 @@ function numberToThaiText(num: number): string {
   // Round to 2 decimal places to avoid floating point issues
   num = Math.round(num * 100) / 100;
   if (num === 0) return "ศูนย์บาทถ้วน";
-  const intPart = Math.floor(Math.abs(num));
-  const decPart = Math.round((Math.abs(num) - intPart) * 100);
+  let intPart = Math.floor(Math.abs(num));
+  let decPart = Math.round((Math.abs(num) - intPart) * 100);
+  if (decPart >= 100) { intPart += 1; decPart = 0; }
   function convert(n: number): string {
     if (n === 0) return "";
     if (n > 999999) return convert(Math.floor(n / 1000000)) + "ล้าน" + convert(n % 1000000);
@@ -464,11 +465,11 @@ export async function POST(
         doc.text(formatCurrency(item.amount), colCol2TextX, textY, { align: "right" });
 
         // WH amount per item
-        const itemWh = whPercent > 0 ? item.amount * whPercent / 100 : 0;
+        const itemWh = whPercent > 0 ? Math.round(item.amount * whPercent / 100 * 100) / 100 : 0;
         doc.text(formatCurrency(itemWh), colCol3TextX, textY, { align: "right" });
 
         // Total per item (price - WH)
-        const itemTotal = item.amount - itemWh;
+        const itemTotal = Math.round((item.amount - itemWh) * 100) / 100;
         doc.text(formatCurrency(itemTotal), colTotalTextX, textY, { align: "right" });
       }
 
